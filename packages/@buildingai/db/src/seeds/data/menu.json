@@ -62,6 +62,18 @@
                 ]
             },
             {
+                "name": "工作流",
+                "code": "workflow",
+                "path": "workflow",
+                "icon": "git-branch",
+                "component": "/workflows",
+                "permissionCode": null,
+                "sort": 150,
+                "isHidden": 0,
+                "type": 1,
+                "sourceType": 1
+            },
+            {
                 "name": "知识库",
                 "code": "ai-datasets",
                 "path": "datasets",

@@ -18,6 +18,8 @@ import DatasetsIndexPage from "@/pages/datasets";
 import DatasetsLayout from "@/pages/datasets/_layouts";
 import DatasetsDetailPage from "@/pages/datasets/detail";
 import InstallPage from "@/pages/install";
+import WorkflowEditorApp from "@/pages/workflows/app";
+import WorkflowsIndexPage from "@/pages/workflows/index";
 
 import ConsoleLayout from "../layouts/console";
 import DynamicHomePage from "../pages";
@@ -147,6 +149,14 @@ export const router = createBrowserRouter([
           {
             path: "/agents/workspace",
             element: <AgentsWorkspacePage />,
+          },
+          {
+            path: "/workflows",
+            element: <WorkflowsIndexPage />,
+          },
+          {
+            path: "/workflows/:id",
+            element: <WorkflowEditorApp />,
           },
           {
             path: "*",

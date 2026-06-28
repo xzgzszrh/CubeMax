@@ -53,6 +53,7 @@ import { SystemModule } from "./system/system.module";
 import { TagModule } from "./tag/tag.module";
 import { UploadModule } from "./upload/upload.module";
 import { UserModule } from "./user/user.module";
+import { WorkflowModule } from "./workflow/workflow.module";
 @Module({})
 export class AppModule {
     static async register(): Promise<DynamicModule> {
@@ -124,6 +125,7 @@ export class AppModule {
                 SmsModule,
                 NoticeModule,
                 NotificationModule,
+                WorkflowModule,
                 await ExtensionCoreModule.register(),
             ],
             controllers: [],
