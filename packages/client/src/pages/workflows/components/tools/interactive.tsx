@@ -3,17 +3,15 @@
  * SPDX-License-Identifier: MIT
  */
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState } from "react";
 
-import {
-  usePlaygroundTools,
-  type InteractiveType as IdeInteractiveType,
-} from '@flowgram.ai/free-layout-editor';
-import { Tooltip, Popover } from '@douyinfe/semi-ui';
+import { usePlaygroundTools } from "@flowgram.ai/free-layout-editor";
+import type { InteractiveType as IdeInteractiveType } from "@flowgram.ai/free-layout-editor";
+import { Tooltip, Popover } from "@douyinfe/semi-ui";
 
-import { MousePadSelector } from './mouse-pad-selector';
+import { MousePadSelector } from "./mouse-pad-selector";
 
-export const CACHE_KEY = 'workflow_prefer_interactive_type';
+export const CACHE_KEY = "workflow_prefer_interactive_type";
 export const IS_MAC_OS = /(Macintosh|MacIntel|MacPPC|Mac68K|iPad)/.test(navigator.userAgent);
 
 export const getPreferInteractiveType = () => {
@@ -29,8 +27,8 @@ export const setPreferInteractiveType = (type: InteractiveType) => {
 };
 
 export enum InteractiveType {
-  Mouse = 'MOUSE',
-  Pad = 'PAD',
+  Mouse = "MOUSE",
+  Pad = "PAD",
 }
 
 export const Interactive = () => {
@@ -38,13 +36,13 @@ export const Interactive = () => {
   const [visible, setVisible] = useState(false);
 
   const [interactiveType, setInteractiveType] = useState<InteractiveType>(
-    () => getPreferInteractiveType() as InteractiveType
+    () => getPreferInteractiveType() as InteractiveType,
   );
 
   const [showInteractivePanel, setShowInteractivePanel] = useState(false);
 
   const mousePadTooltip =
-    interactiveType === InteractiveType.Mouse ? 'Mouse-Friendly' : 'Touchpad-Friendly';
+    interactiveType === InteractiveType.Mouse ? "Mouse-Friendly" : "Touchpad-Friendly";
 
   useEffect(() => {
     // read from localStorage
@@ -60,7 +58,7 @@ export const Interactive = () => {
     <Popover trigger="custom" position="top" visible={visible} onClickOutSide={handleClose}>
       <Tooltip
         content={mousePadTooltip}
-        style={{ display: showInteractivePanel ? 'none' : 'block' }}
+        style={{ display: showInteractivePanel ? "none" : "block" }}
       >
         <div className="workflow-toolbar-interactive">
           <MousePadSelector
@@ -72,23 +70,23 @@ export const Interactive = () => {
             }}
             onPopupVisibleChange={setShowInteractivePanel}
             containerStyle={{
-              border: 'none',
-              height: '32px',
-              width: '32px',
-              justifyContent: 'center',
-              alignItems: 'center',
-              gap: '2px',
-              padding: '4px',
-              borderRadius: 'var(--small, 6px)',
+              border: "none",
+              height: "32px",
+              width: "32px",
+              justifyContent: "center",
+              alignItems: "center",
+              gap: "2px",
+              padding: "4px",
+              borderRadius: "var(--small, 6px)",
             }}
             iconStyle={{
-              margin: '0',
-              width: '16px',
-              height: '16px',
+              margin: "0",
+              width: "16px",
+              height: "16px",
             }}
             arrowStyle={{
-              width: '12px',
-              height: '12px',
+              width: "12px",
+              height: "12px",
             }}
           />
         </div>

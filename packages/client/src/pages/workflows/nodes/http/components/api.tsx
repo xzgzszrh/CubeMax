@@ -3,12 +3,13 @@
  * SPDX-License-Identifier: MIT
  */
 
-import { Field } from '@flowgram.ai/free-layout-editor';
-import { IFlowTemplateValue, PromptEditorWithVariables } from '@flowgram.ai/form-materials';
-import { Select } from '@douyinfe/semi-ui';
+import { Field } from "@flowgram.ai/free-layout-editor";
+import { PromptEditorWithVariables } from "@flowgram.ai/form-materials";
+import type { IFlowTemplateValue } from "@flowgram.ai/form-materials";
+import { Select } from "@douyinfe/semi-ui";
 
-import { useNodeRenderContext } from '../../../hooks';
-import { FormItem } from '../../../form-components';
+import { useNodeRenderContext } from "../../../hooks";
+import { FormItem } from "../../../form-components";
 
 export function Api() {
   const { readonly } = useNodeRenderContext();
@@ -16,7 +17,7 @@ export function Api() {
   return (
     <div>
       <FormItem name="API" required vertical type="string">
-        <div style={{ display: 'flex', gap: 5 }}>
+        <div style={{ display: "flex", gap: 5 }}>
           <Field<string> name="api.method" defaultValue="GET">
             {({ field }) => (
               <Select
@@ -28,12 +29,12 @@ export function Api() {
                 size="small"
                 disabled={readonly}
                 optionList={[
-                  { label: 'GET', value: 'GET' },
-                  { label: 'POST', value: 'POST' },
-                  { label: 'PUT', value: 'PUT' },
-                  { label: 'DELETE', value: 'DELETE' },
-                  { label: 'PATCH', value: 'PATCH' },
-                  { label: 'HEAD', value: 'HEAD' },
+                  { label: "GET", value: "GET" },
+                  { label: "POST", value: "POST" },
+                  { label: "PUT", value: "PUT" },
+                  { label: "DELETE", value: "DELETE" },
+                  { label: "PATCH", value: "PATCH" },
+                  { label: "HEAD", value: "HEAD" },
                 ]}
               />
             )}

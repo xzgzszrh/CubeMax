@@ -3,16 +3,16 @@
  * SPDX-License-Identifier: MIT
  */
 
-import { usePanelManager } from '@flowgram.ai/panel-manager-plugin';
+import { usePanelManager } from "@flowgram.ai/panel-manager-plugin";
 
-import type { NodeFormPanelProps } from '../../components/sidebar/node-form-panel';
-import { PanelType } from './constants';
+import type { NodeFormPanelProps } from "../../components/sidebar/node-form-panel";
+import { PanelType } from "./constants";
 
 export const useNodeFormPanel = () => {
   const panelManager = usePanelManager();
 
   const open = (props: NodeFormPanelProps) => {
-    panelManager.open(PanelType.NodeFormPanel, 'right', {
+    panelManager.open(PanelType.NodeFormPanel, "right", {
       props: props,
     });
   };
@@ -25,7 +25,7 @@ export const useTestRunFormPanel = () => {
   const panelManager = usePanelManager();
 
   const open = () => {
-    panelManager.open(PanelType.TestRunFormPanel, 'docked-right');
+    panelManager.open(PanelType.TestRunFormPanel, "docked-right");
   };
   const close = () => panelManager.close(PanelType.TestRunFormPanel);
 
@@ -36,7 +36,7 @@ export const useProblemPanel = () => {
   const panelManager = usePanelManager();
 
   const open = () => {
-    panelManager.open(PanelType.ProblemPanel, 'bottom');
+    panelManager.open(PanelType.ProblemPanel, "bottom");
   };
   const close = () => panelManager.close(PanelType.ProblemPanel);
 

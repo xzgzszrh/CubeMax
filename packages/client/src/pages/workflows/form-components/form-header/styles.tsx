@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: MIT
  */
 
-import styled from 'styled-components';
+import styled from "styled-components";
 
 export const Header = styled.div`
   box-sizing: border-box;

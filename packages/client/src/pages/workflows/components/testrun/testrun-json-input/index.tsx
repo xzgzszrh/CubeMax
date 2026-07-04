@@ -3,12 +3,12 @@
  * SPDX-License-Identifier: MIT
  */
 
-import { FC } from 'react';
+import type { FC } from "react";
 
-import { JsonValueEditor } from '../json-value-editor';
-import { useFormMeta, useSyncDefault } from '../hooks';
+import { JsonValueEditor } from "../json-value-editor";
+import { useFormMeta, useSyncDefault } from "../hooks";
 
-import styles from './index.module.less';
+import styles from "./index.module.less";
 
 interface TestRunJsonInputProps {
   values: Record<string, unknown>;
@@ -25,7 +25,7 @@ export const TestRunJsonInput: FC<TestRunJsonInputProps> = ({ values, setValues 
   });
 
   return (
-    <div className={styles['testrun-json-input']}>
+    <div className={styles["testrun-json-input"]}>
       <JsonValueEditor value={values} onChange={setValues} />
     </div>
   );

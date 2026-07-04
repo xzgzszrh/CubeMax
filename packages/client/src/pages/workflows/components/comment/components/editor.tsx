@@ -3,13 +3,14 @@
  * SPDX-License-Identifier: MIT
  */
 
-import { type FC, type CSSProperties, useEffect, useRef } from 'react';
+import { useEffect, useRef } from "react";
+import type { FC, CSSProperties } from "react";
 
-import { usePlayground } from '@flowgram.ai/free-layout-editor';
+import { usePlayground } from "@flowgram.ai/free-layout-editor";
 
-import { CommentEditorModel } from '../model';
-import { usePlaceholder } from '../hooks';
-import { CommentEditorEvent } from '../constant';
+import type { CommentEditorModel } from "../model";
+import { usePlaceholder } from "../hooks";
+import { CommentEditorEvent } from "../constant";
 
 interface ICommentEditor {
   model: CommentEditorModel;

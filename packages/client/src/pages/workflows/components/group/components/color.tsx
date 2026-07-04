@@ -3,13 +3,13 @@
  * SPDX-License-Identifier: MIT
  */
 
-import { FC } from 'react';
+import type { FC } from "react";
 
-import { Field } from '@flowgram.ai/free-layout-editor';
-import { Popover, Tooltip } from '@douyinfe/semi-ui';
+import { Field } from "@flowgram.ai/free-layout-editor";
+import { Popover, Tooltip } from "@douyinfe/semi-ui";
 
-import { GroupField } from '../constant';
-import { defaultColor, groupColors } from '../color';
+import { GroupField } from "../constant";
+import { defaultColor, groupColors } from "../color";
 
 export const GroupColor: FC = () => (
   <Field<string> name={GroupField.Color}>
@@ -27,8 +27,8 @@ export const GroupColor: FC = () => (
                     className="workflow-group-color-item"
                     key={name}
                     style={{
-                      backgroundColor: color['300'],
-                      borderColor: name === colorName ? color['400'] : '#fff',
+                      backgroundColor: color["300"],
+                      borderColor: name === colorName ? color["400"] : "#fff",
                     }}
                     onClick={() => field.onChange(name)}
                   />
@@ -40,7 +40,7 @@ export const GroupColor: FC = () => (
           <span
             className="workflow-group-color"
             style={{
-              backgroundColor: groupColors[colorName]['300'],
+              backgroundColor: groupColors[colorName]["300"],
             }}
           />
         </Popover>

@@ -6,22 +6,22 @@
 /* eslint-disable @typescript-eslint/naming-convention -- enum */
 
 export enum CommentEditorFormField {
-  Size = 'size',
-  Note = 'note',
+  Size = "size",
+  Note = "note",
 }
 
 /** 编辑器事件 */
 export enum CommentEditorEvent {
   /** 初始化事件 */
-  Init = 'init',
+  Init = "init",
   /** 内容变更事件 */
-  Change = 'change',
+  Change = "change",
   /** 多选事件 */
-  MultiSelect = 'multiSelect',
+  MultiSelect = "multiSelect",
   /** 单选事件 */
-  Select = 'select',
+  Select = "select",
   /** 失焦事件 */
-  Blur = 'blur',
+  Blur = "blur",
 }
 
-export const CommentEditorDefaultValue = '';
+export const CommentEditorDefaultValue = "";

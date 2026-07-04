@@ -3,9 +3,9 @@
  * SPDX-License-Identifier: MIT
  */
 
-import { domUtils, injectable, Layer } from '@flowgram.ai/free-layout-editor';
+import { domUtils, injectable, Layer } from "@flowgram.ai/free-layout-editor";
 
-import { VariablePanel } from './components/variable-panel';
+import { VariablePanel } from "./components/variable-panel";
 
 @injectable()
 export class VariablePanelLayer extends Layer {
@@ -14,7 +14,7 @@ export class VariablePanelLayer extends Layer {
     this.config.onDataChange(() => {
       const { scrollX, scrollY } = this.config.config;
       domUtils.setStyle(this.node, {
-        position: 'absolute',
+        position: "absolute",
         right: 25 - scrollX,
         top: scrollY + 25,
       });

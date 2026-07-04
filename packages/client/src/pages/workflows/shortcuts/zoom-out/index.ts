@@ -3,18 +3,15 @@
  * SPDX-License-Identifier: MIT
  */
 
-import {
-  FreeLayoutPluginContext,
-  PlaygroundConfigEntity,
-  ShortcutsHandler,
-} from '@flowgram.ai/free-layout-editor';
+import { PlaygroundConfigEntity } from "@flowgram.ai/free-layout-editor";
+import type { FreeLayoutPluginContext, ShortcutsHandler } from "@flowgram.ai/free-layout-editor";
 
-import { FlowCommandId } from '../constants';
+import { FlowCommandId } from "../constants";
 
 export class ZoomOutShortcut implements ShortcutsHandler {
   public commandId = FlowCommandId.ZOOM_OUT;
 
-  public shortcuts = ['meta -', 'ctrl -'];
+  public shortcuts = ["meta -", "ctrl -"];
 
   private playgroundConfig: PlaygroundConfigEntity;
 

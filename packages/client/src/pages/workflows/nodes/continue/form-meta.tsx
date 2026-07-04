@@ -3,11 +3,11 @@
  * SPDX-License-Identifier: MIT
  */
 
-import { FormMeta } from '@flowgram.ai/free-layout-editor';
+import type { FormMeta } from "@flowgram.ai/free-layout-editor";
 
-import { defaultFormMeta } from '../default-form-meta';
-import { useIsSidebar } from '../../hooks';
-import { FormHeader, FormContent } from '../../form-components';
+import { defaultFormMeta } from "../default-form-meta";
+import { useIsSidebar } from "../../hooks";
+import { FormHeader, FormContent } from "../../form-components";
 
 export const renderForm = () => {
   const isSidebar = useIsSidebar();

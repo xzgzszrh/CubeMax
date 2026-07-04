@@ -3,12 +3,12 @@
  * SPDX-License-Identifier: MIT
  */
 
-import { nanoid } from 'nanoid';
+import { nanoid } from "nanoid";
 
-import { WorkflowNodeType } from '../constants';
-import { FlowNodeRegistry } from '../../typings';
-import iconHTTP from '../../assets/icon-http.svg';
-import { formMeta } from './form-meta';
+import { WorkflowNodeType } from "../constants";
+import type { FlowNodeRegistry } from "../../typings";
+import iconHTTP from "../../assets/icon-http.svg";
+import { formMeta } from "./form-meta";
 
 let index = 0;
 
@@ -16,7 +16,7 @@ export const HTTPNodeRegistry: FlowNodeRegistry = {
   type: WorkflowNodeType.HTTP,
   info: {
     icon: iconHTTP,
-    description: 'Call the HTTP API',
+    description: "Call the HTTP API",
   },
   meta: {
     size: {
@@ -27,23 +27,23 @@ export const HTTPNodeRegistry: FlowNodeRegistry = {
   onAdd() {
     return {
       id: `http_${nanoid(5)}`,
-      type: 'http',
+      type: "http",
       data: {
         title: `HTTP_${++index}`,
         api: {
-          method: 'GET',
+          method: "GET",
         },
         body: {
-          bodyType: 'JSON',
+          bodyType: "JSON",
         },
         headers: {},
         params: {},
         outputs: {
-          type: 'object',
+          type: "object",
           properties: {
-            body: { type: 'string' },
-            headers: { type: 'object' },
-            statusCode: { type: 'integer' },
+            body: { type: "string" },
+            headers: { type: "object" },
+            statusCode: { type: "integer" },
           },
         },
       },

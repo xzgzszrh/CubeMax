@@ -3,5 +3,10 @@
  * SPDX-License-Identifier: MIT
  */
 
-export { NodeRenderContext } from './node-render-context';
-export { IsSidebarContext } from './sidebar-context';
+export { NodeRenderContext } from "./node-render-context";
+export { IsSidebarContext } from "./sidebar-context";
+export {
+  WorkflowSaveProvider,
+  serializeWorkflowSchema,
+  useWorkflowSave,
+} from "./workflow-save-context";

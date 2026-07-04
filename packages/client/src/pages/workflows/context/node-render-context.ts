@@ -3,9 +3,9 @@
  * SPDX-License-Identifier: MIT
  */
 
-import React from 'react';
+import React from "react";
 
-import type { NodeRenderReturnType } from '@flowgram.ai/free-layout-editor';
+import type { NodeRenderReturnType } from "@flowgram.ai/free-layout-editor";
 
 interface INodeRenderContext extends NodeRenderReturnType {}
 

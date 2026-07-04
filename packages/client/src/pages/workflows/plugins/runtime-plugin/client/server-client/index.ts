@@ -5,28 +5,30 @@
 
 import {
   FlowGramAPIName,
-  IRuntimeClient,
   TaskCancelDefine,
+  TaskReportDefine,
+  TaskResultDefine,
+  TaskRunDefine,
+  TaskValidateDefine,
+} from "@flowgram.ai/runtime-interface";
+import type {
+  IRuntimeClient,
   TaskCancelInput,
   TaskCancelOutput,
-  TaskReportDefine,
   TaskReportInput,
   TaskReportOutput,
-  TaskResultDefine,
   TaskResultInput,
   TaskResultOutput,
-  TaskRunDefine,
   TaskRunInput,
   TaskRunOutput,
-  TaskValidateDefine,
   TaskValidateInput,
   TaskValidateOutput,
-} from '@flowgram.ai/runtime-interface';
-import { injectable } from '@flowgram.ai/free-layout-editor';
+} from "@flowgram.ai/runtime-interface";
+import { injectable } from "@flowgram.ai/free-layout-editor";
 
-import { ServerConfig } from '../../type';
-import type { ServerError } from './type';
-import { DEFAULT_SERVER_CONFIG } from './constant';
+import type { ServerConfig } from "../../type";
+import type { ServerError } from "./type";
+import { DEFAULT_SERVER_CONFIG } from "./constant";
 
 @injectable()
 export class WorkflowRuntimeServerClient implements IRuntimeClient {
@@ -41,25 +43,25 @@ export class WorkflowRuntimeServerClient implements IRuntimeClient {
   public async [FlowGramAPIName.TaskRun](input: TaskRunInput): Promise<TaskRunOutput | undefined> {
     return this.request<TaskRunOutput>(TaskRunDefine.path, TaskRunDefine.method, {
       body: input,
-      errorMessage: 'TaskRun failed',
+      errorMessage: "TaskRun failed",
     });
   }
 
   public async [FlowGramAPIName.TaskReport](
-    input: TaskReportInput
+    input: TaskReportInput,
   ): Promise<TaskReportOutput | undefined> {
     return this.request<TaskReportOutput>(TaskReportDefine.path, TaskReportDefine.method, {
       queryParams: { taskID: input.taskID },
-      errorMessage: 'TaskReport failed',
+      errorMessage: "TaskReport failed",
     });
   }
 
   public async [FlowGramAPIName.TaskResult](
-    input: TaskResultInput
+    input: TaskResultInput,
   ): Promise<TaskResultOutput | undefined> {
     return this.request<TaskResultOutput>(TaskResultDefine.path, TaskResultDefine.method, {
       queryParams: { taskID: input.taskID },
-      errorMessage: 'TaskResult failed',
+      errorMessage: "TaskResult failed",
       fallbackValue: { success: false },
     });
   }
@@ -70,19 +72,19 @@ export class WorkflowRuntimeServerClient implements IRuntimeClient {
       TaskCancelDefine.method,
       {
         body: input,
-        errorMessage: 'TaskCancel failed',
+        errorMessage: "TaskCancel failed",
         fallbackValue: { success: false },
-      }
+      },
     );
     return result ?? { success: false };
   }
 
   public async [FlowGramAPIName.TaskValidate](
-    input: TaskValidateInput
+    input: TaskValidateInput,
   ): Promise<TaskValidateOutput | undefined> {
     return this.request<TaskValidateOutput>(TaskValidateDefine.path, TaskValidateDefine.method, {
       body: input,
-      errorMessage: 'TaskValidate failed',
+      errorMessage: "TaskValidate failed",
     });
   }
 
@@ -95,18 +97,18 @@ export class WorkflowRuntimeServerClient implements IRuntimeClient {
       queryParams?: Record<string, string>;
       errorMessage: string;
       fallbackValue?: T;
-    }
+    },
   ): Promise<T | undefined> {
     try {
       const url = this.url(path, options.queryParams);
       const requestOptions: RequestInit = {
         method,
-        redirect: 'follow',
+        redirect: "follow",
       };
 
       if (options.body) {
         requestOptions.headers = {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         };
         requestOptions.body = JSON.stringify(options.body);
       }

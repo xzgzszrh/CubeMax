@@ -3,9 +3,9 @@
  * SPDX-License-Identifier: MIT
  */
 
-import { type FlowNodeType } from '@flowgram.ai/free-layout-editor';
+import type { FlowNodeType } from "@flowgram.ai/free-layout-editor";
 
-import { WorkflowNodeType } from '../nodes';
+import { WorkflowNodeType } from "../nodes";
 
 /**
  * 判断父节点是否可以包含对应子节点
@@ -15,7 +15,7 @@ import { WorkflowNodeType } from '../nodes';
  */
 export function canContainNode(
   childNodeType: WorkflowNodeType | FlowNodeType,
-  parentNodeType: WorkflowNodeType | FlowNodeType
+  parentNodeType: WorkflowNodeType | FlowNodeType,
 ) {
   /**
    * 开始/结束节点无法更改容器
@@ -37,7 +37,7 @@ export function canContainNode(
    */
   if (
     [WorkflowNodeType.Continue, WorkflowNodeType.Break].includes(
-      childNodeType as WorkflowNodeType
+      childNodeType as WorkflowNodeType,
     ) &&
     parentNodeType !== WorkflowNodeType.Loop
   ) {

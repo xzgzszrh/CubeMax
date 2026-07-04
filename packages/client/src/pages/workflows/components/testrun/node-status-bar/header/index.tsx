@@ -3,14 +3,14 @@
  * SPDX-License-Identifier: MIT
  */
 
-import React, { useState } from 'react';
+import React, { useState } from "react";
 
-import classNames from 'classnames';
-import { IconChevronDown } from '@douyinfe/semi-icons';
+import classNames from "classnames";
+import { IconChevronDown } from "@douyinfe/semi-icons";
 
-import { useNodeRenderContext } from '../../../../hooks';
+import { useNodeRenderContext } from "../../../../hooks";
 
-import styles from './index.module.less';
+import styles from "./index.module.less";
 
 interface NodeStatusBarProps {
   header?: React.ReactNode;
@@ -35,28 +35,28 @@ export const NodeStatusHeader: React.FC<React.PropsWithChildren<NodeStatusBarPro
 
   return (
     <div
-      className={styles['node-status-header']}
+      className={styles["node-status-header"]}
       // 必须要禁止 down 冒泡，防止判定圈选和 node hover（不支持多边形）
       onMouseDown={(e) => e.stopPropagation()}
     >
       <div
         className={classNames(
-          styles['node-status-header-content'],
-          showDetail && styles['node-status-header-content-opened']
+          styles["node-status-header-content"],
+          showDetail && styles["node-status-header-content-opened"],
         )}
         // 必须要禁止 down 冒泡，防止判定圈选和 node hover（不支持多边形）
         onMouseDown={(e) => e.stopPropagation()}
         // 其他事件统一走点击事件，且也需要阻止冒泡
         onClick={handleToggleShowDetail}
       >
-        <div className={styles['status-title']}>
+        <div className={styles["status-title"]}>
           {header}
           {extraBtns.length > 0 ? extraBtns : null}
         </div>
-        <div className={styles['status-btns']}>
+        <div className={styles["status-btns"]}>
           <IconChevronDown
             className={classNames({
-              [styles['is-show-detail']]: showDetail,
+              [styles["is-show-detail"]]: showDetail,
             })}
           />
         </div>

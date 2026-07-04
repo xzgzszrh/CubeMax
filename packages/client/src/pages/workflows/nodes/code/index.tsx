@@ -3,12 +3,12 @@
  * SPDX-License-Identifier: MIT
  */
 
-import { nanoid } from 'nanoid';
+import { nanoid } from "nanoid";
 
-import { WorkflowNodeType } from '../constants';
-import { FlowNodeRegistry } from '../../typings';
-import iconCode from '../../assets/icon-script.png';
-import { formMeta } from './form-meta';
+import { WorkflowNodeType } from "../constants";
+import type { FlowNodeRegistry } from "../../typings";
+import iconCode from "../../assets/icon-script.png";
+import { formMeta } from "./form-meta";
 
 let index = 0;
 
@@ -36,7 +36,7 @@ export const CodeNodeRegistry: FlowNodeRegistry = {
   type: WorkflowNodeType.Code,
   info: {
     icon: iconCode,
-    description: 'Run the Script',
+    description: "Run the Script",
   },
   meta: {
     size: {
@@ -47,33 +47,33 @@ export const CodeNodeRegistry: FlowNodeRegistry = {
   onAdd() {
     return {
       id: `code_${nanoid(5)}`,
-      type: 'code',
+      type: "code",
       data: {
         title: `Code_${++index}`,
         inputsValues: {
-          input: { type: 'constant', content: '' },
+          input: { type: "constant", content: "" },
         },
         script: {
-          language: 'javascript',
+          language: "javascript",
           content: defaultCode,
         },
         outputs: {
-          type: 'object',
+          type: "object",
           properties: {
             key0: {
-              type: 'string',
+              type: "string",
             },
             key1: {
-              type: 'array',
+              type: "array",
               items: {
-                type: 'string',
+                type: "string",
               },
             },
             key2: {
-              type: 'object',
+              type: "object",
               properties: {
                 key21: {
-                  type: 'string',
+                  type: "string",
                 },
               },
             },

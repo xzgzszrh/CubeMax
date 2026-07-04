@@ -3,9 +3,9 @@
  * SPDX-License-Identifier: MIT
  */
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from "react";
 
-import { JsonCodeEditor } from '@flowgram.ai/form-materials';
+import { JsonCodeEditor } from "@flowgram.ai/form-materials";
 
 export function JsonValueEditor({
   value,

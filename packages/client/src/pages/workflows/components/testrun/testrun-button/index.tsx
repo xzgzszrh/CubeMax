@@ -3,15 +3,16 @@
  * SPDX-License-Identifier: MIT
  */
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from "react";
 
-import { useClientContext, FlowNodeEntity } from '@flowgram.ai/free-layout-editor';
-import { Button, Badge } from '@douyinfe/semi-ui';
-import { IconPlay } from '@douyinfe/semi-icons';
+import { useClientContext } from "@flowgram.ai/free-layout-editor";
+import type { FlowNodeEntity } from "@flowgram.ai/free-layout-editor";
+import { Button, Badge } from "@douyinfe/semi-ui";
+import { IconPlay } from "@douyinfe/semi-icons";
 
-import { useTestRunFormPanel } from '../../../plugins/panel-manager-plugin/hooks';
+import { useTestRunFormPanel } from "../../../plugins/panel-manager-plugin/hooks";
 
-import styles from './index.module.less';
+import styles from "./index.module.less";
 
 export function TestRunButton(props: { disabled: boolean }) {
   const [errorCount, setErrorCount] = useState(0);
@@ -28,7 +29,7 @@ export function TestRunButton(props: { disabled: boolean }) {
   const onTestRun = useCallback(async () => {
     const allForms = clientContext.document.getAllNodes().map((node) => node.form);
     await Promise.all(allForms.map(async (form) => form?.validate()));
-    console.log('>>>>> save data: ', clientContext.document.toJSON());
+    console.log(">>>>> save data: ", clientContext.document.toJSON());
     openPanel();
   }, [clientContext]);
 
@@ -45,7 +46,7 @@ export function TestRunButton(props: { disabled: boolean }) {
     };
     clientContext.document.getAllNodes().map((node) => listenSingleNodeValidate(node));
     const dispose = clientContext.document.onNodeCreate(({ node }) =>
-      listenSingleNodeValidate(node)
+      listenSingleNodeValidate(node),
     );
     return () => dispose.dispose();
   }, [clientContext]);

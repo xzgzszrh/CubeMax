@@ -3,18 +3,18 @@
  * SPDX-License-Identifier: MIT
  */
 
-import { FC } from 'react';
+import type { FC } from "react";
 
-import classNames from 'classnames';
-import { DisplaySchemaTag } from '@flowgram.ai/form-materials';
-import { Input, Switch, InputNumber } from '@douyinfe/semi-ui';
+import classNames from "classnames";
+import { DisplaySchemaTag } from "@flowgram.ai/form-materials";
+import { Input, Switch, InputNumber } from "@douyinfe/semi-ui";
 
-import { JsonValueEditor } from '../json-value-editor';
-import { useFormMeta } from '../hooks/use-form-meta';
-import { useFields } from '../hooks/use-fields';
-import { useSyncDefault } from '../hooks';
+import { JsonValueEditor } from "../json-value-editor";
+import { useFormMeta } from "../hooks/use-form-meta";
+import { useFields } from "../hooks/use-fields";
+import { useSyncDefault } from "../hooks";
 
-import styles from './index.module.less';
+import styles from "./index.module.less";
 
 interface TestRunFormProps {
   values: Record<string, unknown>;
@@ -38,13 +38,13 @@ export const TestRunForm: FC<TestRunFormProps> = ({ values, setValues }) => {
 
   const renderField = (field: any) => {
     switch (field.type) {
-      case 'boolean':
+      case "boolean":
         return (
           <div className={styles.fieldInput}>
             <Switch checked={field.value} onChange={(checked) => field.onChange(checked)} />
           </div>
         );
-      case 'integer':
+      case "integer":
         return (
           <div className={styles.fieldInput}>
             <InputNumber
@@ -55,7 +55,7 @@ export const TestRunForm: FC<TestRunFormProps> = ({ values, setValues }) => {
             />
           </div>
         );
-      case 'number':
+      case "number":
         return (
           <div className={styles.fieldInput}>
             <InputNumber
@@ -65,13 +65,13 @@ export const TestRunForm: FC<TestRunFormProps> = ({ values, setValues }) => {
             />
           </div>
         );
-      case 'object':
+      case "object":
         return (
           <div className={classNames(styles.fieldInput, styles.codeEditorWrapper)}>
             <JsonValueEditor value={field.value} onChange={(value) => field.onChange(value)} />
           </div>
         );
-      case 'array':
+      case "array":
         return (
           <div className={classNames(styles.fieldInput, styles.codeEditorWrapper)}>
             <JsonValueEditor value={field.value} onChange={(value) => field.onChange(value)} />

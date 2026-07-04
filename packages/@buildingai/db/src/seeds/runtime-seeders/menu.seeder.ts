@@ -10,6 +10,7 @@ import { Repository } from "../../typeorm";
 interface MenuItem {
     id?: string;
     name: string;
+    code?: string;
     path?: string;
     icon?: string;
     permissionCode?: string | null;
@@ -65,6 +66,26 @@ export class MenuSeeder {
     }
 
     /**
+     * Synchronize newly added built-in menus without clearing existing records.
+     */
+    async syncMissing(): Promise<void> {
+        try {
+            TerminalLogger.log(this.name, "Synchronizing missing menu data...");
+
+            const menuData = await this.loadMenuConfig();
+            await this.saveMissingMenuTree(menuData);
+
+            TerminalLogger.success(this.name, "Missing menu data synchronization completed");
+        } catch (error) {
+            TerminalLogger.error(
+                this.name,
+                `Missing menu data synchronization failed: ${error.message}`,
+            );
+            throw error;
+        }
+    }
+
+    /**
      * Read menu configuration file
      */
     private async loadMenuConfig(): Promise<MenuItem[]> {
@@ -95,42 +116,8 @@ export class MenuSeeder {
         parentId: string | null = null,
     ): Promise<void> {
         for (const menuItem of menuItems) {
-            // Extract child menus
-            const { children, ...menuData } = menuItem;
-
-            // Set parent ID
-            menuData.parentId = parentId;
-
-            // Handle permission code: convert empty string to null
-            if (menuData.permissionCode === "" || menuData.permissionCode === undefined) {
-                menuData.permissionCode = null;
-            }
-
-            // Check whether the permission code exists
-            if (menuData.permissionCode) {
-                try {
-                    // Try to look up whether the permission code exists
-                    const permissionExists = await this.permissionService.findByCodeSafe(
-                        menuData.permissionCode,
-                    );
-
-                    if (!permissionExists) {
-                        // If the permission code does not exist, set it to null
-                        TerminalLogger.warn(
-                            this.name,
-                            `Permission code ${menuData.permissionCode} does not exist, set to null`,
-                        );
-                        menuData.permissionCode = null;
-                    }
-                } catch (error) {
-                    // When lookup fails, set to null for safety
-                    TerminalLogger.error(
-                        this.name,
-                        `Failed to check permission code: ${error.message}`,
-                    );
-                    menuData.permissionCode = null;
-                }
-            }
+            const { children } = menuItem;
+            const menuData = await this.prepareMenuData(menuItem, parentId);
 
             // Save current menu item
             const savedMenu = await this.menuRepository.save(menuData);
@@ -140,5 +127,85 @@ export class MenuSeeder {
                 await this.saveMenuTree(children, savedMenu.id);
             }
         }
+    }
+
+    private async saveMissingMenuTree(
+        menuItems: MenuItem[],
+        parentId: string | null = null,
+    ): Promise<void> {
+        for (const menuItem of menuItems) {
+            const { children } = menuItem;
+            let savedMenu = await this.findExistingMenu(menuItem, parentId);
+
+            if (!savedMenu) {
+                const menuData = await this.prepareMenuData(menuItem, parentId);
+                savedMenu = await this.menuRepository.save(menuData);
+                TerminalLogger.success(
+                    this.name,
+                    `Created missing menu ${menuData.code || menuData.name}`,
+                );
+            }
+
+            if (children && children.length > 0) {
+                await this.saveMissingMenuTree(children, savedMenu.id);
+            }
+        }
+    }
+
+    private async findExistingMenu(menuItem: MenuItem, parentId: string | null): Promise<any> {
+        if (menuItem.code) {
+            return await this.menuRepository.findOne({
+                where: { code: menuItem.code },
+            });
+        }
+
+        return await this.menuRepository.findOne({
+            where: {
+                name: menuItem.name,
+                path: menuItem.path ?? null,
+                parentId,
+            },
+        });
+    }
+
+    private async prepareMenuData(menuItem: MenuItem, parentId: string | null): Promise<any> {
+        // Extract child menus
+        const { children, ...menuData } = menuItem;
+
+        // Set parent ID
+        menuData.parentId = parentId;
+
+        // Handle permission code: convert empty string to null
+        if (menuData.permissionCode === "" || menuData.permissionCode === undefined) {
+            menuData.permissionCode = null;
+        }
+
+        // Check whether the permission code exists
+        if (menuData.permissionCode) {
+            try {
+                // Try to look up whether the permission code exists
+                const permissionExists = await this.permissionService.findByCodeSafe(
+                    menuData.permissionCode,
+                );
+
+                if (!permissionExists) {
+                    // If the permission code does not exist, set it to null
+                    TerminalLogger.warn(
+                        this.name,
+                        `Permission code ${menuData.permissionCode} does not exist, set to null`,
+                    );
+                    menuData.permissionCode = null;
+                }
+            } catch (error) {
+                // When lookup fails, set to null for safety
+                TerminalLogger.error(
+                    this.name,
+                    `Failed to check permission code: ${error.message}`,
+                );
+                menuData.permissionCode = null;
+            }
+        }
+
+        return menuData;
     }
 }

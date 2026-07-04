@@ -3,6 +3,6 @@
  * SPDX-License-Identifier: MIT
  */
 
-import React from 'react';
+import React from "react";
 
 export const IsSidebarContext = React.createContext<boolean>(false);

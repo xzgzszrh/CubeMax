@@ -3,15 +3,15 @@
  * SPDX-License-Identifier: MIT
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect } from "react";
 
-import { CommentEditorModel } from '../model';
-import { CommentEditorEvent } from '../constant';
+import type { CommentEditorModel } from "../model";
+import { CommentEditorEvent } from "../constant";
 
 export const usePlaceholder = (params: { model: CommentEditorModel }): string | undefined => {
   const { model } = params;
 
-  const [placeholder, setPlaceholder] = useState<string | undefined>('Enter a comment...');
+  const [placeholder, setPlaceholder] = useState<string | undefined>("Enter a comment...");
 
   // 监听 change 事件
   useEffect(() => {
@@ -22,7 +22,7 @@ export const usePlaceholder = (params: { model: CommentEditorModel }): string | 
       if (params.value) {
         setPlaceholder(undefined);
       } else {
-        setPlaceholder('Enter a comment...');
+        setPlaceholder("Enter a comment...");
       }
     });
     return () => {

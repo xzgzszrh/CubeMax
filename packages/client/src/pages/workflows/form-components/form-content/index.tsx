@@ -3,12 +3,12 @@
  * SPDX-License-Identifier: MIT
  */
 
-import React from 'react';
+import React from "react";
 
-import { FlowNodeRegistry } from '@flowgram.ai/free-layout-editor';
+import type { FlowNodeRegistry } from "@flowgram.ai/free-layout-editor";
 
-import { useIsSidebar, useNodeRenderContext } from '../../hooks';
-import { FormTitleDescription, FormWrapper } from './styles';
+import { useIsSidebar, useNodeRenderContext } from "../../hooks";
+import { FormTitleDescription, FormWrapper } from "./styles";
 
 /**
  * @param props

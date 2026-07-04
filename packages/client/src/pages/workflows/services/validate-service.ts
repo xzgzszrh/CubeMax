@@ -7,11 +7,10 @@ import {
   inject,
   injectable,
   WorkflowLinesManager,
-  FlowNodeEntity,
   FlowNodeFormData,
-  FormModelV2,
   WorkflowDocument,
-} from '@flowgram.ai/free-layout-editor';
+} from "@flowgram.ai/free-layout-editor";
+import type { FlowNodeEntity, FormModelV2 } from "@flowgram.ai/free-layout-editor";
 
 export interface ValidateResult {
   node: FlowNodeEntity;
@@ -47,7 +46,7 @@ export class ValidateService {
           feedbacks,
           node,
         };
-      })
+      }),
     );
 
     return results.filter((i) => i.feedbacks.length);

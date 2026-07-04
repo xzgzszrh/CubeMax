@@ -3,14 +3,14 @@
  * SPDX-License-Identifier: MIT
  */
 
-import { WorkflowNodeEntity } from '@flowgram.ai/free-layout-editor';
+import type { WorkflowNodeEntity } from "@flowgram.ai/free-layout-editor";
 
 const HeightCollapsed = 54;
 const HeightExpanded = 225;
 
 export function toggleLoopExpanded(
   node: WorkflowNodeEntity,
-  expanded: boolean = node.transform.collapsed
+  expanded: boolean = node.transform.collapsed,
 ) {
   if (node.transform.collapsed === !expanded) {
     if (!node.getNodeMeta().isContainer && node.blocks.length !== 0) {
@@ -67,8 +67,8 @@ export function toggleLoopExpanded(
     block.lines.allLines.forEach((line) => {
       line.updateUIState({
         style: !expanded
-          ? { ...line.uiState.style, display: 'none' }
-          : { ...line.uiState.style, display: 'block' },
+          ? { ...line.uiState.style, display: "none" }
+          : { ...line.uiState.style, display: "block" },
       });
     });
   });

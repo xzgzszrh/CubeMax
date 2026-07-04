@@ -3,20 +3,21 @@
  * SPDX-License-Identifier: MIT
  */
 
-import React, { type CSSProperties, useState } from 'react';
+import React, { useState } from "react";
+import type { CSSProperties } from "react";
 
-import { Popover, Typography } from '@douyinfe/semi-ui';
+import { Popover, Typography } from "@douyinfe/semi-ui";
 
-import { IconPad, IconPadTool } from '../../assets/icon-pad';
-import { IconMouse, IconMouseTool } from '../../assets/icon-mouse';
+import { IconPad, IconPadTool } from "../../assets/icon-pad";
+import { IconMouse, IconMouseTool } from "../../assets/icon-mouse";
 
-import './mouse-pad-selector.less';
+import "./mouse-pad-selector.less";
 
 const { Title, Paragraph } = Typography;
 
 export enum InteractiveType {
-  Mouse = 'MOUSE',
-  Pad = 'PAD',
+  Mouse = "MOUSE",
+  Pad = "PAD",
 }
 
 export interface MousePadSelectorProps {
@@ -37,22 +38,22 @@ const InteractiveItem: React.FC<{
   onChange: (value: InteractiveType) => void;
 }> = ({ title, subTitle, icon, onChange, value, selected }) => (
   <div
-    className={`mouse-pad-option ${selected ? 'mouse-pad-option-selected' : ''}`}
+    className={`mouse-pad-option ${selected ? "mouse-pad-option-selected" : ""}`}
     onClick={() => onChange(value)}
   >
-    <div className={`mouse-pad-option-icon ${selected ? 'mouse-pad-option-icon-selected' : ''}`}>
+    <div className={`mouse-pad-option-icon ${selected ? "mouse-pad-option-icon-selected" : ""}`}>
       {icon}
     </div>
     <Title
       heading={6}
-      className={`mouse-pad-option-title ${selected ? 'mouse-pad-option-title-selected' : ''}`}
+      className={`mouse-pad-option-title ${selected ? "mouse-pad-option-title-selected" : ""}`}
     >
       {title}
     </Title>
     <Paragraph
       type="tertiary"
       className={`mouse-pad-option-subTitle ${
-        selected ? 'mouse-pad-option-subTitle-selected' : ''
+        selected ? "mouse-pad-option-subTitle-selected" : ""
       }`}
     >
       {subTitle}
@@ -80,12 +81,12 @@ export const MousePadSelector: React.FC<
       }}
       spacing={20}
       content={
-        <div className={'ui-mouse-pad-selector-popover'}>
-          <Typography.Title heading={4}>{'Interaction mode'}</Typography.Title>
-          <div className={'ui-mouse-pad-selector-popover-options'}>
+        <div className={"ui-mouse-pad-selector-popover"}>
+          <Typography.Title heading={4}>{"Interaction mode"}</Typography.Title>
+          <div className={"ui-mouse-pad-selector-popover-options"}>
             <InteractiveItem
-              title={'Mouse-Friendly'}
-              subTitle={'Drag the canvas with the left mouse button, zoom with the scroll wheel.'}
+              title={"Mouse-Friendly"}
+              subTitle={"Drag the canvas with the left mouse button, zoom with the scroll wheel."}
               value={InteractiveType.Mouse}
               selected={value === InteractiveType.Mouse}
               icon={<IconMouse />}
@@ -93,9 +94,9 @@ export const MousePadSelector: React.FC<
             />
 
             <InteractiveItem
-              title={'Touchpad-Friendly'}
+              title={"Touchpad-Friendly"}
               subTitle={
-                'Drag with two fingers moving in the same direction, zoom by pinching or spreading two fingers.'
+                "Drag with two fingers moving in the same direction, zoom by pinching or spreading two fingers."
               }
               value={InteractiveType.Pad}
               selected={value === InteractiveType.Pad}
@@ -107,13 +108,13 @@ export const MousePadSelector: React.FC<
       }
     >
       <div
-        className={`ui-mouse-pad-selector ${visible ? 'ui-mouse-pad-selector-active' : ''}`}
+        className={`ui-mouse-pad-selector ${visible ? "ui-mouse-pad-selector-active" : ""}`}
         onClick={() => {
           setVisible(!visible);
         }}
         style={containerStyle}
       >
-        <div className={'ui-mouse-pad-selector-icon'} style={iconStyle}>
+        <div className={"ui-mouse-pad-selector-icon"} style={iconStyle}>
           {isMouse ? <IconMouseTool /> : <IconPadTool />}
         </div>
       </div>

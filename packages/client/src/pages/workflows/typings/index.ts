@@ -3,5 +3,5 @@
  * SPDX-License-Identifier: MIT
  */
 
-export * from './node';
-export * from './json-schema';
+export * from "./node";
+export * from "./json-schema";

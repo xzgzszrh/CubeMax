@@ -3,10 +3,10 @@
  * SPDX-License-Identifier: MIT
  */
 
-import { FlowNodeRegistry } from '../../typings';
-import iconStart from '../../assets/icon-start.jpg';
-import { formMeta } from './form-meta';
-import { WorkflowNodeType } from '../constants';
+import type { FlowNodeRegistry } from "../../typings";
+import iconStart from "../../assets/icon-start.jpg";
+import { formMeta } from "./form-meta";
+import { WorkflowNodeType } from "../constants";
 
 export const StartNodeRegistry: FlowNodeRegistry = {
   type: WorkflowNodeType.Start,
@@ -15,7 +15,7 @@ export const StartNodeRegistry: FlowNodeRegistry = {
     deleteDisable: true,
     copyDisable: true,
     nodePanelVisible: false,
-    defaultPorts: [{ type: 'output' }],
+    defaultPorts: [{ type: "output" }],
     size: {
       width: 360,
       height: 211,
@@ -24,7 +24,7 @@ export const StartNodeRegistry: FlowNodeRegistry = {
   info: {
     icon: iconStart,
     description:
-      'The starting node of the workflow, used to set the information needed to initiate the workflow.',
+      "The starting node of the workflow, used to set the information needed to initiate the workflow.",
   },
   /**
    * Render node via formMeta

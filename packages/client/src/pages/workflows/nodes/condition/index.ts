@@ -3,22 +3,22 @@
  * SPDX-License-Identifier: MIT
  */
 
-import { nanoid } from 'nanoid';
+import { nanoid } from "nanoid";
 
-import { FlowNodeRegistry } from '../../typings';
-import iconCondition from '../../assets/icon-condition.svg';
-import { formMeta } from './form-meta';
-import { WorkflowNodeType } from '../constants';
+import type { FlowNodeRegistry } from "../../typings";
+import iconCondition from "../../assets/icon-condition.svg";
+import { formMeta } from "./form-meta";
+import { WorkflowNodeType } from "../constants";
 
 export const ConditionNodeRegistry: FlowNodeRegistry = {
   type: WorkflowNodeType.Condition,
   info: {
     icon: iconCondition,
     description:
-      'Connect multiple downstream branches. Only the corresponding branch will be executed if the set conditions are met.',
+      "Connect multiple downstream branches. Only the corresponding branch will be executed if the set conditions are met.",
   },
   meta: {
-    defaultPorts: [{ type: 'input' }],
+    defaultPorts: [{ type: "input" }],
     // Condition Outputs use dynamic port
     useDynamicPort: true,
     expandable: false, // disable expanded
@@ -31,9 +31,9 @@ export const ConditionNodeRegistry: FlowNodeRegistry = {
   onAdd() {
     return {
       id: `condition_${nanoid(5)}`,
-      type: 'condition',
+      type: "condition",
       data: {
-        title: 'Condition',
+        title: "Condition",
         conditions: [
           {
             key: `if_${nanoid(5)}`,

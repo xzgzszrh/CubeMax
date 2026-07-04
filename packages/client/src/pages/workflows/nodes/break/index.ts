@@ -3,18 +3,18 @@
  * SPDX-License-Identifier: MIT
  */
 
-import { nanoid } from 'nanoid';
+import { nanoid } from "nanoid";
 
-import { FlowNodeRegistry } from '../../typings';
-import iconBreak from '../../assets/icon-break.jpg';
-import { formMeta } from './form-meta';
-import { WorkflowNodeType } from '../constants';
+import type { FlowNodeRegistry } from "../../typings";
+import iconBreak from "../../assets/icon-break.jpg";
+import { formMeta } from "./form-meta";
+import { WorkflowNodeType } from "../constants";
 
 let index = 0;
 export const BreakNodeRegistry: FlowNodeRegistry = {
   type: WorkflowNodeType.Break,
   meta: {
-    defaultPorts: [{ type: 'input' }],
+    defaultPorts: [{ type: "input" }],
     sidebarDisabled: true,
     size: {
       width: 360,
@@ -26,7 +26,7 @@ export const BreakNodeRegistry: FlowNodeRegistry = {
   info: {
     icon: iconBreak,
     description:
-      'The final node of the workflow, used to return the result information after the workflow is run.',
+      "The final node of the workflow, used to return the result information after the workflow is run.",
   },
   /**
    * Render node via formMeta
@@ -35,7 +35,7 @@ export const BreakNodeRegistry: FlowNodeRegistry = {
   onAdd() {
     return {
       id: `break_${nanoid(5)}`,
-      type: 'break',
+      type: "break",
       data: {
         title: `Break_${++index}`,
       },

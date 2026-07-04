@@ -3,25 +3,27 @@
  * SPDX-License-Identifier: MIT
  */
 
-import { FC, useMemo, useState } from 'react';
+import { useMemo, useState } from "react";
+import type { FC } from "react";
 
-import classnames from 'classnames';
-import { NodeReport, WorkflowStatus } from '@flowgram.ai/runtime-interface';
-import { Tag, Button, Select } from '@douyinfe/semi-ui';
-import { IconSpin } from '@douyinfe/semi-icons';
+import classnames from "classnames";
+import { WorkflowStatus } from "@flowgram.ai/runtime-interface";
+import type { NodeReport } from "@flowgram.ai/runtime-interface";
+import { Tag, Button, Select } from "@douyinfe/semi-ui";
+import { IconSpin } from "@douyinfe/semi-icons";
 
-import { NodeStatusHeader } from '../header';
-import { NodeStatusGroup } from '../group';
-import { IconWarningFill } from '../../../../assets/icon-warning';
-import { IconSuccessFill } from '../../../../assets/icon-success';
+import { NodeStatusHeader } from "../header";
+import { NodeStatusGroup } from "../group";
+import { IconWarningFill } from "../../../../assets/icon-warning";
+import { IconSuccessFill } from "../../../../assets/icon-success";
 
-import styles from './index.module.less';
+import styles from "./index.module.less";
 
 interface NodeStatusRenderProps {
   report: NodeReport;
 }
 
-const msToSeconds = (ms: number): string => (ms / 1000).toFixed(2) + 's';
+const msToSeconds = (ms: number): string => (ms / 1000).toFixed(2) + "s";
 const displayCount = 6;
 
 export const NodeStatusRender: FC<NodeStatusRenderProps> = ({ report }) => {
@@ -62,15 +64,15 @@ export const NodeStatusRender: FC<NodeStatusRenderProps> = ({ report }) => {
   const renderDesc = () => {
     const getDesc = () => {
       if (isNodeProcessing) {
-        return 'Running';
+        return "Running";
       } else if (isNodePending) {
-        return 'Run terminated';
+        return "Run terminated";
       } else if (isNodeSucceed) {
-        return 'Succeed';
+        return "Succeed";
       } else if (isNodeFailed) {
-        return 'Failed';
+        return "Failed";
       } else if (isNodeCancelled) {
-        return 'Cancelled';
+        return "Cancelled";
       }
     };
 
@@ -100,7 +102,7 @@ export const NodeStatusRender: FC<NodeStatusRenderProps> = ({ report }) => {
               <Button
                 key={index}
                 size="small"
-                type={currentSnapshotIndex === index ? 'primary' : 'tertiary'}
+                type={currentSnapshotIndex === index ? "primary" : "tertiary"}
                 onClick={() => setCurrentSnapshotIndex(index)}
                 className={classnames(styles.snapshotButton, {
                   [styles.active]: currentSnapshotIndex === index,

@@ -3,27 +3,24 @@
  * SPDX-License-Identifier: MIT
  */
 
-import { FC } from 'react';
+import type { FC } from "react";
 
-import {
-  Field,
+import { Field, FlowNodeFormData, Form, useNodeRender } from "@flowgram.ai/free-layout-editor";
+import type {
   FieldRenderProps,
-  FlowNodeFormData,
-  Form,
   FormModelV2,
-  useNodeRender,
   WorkflowNodeEntity,
-} from '@flowgram.ai/free-layout-editor';
+} from "@flowgram.ai/free-layout-editor";
 
-import { useOverflow } from '../hooks/use-overflow';
-import { useModel } from '../hooks/use-model';
-import { useSize } from '../hooks';
-import { CommentEditorFormField } from '../constant';
-import { MoreButton } from './more-button';
-import { CommentEditor } from './editor';
-import { ContentDragArea } from './content-drag-area';
-import { CommentContainer } from './container';
-import { BorderArea } from './border-area';
+import { useOverflow } from "../hooks/use-overflow";
+import { useModel } from "../hooks/use-model";
+import { useSize } from "../hooks";
+import { CommentEditorFormField } from "../constant";
+import { MoreButton } from "./more-button";
+import { CommentEditor } from "./editor";
+import { ContentDragArea } from "./content-drag-area";
+import { CommentContainer } from "./container";
+import { BorderArea } from "./border-area";
 
 export const CommentRender: FC<{
   node: WorkflowNodeEntity;

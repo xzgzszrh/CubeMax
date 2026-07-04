@@ -5,34 +5,36 @@
 
 import {
   FlowNodeBaseType,
-  FreeLayoutPluginContext,
-  PlaygroundConfigEntity,
   Rectangle,
-  ShortcutsHandler,
   TransformData,
   WorkflowDocument,
+  WorkflowNodeEntity,
+  WorkflowSelectService,
+} from "@flowgram.ai/free-layout-editor";
+import type {
+  FreeLayoutPluginContext,
+  PlaygroundConfigEntity,
+  ShortcutsHandler,
   WorkflowEdgeJSON,
   WorkflowJSON,
   WorkflowLineEntity,
-  WorkflowNodeEntity,
   WorkflowNodeJSON,
   WorkflowNodeMeta,
-  WorkflowSelectService,
-} from '@flowgram.ai/free-layout-editor';
-import { Toast } from '@douyinfe/semi-ui';
+} from "@flowgram.ai/free-layout-editor";
+import { Toast } from "@douyinfe/semi-ui";
 
 import type {
   WorkflowClipboardRect,
   WorkflowClipboardSource,
   WorkflowClipboardData,
-} from '../type';
-import { FlowCommandId, WorkflowClipboardDataID } from '../constants';
-import { WorkflowNodeType } from '../../nodes';
+} from "../type";
+import { FlowCommandId, WorkflowClipboardDataID } from "../constants";
+import { WorkflowNodeType } from "../../nodes";
 
 export class CopyShortcut implements ShortcutsHandler {
   public commandId = FlowCommandId.COPY;
 
-  public shortcuts = ['meta c', 'ctrl c'];
+  public shortcuts = ["meta c", "ctrl c"];
 
   private playgroundConfig: PlaygroundConfigEntity;
 
@@ -91,9 +93,9 @@ export class CopyShortcut implements ShortcutsHandler {
     if (!window.getSelection()?.toString()) {
       return false;
     }
-    await navigator.clipboard.writeText(window.getSelection()?.toString() ?? '');
+    await navigator.clipboard.writeText(window.getSelection()?.toString() ?? "");
     Toast.success({
-      content: 'Text copied',
+      content: "Text copied",
     });
     return true;
   }
@@ -103,7 +105,7 @@ export class CopyShortcut implements ShortcutsHandler {
    */
   private get selectedNodes(): WorkflowNodeEntity[] {
     return this.selectService.selection.filter(
-      (n) => n instanceof WorkflowNodeEntity
+      (n) => n instanceof WorkflowNodeEntity,
     ) as WorkflowNodeEntity[];
   }
 
@@ -113,7 +115,7 @@ export class CopyShortcut implements ShortcutsHandler {
   private isValid(nodes: WorkflowNodeEntity[]): boolean {
     if (nodes.length === 0) {
       Toast.warning({
-        content: 'No nodes selected',
+        content: "No nodes selected",
       });
       return false;
     }
@@ -165,7 +167,7 @@ export class CopyShortcut implements ShortcutsHandler {
     const nodeJSONs = nodes.map((node) =>
       node.flowNodeType === FlowNodeBaseType.GROUP
         ? this.getGroupNodeJSON(node)
-        : this.document.toNodeJSON(node)
+        : this.document.toNodeJSON(node),
     );
     return nodeJSONs.filter(Boolean);
   }
@@ -239,7 +241,7 @@ export class CopyShortcut implements ShortcutsHandler {
       await navigator.clipboard.writeText(JSON.stringify(data));
       this.notifySuccess();
     } catch (err) {
-      console.error('Failed to write text: ', err);
+      console.error("Failed to write text: ", err);
     }
   }
 
@@ -255,18 +257,18 @@ export class CopyShortcut implements ShortcutsHandler {
     ];
     if (
       this.selectedNodes.some((node) =>
-        startEndNodeTypes.includes(node.flowNodeType as WorkflowNodeType)
+        startEndNodeTypes.includes(node.flowNodeType as WorkflowNodeType),
       )
     ) {
       Toast.warning({
         content:
-          'The Start/End node cannot be duplicated, other nodes have been copied to the clipboard',
+          "The Start/End node cannot be duplicated, other nodes have been copied to the clipboard",
         showClose: false,
       });
       return;
     }
     Toast.success({
-      content: 'Nodes have been copied to the clipboard',
+      content: "Nodes have been copied to the clipboard",
       showClose: false,
     });
     return;

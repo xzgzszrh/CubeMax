@@ -87,6 +87,8 @@ export class DatabaseInitService implements OnModuleInit {
                     const menuSeeder = new MenuSeeder(this.menuRepository, this.permissionService);
                     await menuSeeder.run();
                 }
+
+                await this.syncInstalledSeedData();
                 return;
             }
 
@@ -166,6 +168,37 @@ export class DatabaseInitService implements OnModuleInit {
             this.logger.warn("⚠️ Menu table is empty, re-initializing menus...");
             await menuSeeder.run();
         }
+    }
+
+    /**
+     * Synchronize idempotent seed updates for already installed systems.
+     */
+    private async syncInstalledSeedData(): Promise<void> {
+        await this.syncInstalledSchemaUpdates();
+
+        const pageSeeder = new PageSeeder();
+        await pageSeeder.run(this.dataSource);
+
+        const menuSeeder = new MenuSeeder(this.menuRepository, this.permissionService);
+        await menuSeeder.syncMissing();
+    }
+
+    /**
+     * Synchronize small idempotent schema additions for already installed databases.
+     */
+    private async syncInstalledSchemaUpdates(): Promise<void> {
+        await this.dataSource.query(`
+            CREATE TABLE IF NOT EXISTS "ai_workflow" (
+                "id" uuid NOT NULL DEFAULT uuid_generate_v4(),
+                "name" varchar(255) NOT NULL,
+                "description" text,
+                "schema" jsonb,
+                "create_by" varchar(255) NOT NULL,
+                "created_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
+                "updated_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
+                CONSTRAINT "PK_ai_workflow" PRIMARY KEY ("id")
+            )
+        `);
     }
 
     /**

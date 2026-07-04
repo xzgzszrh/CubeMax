@@ -3,13 +3,13 @@
  * SPDX-License-Identifier: MIT
  */
 
-import { injectable, inject } from '@flowgram.ai/free-layout-editor';
+import { injectable, inject } from "@flowgram.ai/free-layout-editor";
 import {
   FreeLayoutPluginContext,
   SelectionService,
   Playground,
   WorkflowDocument,
-} from '@flowgram.ai/free-layout-editor';
+} from "@flowgram.ai/free-layout-editor";
 
 /**
  * Docs: https://inversify.io/docs/introduction/getting-started/

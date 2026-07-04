@@ -3,14 +3,13 @@
  * SPDX-License-Identifier: MIT
  */
 
-import { useCallback, useState } from 'react';
+import { useCallback, useState } from "react";
 
 import {
   WorkflowNodePanelService,
   WorkflowNodePanelUtils,
-  type CallNodePanelParams,
-  type NodePanelResult,
-} from '@flowgram.ai/free-node-panel-plugin';
+} from "@flowgram.ai/free-node-panel-plugin";
+import type { CallNodePanelParams, NodePanelResult } from "@flowgram.ai/free-node-panel-plugin";
 import {
   delay,
   usePlayground,
@@ -18,10 +17,12 @@ import {
   WorkflowDocument,
   WorkflowDragService,
   WorkflowLinesManager,
+} from "@flowgram.ai/free-layout-editor";
+import type {
   WorkflowNodeEntity,
   WorkflowNodeJSON,
   WorkflowPortEntity,
-} from '@flowgram.ai/free-layout-editor';
+} from "@flowgram.ai/free-layout-editor";
 
 /**
  * click port to trigger node select panel
@@ -37,7 +38,7 @@ export const usePortClick = () => {
 
   const singleSelectNodePanel = useCallback(
     async (
-      params: Omit<CallNodePanelParams, 'onSelect' | 'onClose' | 'enableMultiAdd'>
+      params: Omit<CallNodePanelParams, "onSelect" | "onClose" | "enableMultiAdd">,
     ): Promise<NodePanelResult | undefined> => {
       if (active) {
         return;
@@ -57,12 +58,12 @@ export const usePortClick = () => {
         });
       });
     },
-    [active]
+    [active],
   );
 
   const onPortClick = useCallback(
     async (e: React.MouseEvent, port: WorkflowPortEntity) => {
-      if (port.portType === 'input') return;
+      if (port.portType === "input") return;
       const mousePos = playground.config.getPosFromMouseEvent(e);
       const containerNode = port.node.parent;
       // open node selection panel - 打开节点选择面板
@@ -87,7 +88,7 @@ export const usePortClick = () => {
       const nodePosition = WorkflowNodePanelUtils.adjustNodePosition({
         nodeType,
         position:
-          port.location === 'bottom'
+          port.location === "bottom"
             ? {
                 x: mousePos.x,
                 y: mousePos.y + 100,
@@ -107,7 +108,7 @@ export const usePortClick = () => {
         nodeType,
         nodePosition,
         nodeJSON ?? ({} as WorkflowNodeJSON),
-        containerNode?.id
+        containerNode?.id,
       );
 
       // wait for node render - 等待节点渲染
@@ -120,7 +121,7 @@ export const usePortClick = () => {
         linesManager,
       });
     },
-    [singleSelectNodePanel]
+    [singleSelectNodePanel],
   );
 
   return onPortClick;

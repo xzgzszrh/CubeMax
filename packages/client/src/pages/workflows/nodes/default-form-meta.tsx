@@ -3,7 +3,8 @@
  * SPDX-License-Identifier: MIT
  */
 
-import { FormRenderProps, FormMeta, ValidateTrigger } from '@flowgram.ai/free-layout-editor';
+import { ValidateTrigger } from "@flowgram.ai/free-layout-editor";
+import type { FormRenderProps, FormMeta } from "@flowgram.ai/free-layout-editor";
 import {
   autoRenameRefEffect,
   provideJsonSchemaOutputs,
@@ -12,11 +13,11 @@ import {
   validateFlowValue,
   validateWhenVariableSync,
   listenRefSchemaChange,
-} from '@flowgram.ai/form-materials';
-import { Divider } from '@douyinfe/semi-ui';
+} from "@flowgram.ai/form-materials";
+import { Divider } from "@douyinfe/semi-ui";
 
-import { FlowNodeJSON } from '../typings';
-import { FormHeader, FormContent, FormInputs } from '../form-components';
+import type { FlowNodeJSON } from "../typings";
+import { FormHeader, FormContent, FormInputs } from "../form-components";
 
 export const renderForm = ({ form }: FormRenderProps<FlowNodeJSON>) => (
   <>
@@ -38,9 +39,9 @@ export const defaultFormMeta: FormMeta<FlowNodeJSON> = {
    * 2: validate as dynamic function: (values,  ctx) => ({ title: () => {}, ... })
    */
   validate: {
-    title: ({ value }) => (value ? undefined : 'Title is required'),
-    'inputsValues.*': ({ value, context, formValues, name }) => {
-      const valuePropertyKey = name.replace(/^inputsValues\./, '');
+    title: ({ value }) => (value ? undefined : "Title is required"),
+    "inputsValues.*": ({ value, context, formValues, name }) => {
+      const valuePropertyKey = name.replace(/^inputsValues\./, "");
       const required = formValues.inputs?.required || [];
 
       return validateFlowValue(value, {
@@ -69,8 +70,8 @@ export const defaultFormMeta: FormMeta<FlowNodeJSON> = {
   effect: {
     title: syncVariableTitle,
     outputs: provideJsonSchemaOutputs,
-    inputsValues: [...autoRenameRefEffect, ...validateWhenVariableSync({ scope: 'public' })],
-    'inputsValues.*': listenRefSchemaChange((params) => {
+    inputsValues: [...autoRenameRefEffect, ...validateWhenVariableSync({ scope: "public" })],
+    "inputsValues.*": listenRefSchemaChange((params) => {
       console.log(`[${params.context.node.id}][${params.name}] Schema Of Ref Updated`);
     }),
   },

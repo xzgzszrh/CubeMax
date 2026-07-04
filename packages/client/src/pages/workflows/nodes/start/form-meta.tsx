@@ -3,23 +3,18 @@
  * SPDX-License-Identifier: MIT
  */
 
-import {
-  Field,
-  FieldRenderProps,
-  FormRenderProps,
-  FormMeta,
-  ValidateTrigger,
-} from '@flowgram.ai/free-layout-editor';
+import { Field, ValidateTrigger } from "@flowgram.ai/free-layout-editor";
+import type { FieldRenderProps, FormRenderProps, FormMeta } from "@flowgram.ai/free-layout-editor";
 import {
   DisplayOutputs,
   JsonSchemaEditor,
   provideJsonSchemaOutputs,
   syncVariableTitle,
-} from '@flowgram.ai/form-materials';
+} from "@flowgram.ai/form-materials";
 
-import { FlowNodeJSON, JsonSchema } from '../../typings';
-import { useIsSidebar } from '../../hooks';
-import { FormHeader, FormContent } from '../../form-components';
+import type { FlowNodeJSON, JsonSchema } from "../../typings";
+import { useIsSidebar } from "../../hooks";
+import { FormHeader, FormContent } from "../../form-components";
 
 export const renderForm = ({ form }: FormRenderProps<FlowNodeJSON>) => {
   const isSidebar = useIsSidebar();
@@ -57,7 +52,7 @@ export const formMeta: FormMeta<FlowNodeJSON> = {
   render: renderForm,
   validateTrigger: ValidateTrigger.onChange,
   validate: {
-    title: ({ value }: { value: string }) => (value ? undefined : 'Title is required'),
+    title: ({ value }: { value: string }) => (value ? undefined : "Title is required"),
   },
   effect: {
     title: syncVariableTitle,

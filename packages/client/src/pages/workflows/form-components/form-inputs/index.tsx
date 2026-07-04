@@ -3,13 +3,13 @@
  * SPDX-License-Identifier: MIT
  */
 
-import { Field } from '@flowgram.ai/free-layout-editor';
-import { DynamicValueInput, PromptEditorWithVariables } from '@flowgram.ai/form-materials';
+import { Field } from "@flowgram.ai/free-layout-editor";
+import { DynamicValueInput, PromptEditorWithVariables } from "@flowgram.ai/form-materials";
 
-import { FormItem } from '../form-item';
-import { Feedback } from '../feedback';
-import { JsonSchema } from '../../typings';
-import { useNodeRenderContext } from '../../hooks';
+import { FormItem } from "../form-item";
+import { Feedback } from "../feedback";
+import type { JsonSchema } from "../../typings";
+import { useNodeRenderContext } from "../../hooks";
 
 export function FormInputs() {
   const { readonly } = useNodeRenderContext();
@@ -27,7 +27,7 @@ export function FormInputs() {
 
           const formComponent = property.extra?.formComponent;
 
-          const vertical = ['prompt-editor'].includes(formComponent || '');
+          const vertical = ["prompt-editor"].includes(formComponent || "");
 
           return (
             <Field key={key} name={`inputsValues.${key}`} defaultValue={property.default}>
@@ -38,7 +38,7 @@ export function FormInputs() {
                   type={property.type as string}
                   required={required.includes(key)}
                 >
-                  {formComponent === 'prompt-editor' && (
+                  {formComponent === "prompt-editor" && (
                     <PromptEditorWithVariables
                       value={field.value}
                       onChange={field.onChange}

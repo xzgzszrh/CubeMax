@@ -3,29 +3,26 @@
  * SPDX-License-Identifier: MIT
  */
 
-import { Field } from '@flowgram.ai/free-layout-editor';
-import {
-  IFlowTemplateValue,
-  JsonEditorWithVariables,
-  PromptEditorWithVariables,
-} from '@flowgram.ai/form-materials';
-import { Select } from '@douyinfe/semi-ui';
+import { Field } from "@flowgram.ai/free-layout-editor";
+import { JsonEditorWithVariables, PromptEditorWithVariables } from "@flowgram.ai/form-materials";
+import type { IFlowTemplateValue } from "@flowgram.ai/form-materials";
+import { Select } from "@douyinfe/semi-ui";
 
-import { useNodeRenderContext } from '../../../hooks';
-import { FormItem } from '../../../form-components';
+import { useNodeRenderContext } from "../../../hooks";
+import { FormItem } from "../../../form-components";
 
 const BODY_TYPE_OPTIONS = [
   {
-    label: 'None',
-    value: 'none',
+    label: "None",
+    value: "none",
   },
   {
-    label: 'JSON',
-    value: 'JSON',
+    label: "JSON",
+    value: "JSON",
   },
   {
-    label: 'Raw Text',
-    value: 'raw-text',
+    label: "Raw Text",
+    value: "raw-text",
   },
 ];
 
@@ -34,7 +31,7 @@ export function Body() {
 
   const renderBodyEditor = (bodyType: string) => {
     switch (bodyType) {
-      case 'JSON':
+      case "JSON":
         return (
           <Field<IFlowTemplateValue> name="body.json">
             {({ field }) => (
@@ -43,13 +40,13 @@ export function Body() {
                 readonly={readonly}
                 activeLinePlaceholder="use var by '@'"
                 onChange={(value) => {
-                  field.onChange({ type: 'template', content: value });
+                  field.onChange({ type: "template", content: value });
                 }}
               />
             )}
           </Field>
         );
-      case 'raw-text':
+      case "raw-text":
         return (
           <Field<IFlowTemplateValue> name="body.rawText">
             {({ field }) => (
@@ -80,7 +77,7 @@ export function Body() {
               onChange={(value) => {
                 field.onChange(value as string);
               }}
-              style={{ width: '100%', marginBottom: 10 }}
+              style={{ width: "100%", marginBottom: 10 }}
               disabled={readonly}
               size="small"
               optionList={BODY_TYPE_OPTIONS}

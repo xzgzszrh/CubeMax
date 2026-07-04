@@ -3,16 +3,16 @@
  * SPDX-License-Identifier: MIT
  */
 
-import React, { useState } from 'react';
+import React, { useState } from "react";
 
-import { WorkflowPortRender } from '@flowgram.ai/free-layout-editor';
-import { useClientContext } from '@flowgram.ai/free-layout-editor';
+import { WorkflowPortRender } from "@flowgram.ai/free-layout-editor";
+import { useClientContext } from "@flowgram.ai/free-layout-editor";
 
-import { FlowNodeMeta } from '../../typings';
-import { useNodeFormPanel } from '../../plugins/panel-manager-plugin/hooks';
-import { useNodeRenderContext, usePortClick } from '../../hooks';
-import { scrollToView } from './utils';
-import { NodeWrapperStyle } from './styles';
+import type { FlowNodeMeta } from "../../typings";
+import { useNodeFormPanel } from "../../plugins/panel-manager-plugin/hooks";
+import { useNodeRenderContext, usePortClick } from "../../hooks";
+import { scrollToView } from "./utils";
+import { NodeWrapperStyle } from "./styles";
 
 export interface NodeWrapperProps {
   isScrollToView?: boolean;
@@ -42,7 +42,7 @@ export const NodeWrapper: React.FC<NodeWrapperProps> = (props) => {
   return (
     <>
       <NodeWrapperStyle
-        className={selected ? 'selected' : ''}
+        className={selected ? "selected" : ""}
         ref={nodeRef}
         draggable
         onDragStart={(e) => {
@@ -72,7 +72,7 @@ export const NodeWrapper: React.FC<NodeWrapperProps> = (props) => {
         data-node-selected={String(selected)}
         style={{
           ...meta.wrapperStyle,
-          outline: form?.state.invalid ? '1px solid red' : 'none',
+          outline: form?.state.invalid ? "1px solid red" : "none",
         }}
       >
         {children}

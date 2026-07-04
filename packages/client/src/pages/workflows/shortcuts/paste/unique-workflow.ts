@@ -3,14 +3,15 @@
  * SPDX-License-Identifier: MIT
  */
 
-import { customAlphabet } from 'nanoid';
-import type { WorkflowJSON, WorkflowNodeJSON } from '@flowgram.ai/free-layout-editor';
+import { customAlphabet } from "nanoid";
+import type { WorkflowJSON, WorkflowNodeJSON } from "@flowgram.ai/free-layout-editor";
 
-import { traverse, TraverseContext } from './traverse';
+import { traverse } from "./traverse";
+import type { TraverseContext } from "./traverse";
 
 namespace UniqueWorkflowUtils {
   /** generate unique id - 生成唯一ID */
-  const generateUniqueId = customAlphabet('1234567890', 6); // create a function to generate 6-digit number - 创建一个生成6位数字的函数
+  const generateUniqueId = customAlphabet("1234567890", 6); // create a function to generate 6-digit number - 创建一个生成6位数字的函数
 
   /** get all node ids from workflow json - 从工作流JSON中获取所有节点ID */
   export const getAllNodeIds = (json: WorkflowJSON): string[] => {
@@ -28,7 +29,7 @@ namespace UniqueWorkflowUtils {
   /** generate node replacement mapping - 生成节点替换映射 */
   export const generateNodeReplaceMap = (
     nodeIds: string[],
-    isUniqueId: (id: string) => boolean
+    isUniqueId: (id: string) => boolean,
   ): Map<string, string> => {
     const nodeReplaceMap = new Map<string, string>(); // create map for id replacement - 创建ID替换映射
     nodeIds.forEach((id) => {
@@ -54,14 +55,14 @@ namespace UniqueWorkflowUtils {
     // check edge data - 检查边数据
     if (
       node?.key &&
-      ['sourceNodeID', 'targetNodeID'].includes(node.key) &&
-      node.parent?.parent?.key === 'edges'
+      ["sourceNodeID", "targetNodeID"].includes(node.key) &&
+      node.parent?.parent?.key === "edges"
     ) {
       return true;
     }
     // check node data - 检查节点数据
     if (
-      node?.key === 'id' &&
+      node?.key === "id" &&
       isExist(node.container?.type) &&
       isExist(node.container?.meta) &&
       isExist(node.container?.data)
@@ -70,9 +71,9 @@ namespace UniqueWorkflowUtils {
     }
     // check variable data - 检查变量数据
     if (
-      node?.key === 'blockID' &&
+      node?.key === "blockID" &&
       isExist(node.container?.name) &&
-      node.container?.source === 'block-output'
+      node.container?.source === "block-output"
     ) {
       return true;
     }
@@ -86,7 +87,7 @@ namespace UniqueWorkflowUtils {
    */
   export const replaceNodeId = (
     json: WorkflowJSON,
-    nodeReplaceMap: Map<string, string>
+    nodeReplaceMap: Map<string, string>,
   ): WorkflowJSON => {
     traverse(json, (context) => {
       if (!shouldHandle(context)) {

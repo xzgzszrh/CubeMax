@@ -3,12 +3,12 @@
  * SPDX-License-Identifier: MIT
  */
 
-import { FC } from 'react';
+import type { FC } from "react";
 
-import { IconHandle } from '@douyinfe/semi-icons';
+import { IconHandle } from "@douyinfe/semi-icons";
 
-import { GroupTitle } from './title';
-import { GroupColor } from './color';
+import { GroupTitle } from "./title";
+import { GroupColor } from "./color";
 
 export const GroupTools: FC = () => (
   <div className="workflow-group-tools">

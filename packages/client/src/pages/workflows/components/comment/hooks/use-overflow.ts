@@ -3,12 +3,12 @@
  * SPDX-License-Identifier: MIT
  */
 
-import { useCallback, useState, useEffect } from 'react';
+import { useCallback, useState, useEffect } from "react";
 
-import { usePlayground } from '@flowgram.ai/free-layout-editor';
+import { usePlayground } from "@flowgram.ai/free-layout-editor";
 
-import { CommentEditorModel } from '../model';
-import { CommentEditorEvent } from '../constant';
+import type { CommentEditorModel } from "../model";
+import { CommentEditorEvent } from "../constant";
 
 export const useOverflow = (params: { model: CommentEditorModel; height: number }) => {
   const { model, height } = params;

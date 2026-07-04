@@ -7,12 +7,61 @@ import { defineConfig } from "vite";
 
 const host = process.env.TAURI_DEV_HOST;
 
+const flowgramDedupe = [
+  "@flowgram.ai/background-plugin",
+  "@flowgram.ai/command",
+  "@flowgram.ai/core",
+  "@flowgram.ai/document",
+  "@flowgram.ai/editor",
+  "@flowgram.ai/export-plugin",
+  "@flowgram.ai/form",
+  "@flowgram.ai/form-core",
+  "@flowgram.ai/form-materials",
+  "@flowgram.ai/free-auto-layout-plugin",
+  "@flowgram.ai/free-container-plugin",
+  "@flowgram.ai/free-group-plugin",
+  "@flowgram.ai/free-history-plugin",
+  "@flowgram.ai/free-hover-plugin",
+  "@flowgram.ai/free-layout-core",
+  "@flowgram.ai/free-layout-editor",
+  "@flowgram.ai/free-lines-plugin",
+  "@flowgram.ai/free-node-panel-plugin",
+  "@flowgram.ai/free-snap-plugin",
+  "@flowgram.ai/free-stack-plugin",
+  "@flowgram.ai/history",
+  "@flowgram.ai/history-node-plugin",
+  "@flowgram.ai/i18n",
+  "@flowgram.ai/i18n-plugin",
+  "@flowgram.ai/json-schema",
+  "@flowgram.ai/materials-plugin",
+  "@flowgram.ai/minimap-plugin",
+  "@flowgram.ai/node",
+  "@flowgram.ai/node-core-plugin",
+  "@flowgram.ai/node-variable-plugin",
+  "@flowgram.ai/panel-manager-plugin",
+  "@flowgram.ai/playground-react",
+  "@flowgram.ai/reactive",
+  "@flowgram.ai/renderer",
+  "@flowgram.ai/select-box-plugin",
+  "@flowgram.ai/shortcuts-plugin",
+  "@flowgram.ai/utils",
+  "@flowgram.ai/variable-core",
+  "@flowgram.ai/variable-layout",
+  "@flowgram.ai/variable-plugin",
+];
+
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [
     react(),
     tailwindcss(),
-    babel({ presets: [reactCompilerPreset()] }),
+    babel({
+      presets: [reactCompilerPreset()],
+      plugins: [
+        ["@babel/plugin-proposal-decorators", { legacy: true }],
+        ["@babel/plugin-transform-class-properties", { loose: true }],
+      ],
+    }),
     // visualizer({
     //   open: true,
     // }),
@@ -23,7 +72,7 @@ export default defineConfig({
     alias: {
       "@": path.resolve(__dirname, "src"),
     },
-    dedupe: ["react", "react-dom", "@tanstack/react-query"],
+    dedupe: ["react", "react-dom", "@tanstack/react-query", "inversify", ...flowgramDedupe],
   },
   server: {
     host: host || "0.0.0.0",

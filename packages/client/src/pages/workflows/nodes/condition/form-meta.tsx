@@ -3,12 +3,13 @@
  * SPDX-License-Identifier: MIT
  */
 
-import { FormRenderProps, FormMeta, ValidateTrigger } from '@flowgram.ai/free-layout-editor';
-import { autoRenameRefEffect } from '@flowgram.ai/form-materials';
+import { ValidateTrigger } from "@flowgram.ai/free-layout-editor";
+import type { FormRenderProps, FormMeta } from "@flowgram.ai/free-layout-editor";
+import { autoRenameRefEffect } from "@flowgram.ai/form-materials";
 
-import { FlowNodeJSON } from '../../typings';
-import { FormHeader, FormContent } from '../../form-components';
-import { ConditionInputs } from './condition-inputs';
+import type { FlowNodeJSON } from "../../typings";
+import { FormHeader, FormContent } from "../../form-components";
+import { ConditionInputs } from "./condition-inputs";
 
 export const renderForm = ({ form }: FormRenderProps<FlowNodeJSON>) => (
   <>
@@ -23,9 +24,9 @@ export const formMeta: FormMeta<FlowNodeJSON> = {
   render: renderForm,
   validateTrigger: ValidateTrigger.onChange,
   validate: {
-    title: ({ value }: { value: string }) => (value ? undefined : 'Title is required'),
-    'conditions.*': ({ value }) => {
-      if (!value?.value) return 'Condition is required';
+    title: ({ value }: { value: string }) => (value ? undefined : "Title is required"),
+    "conditions.*": ({ value }) => {
+      if (!value?.value) return "Condition is required";
       return undefined;
     },
   },

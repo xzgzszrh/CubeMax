@@ -3,20 +3,21 @@
  * SPDX-License-Identifier: MIT
  */
 
-import { FormRenderProps, FlowNodeJSON, Field, FormMeta } from '@flowgram.ai/free-layout-editor';
-import { SubCanvasRender } from '@flowgram.ai/free-container-plugin';
+import { Field } from "@flowgram.ai/free-layout-editor";
+import type { FormRenderProps, FlowNodeJSON, FormMeta } from "@flowgram.ai/free-layout-editor";
+import { SubCanvasRender } from "@flowgram.ai/free-container-plugin";
 import {
   BatchOutputs,
   BatchVariableSelector,
   createBatchOutputsFormPlugin,
   DisplayOutputs,
-  IFlowRefValue,
   provideBatchInputEffect,
-} from '@flowgram.ai/form-materials';
+} from "@flowgram.ai/form-materials";
+import type { IFlowRefValue } from "@flowgram.ai/form-materials";
 
-import { defaultFormMeta } from '../default-form-meta';
-import { useIsSidebar, useNodeRenderContext } from '../../hooks';
-import { FormHeader, FormContent, FormItem, Feedback } from '../../form-components';
+import { defaultFormMeta } from "../default-form-meta";
+import { useIsSidebar, useNodeRenderContext } from "../../hooks";
+import { FormHeader, FormContent, FormItem, Feedback } from "../../form-components";
 
 interface LoopNodeJSON extends FlowNodeJSON {
   data: {
@@ -32,11 +33,11 @@ export const LoopFormRender = ({ form }: FormRenderProps<LoopNodeJSON>) => {
   const loopFor = (
     <Field<IFlowRefValue> name={`loopFor`}>
       {({ field, fieldState }) => (
-        <FormItem name={'loopFor'} type={'array'} required>
+        <FormItem name={"loopFor"} type={"array"} required>
           <BatchVariableSelector
-            style={{ width: '100%' }}
+            style={{ width: "100%" }}
             value={field.value?.content}
-            onChange={(val) => field.onChange({ type: 'ref', content: val })}
+            onChange={(val) => field.onChange({ type: "ref", content: val })}
             readonly={readonly}
             hasError={Object.keys(fieldState?.errors || {}).length > 0}
           />
@@ -51,7 +52,7 @@ export const LoopFormRender = ({ form }: FormRenderProps<LoopNodeJSON>) => {
       {({ field, fieldState }) => (
         <FormItem name="loopOutputs" type="object" vertical>
           <BatchOutputs
-            style={{ width: '100%' }}
+            style={{ width: "100%" }}
             value={field.value}
             onChange={(val) => field.onChange(val)}
             readonly={readonly}
@@ -92,5 +93,5 @@ export const formMeta: FormMeta = {
   effect: {
     loopFor: provideBatchInputEffect,
   },
-  plugins: [createBatchOutputsFormPlugin({ outputKey: 'loopOutputs', inferTargetKey: 'outputs' })],
+  plugins: [createBatchOutputsFormPlugin({ outputKey: "loopOutputs", inferTargetKey: "outputs" })],
 };

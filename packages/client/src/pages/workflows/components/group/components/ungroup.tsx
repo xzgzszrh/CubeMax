@@ -3,13 +3,14 @@
  * SPDX-License-Identifier: MIT
  */
 
-import { CSSProperties, FC } from 'react';
+import type { CSSProperties, FC } from "react";
 
-import { CommandRegistry, useService, WorkflowNodeEntity } from '@flowgram.ai/free-layout-editor';
-import { WorkflowGroupCommand } from '@flowgram.ai/free-group-plugin';
-import { Button, Tooltip } from '@douyinfe/semi-ui';
+import { CommandRegistry, useService } from "@flowgram.ai/free-layout-editor";
+import type { WorkflowNodeEntity } from "@flowgram.ai/free-layout-editor";
+import { WorkflowGroupCommand } from "@flowgram.ai/free-group-plugin";
+import { Button, Tooltip } from "@douyinfe/semi-ui";
 
-import { IconUngroup } from './icon-group';
+import { IconUngroup } from "./icon-group";
 
 interface UngroupButtonProps {
   node: WorkflowNodeEntity;

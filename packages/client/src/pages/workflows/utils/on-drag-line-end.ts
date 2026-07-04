@@ -6,16 +6,14 @@
 import {
   WorkflowNodePanelService,
   WorkflowNodePanelUtils,
-} from '@flowgram.ai/free-node-panel-plugin';
-import {
-  delay,
+} from "@flowgram.ai/free-node-panel-plugin";
+import { delay, WorkflowDragService, WorkflowLinesManager } from "@flowgram.ai/free-layout-editor";
+import type {
   FreeLayoutPluginContext,
   onDragLineEndParams,
-  WorkflowDragService,
-  WorkflowLinesManager,
   WorkflowNodeEntity,
   WorkflowNodeJSON,
-} from '@flowgram.ai/free-layout-editor';
+} from "@flowgram.ai/free-layout-editor";
 
 /**
  * Drag the end of the line to create an add panel (feature optional)
@@ -43,7 +41,7 @@ export const onDragLineEnd = async (ctx: FreeLayoutPluginContext, params: onDrag
 
   // get container node for the new node - 获取新节点的容器节点
   const containerNode = fromPort.node.parent;
-  const isVertical = fromPort.location === 'bottom';
+  const isVertical = fromPort.location === "bottom";
 
   // open node selection panel - 打开节点选择面板
   const result = await nodePanelService.singleSelectNodePanel({
@@ -85,7 +83,7 @@ export const onDragLineEnd = async (ctx: FreeLayoutPluginContext, params: onDrag
     nodeType,
     nodePosition,
     nodeJSON ?? ({} as WorkflowNodeJSON),
-    containerNode?.id
+    containerNode?.id,
   );
 
   // wait for node render - 等待节点渲染

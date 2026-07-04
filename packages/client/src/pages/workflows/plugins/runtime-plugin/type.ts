@@ -4,11 +4,11 @@
  */
 
 export interface RuntimeBrowserOptions {
-  mode?: 'browser';
+  mode?: "browser";
 }
 
 export interface RuntimeServerOptions {
-  mode: 'server';
+  mode: "server";
   serverConfig: ServerConfig;
 }
 

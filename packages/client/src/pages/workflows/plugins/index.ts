@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: MIT
  */
 
-export { createContextMenuPlugin } from './context-menu-plugin';
-export { createRuntimePlugin } from './runtime-plugin';
-export { createVariablePanelPlugin } from './variable-panel-plugin';
-export { createPanelManagerPlugin } from './panel-manager-plugin';
+export { createContextMenuPlugin } from "./context-menu-plugin";
+export { createRuntimePlugin } from "./runtime-plugin";
+export { createVariablePanelPlugin } from "./variable-panel-plugin";
+export { createPanelManagerPlugin } from "./panel-manager-plugin";

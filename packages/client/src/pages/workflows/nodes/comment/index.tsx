@@ -3,8 +3,8 @@
  * SPDX-License-Identifier: MIT
  */
 
-import { WorkflowNodeType } from '../constants';
-import { FlowNodeRegistry } from '../../typings';
+import { WorkflowNodeType } from "../constants";
+import type { FlowNodeRegistry } from "../../typings";
 
 export const CommentNodeRegistry: FlowNodeRegistry = {
   type: WorkflowNodeType.Comment,

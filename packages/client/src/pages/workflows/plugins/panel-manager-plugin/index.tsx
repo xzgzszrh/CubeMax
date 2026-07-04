@@ -3,19 +3,16 @@
  * SPDX-License-Identifier: MIT
  */
 
-import {
-  createPanelManagerPlugin as create,
-  PanelFactory,
-} from '@flowgram.ai/panel-manager-plugin';
+import { createPanelManagerPlugin as create } from "@flowgram.ai/panel-manager-plugin";
+import type { PanelFactory } from "@flowgram.ai/panel-manager-plugin";
 
-import { DemoTools } from '../../components/tools';
-import {
-  TestRunSidePanel,
-  TestRunSidePanelProps,
-} from '../../components/testrun/testrun-panel/test-run-panel';
-import { NodeFormPanel, NodeFormPanelProps } from '../../components/sidebar/node-form-panel';
-import { ProblemPanel } from '../../components/problem-panel/problem-panel';
-import { PanelType } from './constants';
+import { DemoTools } from "../../components/tools";
+import { TestRunSidePanel } from "../../components/testrun/testrun-panel/test-run-panel";
+import type { TestRunSidePanelProps } from "../../components/testrun/testrun-panel/test-run-panel";
+import { NodeFormPanel } from "../../components/sidebar/node-form-panel";
+import type { NodeFormPanelProps } from "../../components/sidebar/node-form-panel";
+import { ProblemPanel } from "../../components/problem-panel/problem-panel";
+import { PanelType } from "./constants";
 
 const nodeFormPanelFactory: PanelFactory<NodeFormPanelProps> = {
   key: PanelType.NodeFormPanel,

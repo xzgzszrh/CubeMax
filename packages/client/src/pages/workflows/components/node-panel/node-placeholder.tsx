@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: MIT
  */
 
-import { Skeleton } from '@douyinfe/semi-ui';
+import { Skeleton } from "@douyinfe/semi-ui";
 
 export const NodePlaceholder = () => (
   <div className="node-placeholder" data-testid="workflow.detail.node-panel.placeholder">

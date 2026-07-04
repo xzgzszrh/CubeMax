@@ -2,21 +2,24 @@
  * Copyright (c) 2025 Bytedance Ltd. and/or its affiliates
  * SPDX-License-Identifier: MIT
  */
-import { useCallback } from 'react';
+import { useCallback } from "react";
 
-import { NodePanelResult, WorkflowNodePanelService } from '@flowgram.ai/free-node-panel-plugin';
+import { WorkflowNodePanelService } from "@flowgram.ai/free-node-panel-plugin";
+import type { NodePanelResult } from "@flowgram.ai/free-node-panel-plugin";
 import {
   useService,
   WorkflowDocument,
   usePlayground,
+  WorkflowSelectService,
+  getAntiOverlapPosition,
+  FlowNodeBaseType,
+} from "@flowgram.ai/free-layout-editor";
+import type {
   PositionSchema,
   WorkflowNodeEntity,
-  WorkflowSelectService,
   WorkflowNodeJSON,
-  getAntiOverlapPosition,
   WorkflowNodeMeta,
-  FlowNodeBaseType,
-} from '@flowgram.ai/free-layout-editor';
+} from "@flowgram.ai/free-layout-editor";
 // hook to get panel position from mouse event - 从鼠标事件获取面板位置的 hook
 const useGetPanelPosition = () => {
   const playground = usePlayground();
@@ -27,7 +30,7 @@ const useGetPanelPosition = () => {
         clientX: targetBoundingRect.left + 64,
         clientY: targetBoundingRect.top - 7,
       }),
-    [playground]
+    [playground],
   );
 };
 // hook to handle node selection - 处理节点选择的 hook
@@ -41,7 +44,7 @@ const useSelectNode = () => {
       // select the target node - 选择目标节点
       selectService.selectNode(node);
     },
-    [selectService]
+    [selectService],
   );
 };
 
@@ -99,7 +102,7 @@ export const useAddNode = () => {
               nodeType,
               position, // position undefined means create node in center of canvas - position undefined 可以在画布中间创建节点
               nodeJSON ?? ({} as WorkflowNodeJSON),
-              containerNode?.id
+              containerNode?.id,
             );
             select(node);
           },
@@ -110,6 +113,6 @@ export const useAddNode = () => {
         });
       });
     },
-    [getPanelPosition, nodePanelService, playground.config.zoom, workflowDocument, select]
+    [getPanelPosition, nodePanelService, playground.config.zoom, workflowDocument, select],
   );
 };

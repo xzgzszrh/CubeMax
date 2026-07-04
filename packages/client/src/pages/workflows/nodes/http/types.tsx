@@ -3,29 +3,29 @@
  * SPDX-License-Identifier: MIT
  */
 
-import { IFlowConstantRefValue } from '@flowgram.ai/runtime-interface';
-import { FlowNodeJSON } from '@flowgram.ai/free-layout-editor';
-import { IFlowTemplateValue, IJsonSchema } from '@flowgram.ai/form-materials';
+import type { IFlowConstantRefValue } from "@flowgram.ai/runtime-interface";
+import type { FlowNodeJSON } from "@flowgram.ai/free-layout-editor";
+import type { IFlowTemplateValue, IJsonSchema } from "@flowgram.ai/form-materials";
 
 export interface HTTPNodeJSON extends FlowNodeJSON {
   data: {
     title: string;
-    outputs: IJsonSchema<'object'>;
+    outputs: IJsonSchema<"object">;
     api: {
-      method: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH' | 'HEAD';
+      method: "GET" | "POST" | "PUT" | "DELETE" | "PATCH" | "HEAD";
       url: IFlowTemplateValue;
     };
-    headers: IJsonSchema<'object'>;
+    headers: IJsonSchema<"object">;
     headersValues: Record<string, IFlowConstantRefValue>;
-    params: IJsonSchema<'object'>;
+    params: IJsonSchema<"object">;
     paramsValues: Record<string, IFlowConstantRefValue>;
     body: {
-      bodyType: 'none' | 'form-data' | 'x-www-form-urlencoded' | 'raw-text' | 'JSON';
+      bodyType: "none" | "form-data" | "x-www-form-urlencoded" | "raw-text" | "JSON";
       json?: IFlowTemplateValue;
-      formData?: IJsonSchema<'object'>;
+      formData?: IJsonSchema<"object">;
       formDataValues?: Record<string, IFlowConstantRefValue>;
       rawText?: IFlowTemplateValue;
-      xWwwFormUrlencoded?: IJsonSchema<'object'>;
+      xWwwFormUrlencoded?: IJsonSchema<"object">;
       xWwwFormUrlencodedValues?: Record<string, IFlowConstantRefValue>;
     };
     timeout: {

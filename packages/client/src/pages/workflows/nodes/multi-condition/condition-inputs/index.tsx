@@ -3,17 +3,18 @@
  * SPDX-License-Identifier: MIT
  */
 
-import { useLayoutEffect } from 'react';
+import { useLayoutEffect } from "react";
 
-import { nanoid } from 'nanoid';
-import { Field, FieldArray, I18n, WorkflowNodePortsData } from '@flowgram.ai/free-layout-editor';
-import { ConditionRow, ConditionRowValueType } from '@flowgram.ai/form-materials';
-import { Button, Select, Space } from '@douyinfe/semi-ui';
-import { IconCrossCircleStroked, IconDelete, IconPlus } from '@douyinfe/semi-icons';
+import { nanoid } from "nanoid";
+import { Field, FieldArray, I18n, WorkflowNodePortsData } from "@flowgram.ai/free-layout-editor";
+import { ConditionRow } from "@flowgram.ai/form-materials";
+import type { ConditionRowValueType } from "@flowgram.ai/form-materials";
+import { Button, Select, Space } from "@douyinfe/semi-ui";
+import { IconCrossCircleStroked, IconDelete, IconPlus } from "@douyinfe/semi-icons";
 
-import { useNodeRenderContext, useIsSidebar } from '../../../hooks';
-import { Feedback, FormItem } from '../../../form-components';
-import { ConditionBranch, ConditionBranchLogic, ConditionPort } from './styles';
+import { useNodeRenderContext, useIsSidebar } from "../../../hooks";
+import { Feedback, FormItem } from "../../../form-components";
+import { ConditionBranch, ConditionBranchLogic, ConditionPort } from "./styles";
 
 interface ConditionValue {
   key: string;
@@ -45,7 +46,7 @@ export function ConditionInputs() {
                 <FormItem
                   type="boolean"
                   labelWidth={100}
-                  name={index === 0 ? I18n.t('IF') : I18n.t('ELSE-IF')}
+                  name={index === 0 ? I18n.t("IF") : I18n.t("ELSE-IF")}
                   vertical
                   required={index === 0}
                 >
@@ -55,16 +56,16 @@ export function ConditionInputs() {
                         <Select
                           size="small"
                           value={field.value.logic}
-                          style={{ backgroundColor: 'var(--semi-color-bg-0)' }}
+                          style={{ backgroundColor: "var(--semi-color-bg-0)" }}
                           onChange={(v) =>
                             field.onChange({
                               ...field.value,
-                              logic: (v as string) ?? 'and',
+                              logic: (v as string) ?? "and",
                             })
                           }
                         >
-                          <Select.Option value="and">{I18n.t('AND')}</Select.Option>
-                          <Select.Option value="or">{I18n.t('OR')}</Select.Option>
+                          <Select.Option value="and">{I18n.t("AND")}</Select.Option>
+                          <Select.Option value="or">{I18n.t("OR")}</Select.Option>
                         </Select>
                       </ConditionBranchLogic>
                     )}
@@ -75,7 +76,7 @@ export function ConditionInputs() {
                           key={condition.key}
                         >
                           {({ field: conditionField }) => (
-                            <Space align="center" style={{ padding: '6px 0', width: '100%' }}>
+                            <Space align="center" style={{ padding: "6px 0", width: "100%" }}>
                               <div style={{ flex: 1 }}>
                                 <ConditionRow
                                   readonly={readonly}
@@ -98,7 +99,7 @@ export function ConditionInputs() {
                                     field.onChange({
                                       ...field.value,
                                       conditions: field.value.conditions.filter(
-                                        (i: ConditionValue) => i.key !== condition.key
+                                        (i: ConditionValue) => i.key !== condition.key,
                                       ),
                                     })
                                   }
@@ -115,7 +116,7 @@ export function ConditionInputs() {
 
                   {/* remove current branch and add new condition*/}
                   {isSidebar && !readonly && (
-                    <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                    <div style={{ display: "flex", justifyContent: "flex-end" }}>
                       <Button
                         size="small"
                         theme="borderless"
@@ -133,7 +134,7 @@ export function ConditionInputs() {
                           });
                         }}
                       >
-                        {I18n.t('Add condition')}
+                        {I18n.t("Add condition")}
                       </Button>
                       <Button
                         disabled={conditions.value?.length === 1}
@@ -142,7 +143,7 @@ export function ConditionInputs() {
                         icon={<IconDelete />}
                         onClick={() => conditions.remove(index)}
                       >
-                        {I18n.t('Remove branch')}
+                        {I18n.t("Remove branch")}
                       </Button>
                     </div>
                   )}
@@ -153,7 +154,7 @@ export function ConditionInputs() {
           ))}
 
           {/*  else */}
-          <FormItem name={I18n.t('ELSE')} type="boolean" required={true} labelWidth={100}>
+          <FormItem name={I18n.t("ELSE")} type="boolean" required={true} labelWidth={100}>
             <ConditionPort data-port-id="else" data-port-type="output" />
           </FormItem>
 
@@ -164,7 +165,7 @@ export function ConditionInputs() {
                 icon={<IconPlus />}
                 onClick={() =>
                   conditions.append({
-                    logic: 'and',
+                    logic: "and",
                     conditions: [
                       {
                         key: `condition_${nanoid(6)}`,
@@ -174,7 +175,7 @@ export function ConditionInputs() {
                   })
                 }
               >
-                {I18n.t('Add branch')}
+                {I18n.t("Add branch")}
               </Button>
             </div>
           )}

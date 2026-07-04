@@ -3,12 +3,12 @@
  * SPDX-License-Identifier: MIT
  */
 
-import React, { useState } from 'react';
+import React, { useState } from "react";
 
-import classnames from 'classnames';
-import { Toast } from '@douyinfe/semi-ui';
+import classnames from "classnames";
+import { Toast } from "@douyinfe/semi-ui";
 
-import styles from './index.module.less';
+import styles from "./index.module.less";
 
 interface DataStructureViewerProps {
   data: any;
@@ -27,12 +27,12 @@ const TreeNode: React.FC<TreeNodeProps> = ({ label, value, level, isLast = false
 
   const handleCopy = (text: string) => {
     navigator.clipboard.writeText(text);
-    Toast.success('Copied');
+    Toast.success("Copied");
   };
 
   const isExpandable = (val: any) =>
     val !== null &&
-    typeof val === 'object' &&
+    typeof val === "object" &&
     ((Array.isArray(val) && val.length > 0) ||
       (!Array.isArray(val) && Object.keys(val).length > 0));
 
@@ -43,7 +43,7 @@ const TreeNode: React.FC<TreeNodeProps> = ({ label, value, level, isLast = false
       return <span className={classnames(styles.primitiveValue, styles.undefined)}>undefined</span>;
 
     switch (typeof val) {
-      case 'string':
+      case "string":
         return (
           <span>
             <span className={styles.primitiveValueQuote}>{'"'}</span>
@@ -56,7 +56,7 @@ const TreeNode: React.FC<TreeNodeProps> = ({ label, value, level, isLast = false
             <span className={styles.primitiveValueQuote}>{'"'}</span>
           </span>
         );
-      case 'number':
+      case "number":
         return (
           <span
             className={classnames(styles.primitiveValue, styles.number)}
@@ -65,7 +65,7 @@ const TreeNode: React.FC<TreeNodeProps> = ({ label, value, level, isLast = false
             {val}
           </span>
         );
-      case 'boolean':
+      case "boolean":
         return (
           <span
             className={classnames(styles.primitiveValue, styles.boolean)}
@@ -74,18 +74,18 @@ const TreeNode: React.FC<TreeNodeProps> = ({ label, value, level, isLast = false
             {val.toString()}
           </span>
         );
-      case 'object':
+      case "object":
         // Handle empty objects and arrays
         if (Array.isArray(val)) {
           return (
-            <span className={styles.primitiveValue} onDoubleClick={() => handleCopy('[]')}>
+            <span className={styles.primitiveValue} onDoubleClick={() => handleCopy("[]")}>
               []
             </span>
           );
         } else {
           return (
-            <span className={styles.primitiveValue} onDoubleClick={() => handleCopy('{}')}>
-              {'{}'}
+            <span className={styles.primitiveValue} onDoubleClick={() => handleCopy("{}")}>
+              {"{}"}
             </span>
           );
         }
@@ -130,7 +130,7 @@ const TreeNode: React.FC<TreeNodeProps> = ({ label, value, level, isLast = false
           <button
             className={classnames(
               styles.expandButton,
-              isExpanded ? styles.expanded : styles.collapsed
+              isExpanded ? styles.expanded : styles.collapsed,
             )}
             onClick={() => setIsExpanded(!isExpanded)}
           >
@@ -145,7 +145,7 @@ const TreeNode: React.FC<TreeNodeProps> = ({ label, value, level, isLast = false
             handleCopy(
               JSON.stringify({
                 [label]: value,
-              })
+              }),
             )
           }
         >
@@ -163,7 +163,7 @@ const TreeNode: React.FC<TreeNodeProps> = ({ label, value, level, isLast = false
 };
 
 export const DataStructureViewer: React.FC<DataStructureViewerProps> = ({ data, level = 0 }) => {
-  if (data === null || data === undefined || typeof data !== 'object') {
+  if (data === null || data === undefined || typeof data !== "object") {
     return (
       <div className={styles.dataStructureViewer}>
         <TreeNode label="value" value={data} level={0} />

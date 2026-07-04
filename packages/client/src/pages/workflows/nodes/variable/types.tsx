@@ -3,13 +3,13 @@
  * SPDX-License-Identifier: MIT
  */
 
-import { FlowNodeJSON } from '@flowgram.ai/free-layout-editor';
-import { AssignValueType, IJsonSchema } from '@flowgram.ai/form-materials';
+import type { FlowNodeJSON } from "@flowgram.ai/free-layout-editor";
+import type { AssignValueType, IJsonSchema } from "@flowgram.ai/form-materials";
 
 export interface VariableNodeJSON extends FlowNodeJSON {
   data: {
     title: string;
     assign: AssignValueType[];
-    outputs: IJsonSchema<'object'>;
+    outputs: IJsonSchema<"object">;
   };
 }

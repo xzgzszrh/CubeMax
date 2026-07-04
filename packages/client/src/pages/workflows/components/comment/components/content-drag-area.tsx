@@ -3,12 +3,13 @@
  * SPDX-License-Identifier: MIT
  */
 
-import { type FC, useState, useEffect, type WheelEventHandler } from 'react';
+import { useState, useEffect } from "react";
+import type { FC, WheelEventHandler } from "react";
 
-import { useNodeRender, usePlayground } from '@flowgram.ai/free-layout-editor';
+import { useNodeRender, usePlayground } from "@flowgram.ai/free-layout-editor";
 
-import type { CommentEditorModel } from '../model';
-import { DragArea } from './drag-area';
+import type { CommentEditorModel } from "../model";
+import { DragArea } from "./drag-area";
 
 interface IContentDragArea {
   model: CommentEditorModel;
@@ -63,12 +64,12 @@ export const ContentDragArea: FC<IContentDragArea> = (props) => {
         // 点击后隐藏
         setActive(true);
       }
-      document.removeEventListener('mouseup', handleMouseUp);
-      document.removeEventListener('click', handleMouseUp);
+      document.removeEventListener("mouseup", handleMouseUp);
+      document.removeEventListener("click", handleMouseUp);
     };
 
-    document.addEventListener('mouseup', handleMouseUp);
-    document.addEventListener('click', handleMouseUp);
+    document.addEventListener("mouseup", handleMouseUp);
+    document.addEventListener("click", handleMouseUp);
   };
 
   return (
@@ -77,14 +78,14 @@ export const ContentDragArea: FC<IContentDragArea> = (props) => {
       onMouseDown={handleMouseDown}
       onWheel={handleWheel}
       style={{
-        display: active ? 'none' : undefined,
+        display: active ? "none" : undefined,
       }}
     >
       <DragArea
         style={{
-          position: 'relative',
-          width: '100%',
-          height: '100%',
+          position: "relative",
+          width: "100%",
+          height: "100%",
         }}
         model={model}
         stopEvent={false}

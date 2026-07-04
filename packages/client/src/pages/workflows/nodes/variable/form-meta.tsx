@@ -3,13 +3,13 @@
  * SPDX-License-Identifier: MIT
  */
 
-import { FormMeta, FormRenderProps } from '@flowgram.ai/free-layout-editor';
-import { AssignRows, createInferAssignPlugin, DisplayOutputs } from '@flowgram.ai/form-materials';
+import type { FormMeta, FormRenderProps } from "@flowgram.ai/free-layout-editor";
+import { AssignRows, createInferAssignPlugin, DisplayOutputs } from "@flowgram.ai/form-materials";
 
-import { FormHeader, FormContent } from '../../form-components';
-import { VariableNodeJSON } from './types';
-import { defaultFormMeta } from '../default-form-meta';
-import { useIsSidebar } from '../../hooks';
+import { FormHeader, FormContent } from "../../form-components";
+import type { VariableNodeJSON } from "./types";
+import { defaultFormMeta } from "../default-form-meta";
+import { useIsSidebar } from "../../hooks";
 
 export const FormRender = ({ form }: FormRenderProps<VariableNodeJSON>) => {
   const isSidebar = useIsSidebar();
@@ -29,8 +29,8 @@ export const formMeta: FormMeta = {
   effect: defaultFormMeta.effect,
   plugins: [
     createInferAssignPlugin({
-      assignKey: 'assign',
-      outputKey: 'outputs',
+      assignKey: "assign",
+      outputKey: "outputs",
     }),
   ],
 };

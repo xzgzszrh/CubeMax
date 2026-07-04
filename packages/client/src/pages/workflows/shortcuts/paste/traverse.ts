@@ -35,7 +35,7 @@ export type TraverseHandler = (context: TraverseContext) => void;
  */
 export const traverse = <T extends TraverseValue = TraverseValue>(
   value: T,
-  handler: TraverseHandler | TraverseHandler[]
+  handler: TraverseHandler | TraverseHandler[],
 ): T => {
   const traverseHandler: TraverseHandler = Array.isArray(handler)
     ? (context: TraverseContext) => {
@@ -58,7 +58,7 @@ namespace TraverseUtils {
       // handle null value - 处理空值
       return;
     }
-    if (Object.prototype.toString.call(value) === '[object Object]') {
+    if (Object.prototype.toString.call(value) === "[object Object]") {
       // traverse object properties - 遍历对象属性
       Object.entries(value).forEach(([key, item]) =>
         traverseNodes(
@@ -68,8 +68,8 @@ namespace TraverseUtils {
             key,
             parent: node,
           },
-          handle
-        )
+          handle,
+        ),
       );
     } else if (Array.isArray(value)) {
       // traverse array elements from end to start - 从末尾开始遍历数组元素
@@ -82,7 +82,7 @@ namespace TraverseUtils {
             index,
             parent: node,
           },
-          handle
+          handle,
         );
       }
     }
@@ -118,7 +118,7 @@ namespace TraverseUtils {
     const { container, key, index } = node;
     if (key && container) {
       container[key] = value;
-    } else if (typeof index === 'number') {
+    } else if (typeof index === "number") {
       container[index] = value;
     }
   };
@@ -161,7 +161,7 @@ namespace TraverseUtils {
   const getStringifyPath = (node: TraverseNode): string => {
     const path = getPath(node);
     return path.reduce((stringifyPath: string, pathItem: string | number) => {
-      if (typeof pathItem === 'string') {
+      if (typeof pathItem === "string") {
         const re = /\W/g;
         if (re.test(pathItem)) {
           // handle special characters - 处理特殊字符
@@ -171,7 +171,7 @@ namespace TraverseUtils {
       } else {
         return `${stringifyPath}[${pathItem}]`;
       }
-    }, '');
+    }, "");
   };
 
   /**
@@ -182,7 +182,7 @@ namespace TraverseUtils {
     const { container, key, index } = node;
     if (key && container) {
       delete container[key];
-    } else if (typeof index === 'number') {
+    } else if (typeof index === "number") {
       container.splice(index, 1);
     }
   };

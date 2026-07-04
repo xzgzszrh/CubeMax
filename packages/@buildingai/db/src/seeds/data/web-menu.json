@@ -40,6 +40,19 @@
             }
         },
         {
+            "id": "menu_workflows",
+            "icon": "git-branch",
+            "title": "工作流",
+            "link": {
+                "label": "工作流",
+                "path": "/workflows",
+                "type": "system",
+                "query": {},
+                "component": "/src/pages/workflows/index.tsx",
+                "target": "_self"
+            }
+        },
+        {
             "id": "menu_datasets",
             "icon": "book-search",
             "title": "知识库",

@@ -3,5 +3,5 @@
  * SPDX-License-Identifier: MIT
  */
 
-export * from './constants';
-export * from './shortcuts';
+export * from "./constants";
+export * from "./shortcuts";

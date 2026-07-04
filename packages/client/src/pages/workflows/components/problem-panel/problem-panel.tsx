@@ -3,12 +3,12 @@
  * SPDX-License-Identifier: MIT
  */
 
-import { useService, WorkflowSelectService } from '@flowgram.ai/free-layout-editor';
-import { IconButton, Spin, Typography, Avatar, Tooltip } from '@douyinfe/semi-ui';
-import { IconUploadError, IconClose } from '@douyinfe/semi-icons';
+import { useService, WorkflowSelectService } from "@flowgram.ai/free-layout-editor";
+import { IconButton, Spin, Typography, Avatar, Tooltip } from "@douyinfe/semi-ui";
+import { IconUploadError, IconClose } from "@douyinfe/semi-icons";
 
-import { useProblemPanel, useNodeFormPanel } from '../../plugins/panel-manager-plugin/hooks';
-import { useWatchValidate } from './use-watch-validate';
+import { useProblemPanel, useNodeFormPanel } from "../../plugins/panel-manager-plugin/hooks";
+import { useWatchValidate } from "./use-watch-validate";
 
 export const ProblemPanel = () => {
   const { results, loading } = useWatchValidate();
@@ -21,25 +21,25 @@ export const ProblemPanel = () => {
   return (
     <div
       style={{
-        width: '100%',
-        height: '100%',
-        borderRadius: '8px',
-        background: 'rgb(251, 251, 251)',
-        border: '1px solid rgba(82,100,154, 0.13)',
+        width: "100%",
+        height: "100%",
+        borderRadius: "8px",
+        background: "rgb(251, 251, 251)",
+        border: "1px solid rgba(82,100,154, 0.13)",
       }}
     >
       <div
         style={{
-          display: 'flex',
-          height: '50px',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          padding: '0 12px',
+          display: "flex",
+          height: "50px",
+          alignItems: "center",
+          justifyContent: "space-between",
+          padding: "0 12px",
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', columnGap: '4px', height: '100%' }}>
+        <div style={{ display: "flex", alignItems: "center", columnGap: "4px", height: "100%" }}>
           <Typography.Text strong>Problem</Typography.Text>
-          {loading && <Spin size="small" style={{ lineHeight: '0' }} />}
+          {loading && <Spin size="small" style={{ lineHeight: "0" }} />}
         </div>
         <IconButton
           type="tertiary"
@@ -48,17 +48,17 @@ export const ProblemPanel = () => {
           onClick={() => closePanel()}
         />
       </div>
-      <div style={{ padding: '12px', display: 'flex', flexDirection: 'column', rowGap: '4px' }}>
+      <div style={{ padding: "12px", display: "flex", flexDirection: "column", rowGap: "4px" }}>
         {results.map((i) => (
           <div
             key={i.node.id}
             style={{
-              display: 'flex',
-              alignItems: 'center',
-              border: '1px solid #999',
-              borderRadius: '4px',
-              padding: '0 4px',
-              cursor: 'pointer',
+              display: "flex",
+              alignItems: "center",
+              border: "1px solid #999",
+              borderRadius: "4px",
+              padding: "0 4px",
+              cursor: "pointer",
             }}
             onClick={() => {
               selectService.selectNodeAndScrollToView(i.node);
@@ -66,16 +66,16 @@ export const ProblemPanel = () => {
             }}
           >
             <Avatar
-              style={{ flexShrink: '0' }}
+              style={{ flexShrink: "0" }}
               src={i.node.getNodeRegistry().info.icon}
               size="24px"
               shape="square"
             />
-            <div style={{ marginLeft: '8px' }}>
+            <div style={{ marginLeft: "8px" }}>
               <Typography.Text>{i.node.form?.values.title}</Typography.Text>
               <br />
               <Typography.Text type="danger">
-                {i.feedbacks.map((i) => i.feedbackText).join(', ')}
+                {i.feedbacks.map((i) => i.feedbackText).join(", ")}
               </Typography.Text>
             </div>
           </div>

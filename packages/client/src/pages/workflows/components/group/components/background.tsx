@@ -3,12 +3,14 @@
  * SPDX-License-Identifier: MIT
  */
 
-import { CSSProperties, FC, useEffect } from 'react';
+import { useEffect } from "react";
+import type { CSSProperties, FC } from "react";
 
-import { useWatch, WorkflowNodeEntity } from '@flowgram.ai/free-layout-editor';
+import { useWatch } from "@flowgram.ai/free-layout-editor";
+import type { WorkflowNodeEntity } from "@flowgram.ai/free-layout-editor";
 
-import { GroupField } from '../constant';
-import { defaultColor, groupColors } from '../color';
+import { GroupField } from "../constant";
+import { defaultColor, groupColors } from "../color";
 
 interface GroupBackgroundProps {
   node: WorkflowNodeEntity;
@@ -21,12 +23,12 @@ export const GroupBackground: FC<GroupBackgroundProps> = ({ node, style, selecte
   const color = groupColors[colorName];
 
   useEffect(() => {
-    const styleElement = document.createElement('style');
+    const styleElement = document.createElement("style");
 
     // 使用独特的选择器
     const styleContent = `
       .workflow-group-render[data-group-id="${node.id}"] .workflow-group-background {
-        border: 1px solid ${color['300']};
+        border: 1px solid ${color["300"]};
       }
 
       .workflow-group-render.selected[data-group-id="${node.id}"] .workflow-group-background {
@@ -48,7 +50,7 @@ export const GroupBackground: FC<GroupBackgroundProps> = ({ node, style, selecte
       data-flow-editor-selectable="true"
       style={{
         ...style,
-        backgroundColor: `${color['300']}${selected ? '40' : '29'}`,
+        backgroundColor: `${color["300"]}${selected ? "40" : "29"}`,
       }}
     />
   );

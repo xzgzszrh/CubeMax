@@ -3,22 +3,19 @@
  * SPDX-License-Identifier: MIT
  */
 
-import {
-  FreeLayoutPluginContext,
-  ShortcutsHandler,
-  WorkflowSelectService,
-} from '@flowgram.ai/free-layout-editor';
+import { WorkflowSelectService } from "@flowgram.ai/free-layout-editor";
+import type { FreeLayoutPluginContext, ShortcutsHandler } from "@flowgram.ai/free-layout-editor";
 
-import { FlowCommandId } from '../constants';
+import { FlowCommandId } from "../constants";
 
 export class ExpandShortcut implements ShortcutsHandler {
   public commandId = FlowCommandId.EXPAND;
 
-  public commandDetail: ShortcutsHandler['commandDetail'] = {
-    label: 'Expand',
+  public commandDetail: ShortcutsHandler["commandDetail"] = {
+    label: "Expand",
   };
 
-  public shortcuts = ['meta alt closebracket', 'ctrl alt closebracket'];
+  public shortcuts = ["meta alt closebracket", "ctrl alt closebracket"];
 
   private selectService: WorkflowSelectService;
 

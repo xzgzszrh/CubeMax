@@ -3,26 +3,26 @@
  * SPDX-License-Identifier: MIT
  */
 
-import { useCallback } from 'react';
+import { useCallback } from "react";
 
-import { usePlayground, usePlaygroundTools } from '@flowgram.ai/free-layout-editor';
-import { IconButton, Tooltip } from '@douyinfe/semi-ui';
+import { usePlayground, usePlaygroundTools } from "@flowgram.ai/free-layout-editor";
+import { IconButton, Tooltip } from "@douyinfe/semi-ui";
 
-import { IconAutoLayout } from '../../assets/icon-auto-layout';
+import { IconAutoLayout } from "../../assets/icon-auto-layout";
 
 export const AutoLayout = () => {
   const tools = usePlaygroundTools();
   const playground = usePlayground();
   const autoLayout = useCallback(async () => {
     if (playground.config.readonly) {
-      console.warn('Auto layout is disabled in readonly mode');
+      console.warn("Auto layout is disabled in readonly mode");
       return;
     }
     await tools.autoLayout({
       enableAnimation: true,
       animationDuration: 1000,
       layoutConfig: {
-        rankdir: 'LR',
+        rankdir: "LR",
         align: undefined,
         nodesep: 100,
         ranksep: 100,
@@ -31,7 +31,7 @@ export const AutoLayout = () => {
   }, [tools]);
 
   return (
-    <Tooltip content={'Auto Layout'}>
+    <Tooltip content={"Auto Layout"}>
       <IconButton
         disabled={playground.config.readonly}
         type="tertiary"

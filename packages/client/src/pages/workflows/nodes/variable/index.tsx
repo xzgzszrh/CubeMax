@@ -3,12 +3,12 @@
  * SPDX-License-Identifier: MIT
  */
 
-import { nanoid } from 'nanoid';
+import { nanoid } from "nanoid";
 
-import { WorkflowNodeType } from '../constants';
-import { FlowNodeRegistry } from '../../typings';
-import iconVariable from '../../assets/icon-variable.png';
-import { formMeta } from './form-meta';
+import { WorkflowNodeType } from "../constants";
+import type { FlowNodeRegistry } from "../../typings";
+import iconVariable from "../../assets/icon-variable.png";
+import { formMeta } from "./form-meta";
 
 let index = 0;
 
@@ -16,7 +16,7 @@ export const VariableNodeRegistry: FlowNodeRegistry = {
   type: WorkflowNodeType.Variable,
   info: {
     icon: iconVariable,
-    description: 'Variable Assign and Declaration',
+    description: "Variable Assign and Declaration",
   },
   meta: {
     size: {
@@ -27,17 +27,17 @@ export const VariableNodeRegistry: FlowNodeRegistry = {
   onAdd() {
     return {
       id: `variable_${nanoid(5)}`,
-      type: 'variable',
+      type: "variable",
       data: {
         title: `Variable_${++index}`,
         assign: [
           {
-            operator: 'declare',
-            left: 'sum',
+            operator: "declare",
+            left: "sum",
             right: {
-              type: 'constant',
+              type: "constant",
               content: 0,
-              schema: { type: 'integer' },
+              schema: { type: "integer" },
             },
           },
         ],

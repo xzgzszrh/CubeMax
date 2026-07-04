@@ -3,19 +3,17 @@
  * SPDX-License-Identifier: MIT
  */
 
-import React, { FC } from 'react';
+import React from "react";
+import type { FC } from "react";
 
-import styled from 'styled-components';
-import { NodePanelRenderProps } from '@flowgram.ai/free-node-panel-plugin';
-import {
-  useClientContext,
-  WorkflowNodeEntity,
-  WorkflowPortEntity,
-} from '@flowgram.ai/free-layout-editor';
+import styled from "styled-components";
+import type { NodePanelRenderProps } from "@flowgram.ai/free-node-panel-plugin";
+import { useClientContext } from "@flowgram.ai/free-layout-editor";
+import type { WorkflowNodeEntity, WorkflowPortEntity } from "@flowgram.ai/free-layout-editor";
 
-import { canContainNode } from '../../utils';
-import { FlowNodeRegistry } from '../../typings';
-import { nodeRegistries } from '../../nodes';
+import { canContainNode } from "../../utils";
+import type { FlowNodeRegistry } from "../../typings";
+import { nodeRegistries } from "../../nodes";
 
 const NodeWrap = styled.div`
   width: 100%;
@@ -66,7 +64,7 @@ const NodesWrap = styled.div`
 `;
 
 interface NodeListProps {
-  onSelect: NodePanelRenderProps['onSelect'];
+  onSelect: NodePanelRenderProps["onSelect"];
   fromPort?: WorkflowPortEntity; // 从哪个端口添加 From which port to add
   containerNode?: WorkflowNodeEntity;
 }
@@ -82,7 +80,7 @@ export const NodeList: FC<NodeListProps> = (props) => {
       nodeJSON: json,
     });
   };
-  console.log('>>> fromNode', fromPort?.node);
+  console.log(">>> fromNode", fromPort?.node);
   return (
     <NodesWrap style={{ width: 80 * 2 + 20 }}>
       {nodeRegistries

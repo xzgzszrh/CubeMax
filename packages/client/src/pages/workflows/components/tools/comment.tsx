@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: MIT
  */
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback } from "react";
 
 import {
   delay,
@@ -12,11 +12,11 @@ import {
   WorkflowDocument,
   WorkflowDragService,
   WorkflowSelectService,
-} from '@flowgram.ai/free-layout-editor';
-import { IconButton, Tooltip } from '@douyinfe/semi-ui';
+} from "@flowgram.ai/free-layout-editor";
+import { IconButton, Tooltip } from "@douyinfe/semi-ui";
 
-import { WorkflowNodeType } from '../../nodes';
-import { IconComment } from '../../assets/icon-comment';
+import { WorkflowNodeType } from "../../nodes";
+import { IconComment } from "../../assets/icon-comment";
 
 export const Comment = () => {
   const playground = usePlayground();
@@ -34,7 +34,7 @@ export const Comment = () => {
         y: mousePosition.y - 75,
       };
     },
-    [playground]
+    [playground],
   );
 
   const createComment = useCallback(
@@ -53,7 +53,7 @@ export const Comment = () => {
         dragService.startDragSelectedNodes(mouseEvent);
       }
     },
-    [selectService, calcNodePosition, document, dragService]
+    [selectService, calcNodePosition, document, dragService],
   );
 
   return (

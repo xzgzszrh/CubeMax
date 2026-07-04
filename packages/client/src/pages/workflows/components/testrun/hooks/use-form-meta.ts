@@ -3,16 +3,16 @@
  * SPDX-License-Identifier: MIT
  */
 
-import { useMemo } from 'react';
+import { useMemo } from "react";
 
-import { useService, WorkflowDocument } from '@flowgram.ai/free-layout-editor';
-import { IJsonSchema, JsonSchemaBasicType } from '@flowgram.ai/form-materials';
+import { useService, WorkflowDocument } from "@flowgram.ai/free-layout-editor";
+import type { IJsonSchema, JsonSchemaBasicType } from "@flowgram.ai/form-materials";
 
-import { TestRunFormMetaItem } from '../testrun-form/type';
-import { WorkflowNodeType } from '../../../nodes';
+import type { TestRunFormMetaItem } from "../testrun-form/type";
+import { WorkflowNodeType } from "../../../nodes";
 
 const DEFAULT_DECLARE: IJsonSchema = {
-  type: 'object',
+  type: "object",
   properties: {},
 };
 
@@ -21,10 +21,10 @@ export const useFormMeta = (): TestRunFormMetaItem[] => {
 
   const startNode = useMemo(
     () => document.root.blocks.find((node) => node.flowNodeType === WorkflowNodeType.Start),
-    [document]
+    [document],
   );
 
-  const workflowInputs = startNode?.form?.getValueIn<IJsonSchema>('outputs') || DEFAULT_DECLARE;
+  const workflowInputs = startNode?.form?.getValueIn<IJsonSchema>("outputs") || DEFAULT_DECLARE;
 
   // Add state for form values
   const formMeta = useMemo(() => {

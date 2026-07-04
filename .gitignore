@@ -42,8 +42,8 @@ build
 packages/**/dist
 /public/package.json
 /public/*
-!/public/web/
 !/public/index.html
+/public/web/
 *.tsbuildinfo
 _temp_get_languages.*
 build.tsbuildinfo

@@ -3,22 +3,23 @@
  * SPDX-License-Identifier: MIT
  */
 
-import { FC, useState, useEffect } from 'react';
+import { useState, useEffect } from "react";
+import type { FC } from "react";
 
-import classnames from 'classnames';
-import { WorkflowInputs, WorkflowOutputs } from '@flowgram.ai/runtime-interface';
-import { useService } from '@flowgram.ai/free-layout-editor';
-import { Button, Switch } from '@douyinfe/semi-ui';
-import { IconClose, IconPlay, IconSpin } from '@douyinfe/semi-icons';
+import classnames from "classnames";
+import type { WorkflowInputs, WorkflowOutputs } from "@flowgram.ai/runtime-interface";
+import { useService } from "@flowgram.ai/free-layout-editor";
+import { Button, Switch } from "@douyinfe/semi-ui";
+import { IconClose, IconPlay, IconSpin } from "@douyinfe/semi-icons";
 
-import { TestRunJsonInput } from '../testrun-json-input';
-import { TestRunForm } from '../testrun-form';
-import { NodeStatusGroup } from '../node-status-bar/group';
-import { WorkflowRuntimeService } from '../../../plugins/runtime-plugin/runtime-service';
-import { useTestRunFormPanel } from '../../../plugins/panel-manager-plugin/hooks';
-import { IconCancel } from '../../../assets/icon-cancel';
+import { TestRunJsonInput } from "../testrun-json-input";
+import { TestRunForm } from "../testrun-form";
+import { NodeStatusGroup } from "../node-status-bar/group";
+import { WorkflowRuntimeService } from "../../../plugins/runtime-plugin/runtime-service";
+import { useTestRunFormPanel } from "../../../plugins/panel-manager-plugin/hooks";
+import { IconCancel } from "../../../assets/icon-cancel";
 
-import styles from './index.module.less';
+import styles from "./index.module.less";
 
 export interface TestRunSidePanelProps {}
 
@@ -38,13 +39,13 @@ export const TestRunSidePanel: FC<TestRunSidePanelProps> = () => {
 
   // en - Use localStorage to persist the JSON mode state
   const [inputJSONMode, _setInputJSONMode] = useState(() => {
-    const savedMode = localStorage.getItem('testrun-input-json-mode');
+    const savedMode = localStorage.getItem("testrun-input-json-mode");
     return savedMode ? JSON.parse(savedMode) : false;
   });
 
   const setInputJSONMode = (checked: boolean) => {
     _setInputJSONMode(checked);
-    localStorage.setItem('testrun-input-json-mode', JSON.stringify(checked));
+    localStorage.setItem("testrun-input-json-mode", JSON.stringify(checked));
   };
 
   const onTestRun = async () => {
@@ -68,15 +69,15 @@ export const TestRunSidePanel: FC<TestRunSidePanelProps> = () => {
   };
 
   const renderRunning = (
-    <div className={styles['testrun-panel-running']}>
+    <div className={styles["testrun-panel-running"]}>
       <IconSpin spin size="large" />
       <div className={styles.text}>Running...</div>
     </div>
   );
 
   const renderForm = (
-    <div className={styles['testrun-panel-form']}>
-      <div className={styles['testrun-panel-input']}>
+    <div className={styles["testrun-panel-form"]}>
+      <div className={styles["testrun-panel-input"]}>
         <div className={styles.title}>Input Form</div>
         <div>JSON Mode</div>
         <Switch
@@ -109,7 +110,7 @@ export const TestRunSidePanel: FC<TestRunSidePanelProps> = () => {
         [styles.default]: !isRunning,
       })}
     >
-      {isRunning ? 'Cancel' : 'Test Run'}
+      {isRunning ? "Cancel" : "Test Run"}
     </Button>
   );
 
@@ -130,15 +131,15 @@ export const TestRunSidePanel: FC<TestRunSidePanelProps> = () => {
     () => () => {
       runtimeService.taskCancel();
     },
-    [runtimeService]
+    [runtimeService],
   );
 
   return (
-    <div className={styles['testrun-panel-container']}>
-      <div className={styles['testrun-panel-header']}>
-        <div className={styles['testrun-panel-title']}>Test Run</div>
+    <div className={styles["testrun-panel-container"]}>
+      <div className={styles["testrun-panel-header"]}>
+        <div className={styles["testrun-panel-title"]}>Test Run</div>
         <Button
-          className={styles['testrun-panel-title']}
+          className={styles["testrun-panel-title"]}
           type="tertiary"
           icon={<IconClose />}
           size="small"
@@ -146,10 +147,10 @@ export const TestRunSidePanel: FC<TestRunSidePanelProps> = () => {
           onClick={onClose}
         />
       </div>
-      <div className={styles['testrun-panel-content']}>
+      <div className={styles["testrun-panel-content"]}>
         {isRunning ? renderRunning : renderForm}
       </div>
-      <div className={styles['testrun-panel-footer']}>{renderButton}</div>
+      <div className={styles["testrun-panel-footer"]}>{renderButton}</div>
     </div>
   );
 };

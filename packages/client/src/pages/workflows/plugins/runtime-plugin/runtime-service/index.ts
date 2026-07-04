@@ -3,26 +3,25 @@
  * SPDX-License-Identifier: MIT
  */
 
-import {
+import { WorkflowStatus } from "@flowgram.ai/runtime-interface";
+import type {
   IReport,
   NodeReport,
   WorkflowInputs,
   WorkflowOutputs,
-  WorkflowStatus,
-} from '@flowgram.ai/runtime-interface';
+} from "@flowgram.ai/runtime-interface";
 import {
   injectable,
   inject,
   WorkflowDocument,
   Playground,
-  WorkflowLineEntity,
-  WorkflowNodeEntity,
   Emitter,
-} from '@flowgram.ai/free-layout-editor';
+} from "@flowgram.ai/free-layout-editor";
+import type { WorkflowLineEntity, WorkflowNodeEntity } from "@flowgram.ai/free-layout-editor";
 
-import { WorkflowRuntimeClient } from '../client';
-import { GetGlobalVariableSchema } from '../../variable-panel-plugin';
-import { WorkflowNodeType } from '../../../nodes';
+import { WorkflowRuntimeClient } from "../client";
+import { GetGlobalVariableSchema } from "../../variable-panel-plugin";
+import { WorkflowNodeType } from "../../../nodes";
 
 const SYNC_TASK_REPORT_INTERVAL = 500;
 
@@ -79,7 +78,7 @@ export class WorkflowRuntimeService {
     const isFormValid = await this.validateForm();
     if (!isFormValid) {
       this.resultEmitter.fire({
-        errors: ['Form validation failed'],
+        errors: ["Form validation failed"],
       });
       return;
     }
@@ -94,7 +93,7 @@ export class WorkflowRuntimeService {
     });
     if (!validateResult?.valid) {
       this.resultEmitter.fire({
-        errors: validateResult?.errors ?? ['Internal Server Error'],
+        errors: validateResult?.errors ?? ["Internal Server Error"],
       });
       return;
     }
@@ -114,7 +113,7 @@ export class WorkflowRuntimeService {
     }
     if (!taskID) {
       this.resultEmitter.fire({
-        errors: ['Task run failed'],
+        errors: ["Task run failed"],
       });
       return;
     }
@@ -161,7 +160,7 @@ export class WorkflowRuntimeService {
     });
     if (!report) {
       clearInterval(this.syncTaskReportIntervalID);
-      console.error('Sync task report failed');
+      console.error("Sync task report failed");
       return;
     }
     const { workflowStatus, inputs, outputs, messages } = report;
@@ -172,7 +171,7 @@ export class WorkflowRuntimeService {
       } else {
         this.resultEmitter.fire({
           errors: messages?.error?.map((message) =>
-            message.nodeID ? `${message.nodeID}: ${message.message}` : message.message
+            message.nodeID ? `${message.nodeID}: ${message.message}` : message.message,
           ),
         });
       }
@@ -188,8 +187,8 @@ export class WorkflowRuntimeService {
       .filter(
         (node) =>
           ![WorkflowNodeType.BlockStart, WorkflowNodeType.BlockEnd].includes(
-            node.flowNodeType as WorkflowNodeType
-          )
+            node.flowNodeType as WorkflowNodeType,
+          ),
       )
       .forEach((node) => {
         const nodeID = node.id;

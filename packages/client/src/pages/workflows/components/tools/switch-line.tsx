@@ -3,12 +3,12 @@
  * SPDX-License-Identifier: MIT
  */
 
-import { useCallback } from 'react';
+import { useCallback } from "react";
 
-import { useService, WorkflowLinesManager } from '@flowgram.ai/free-layout-editor';
-import { IconButton, Tooltip } from '@douyinfe/semi-ui';
+import { useService, WorkflowLinesManager } from "@flowgram.ai/free-layout-editor";
+import { IconButton, Tooltip } from "@douyinfe/semi-ui";
 
-import { IconSwitchLine } from '../../assets/icon-switch-line';
+import { IconSwitchLine } from "../../assets/icon-switch-line";
 
 export const SwitchLine = () => {
   const linesManager = useService(WorkflowLinesManager);
@@ -17,7 +17,7 @@ export const SwitchLine = () => {
   }, [linesManager]);
 
   return (
-    <Tooltip content={'Switch Line'}>
+    <Tooltip content={"Switch Line"}>
       <IconButton type="tertiary" theme="borderless" onClick={switchLine} icon={IconSwitchLine} />
     </Tooltip>
   );

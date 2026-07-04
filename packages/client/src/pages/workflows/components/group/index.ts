@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: MIT
  */
 
-import './index.css';
+import "./index.css";
 
-export { GroupNodeRender } from './components';
-export { IconGroup } from './components';
+export { GroupNodeRender } from "./components";
+export { IconGroup } from "./components";

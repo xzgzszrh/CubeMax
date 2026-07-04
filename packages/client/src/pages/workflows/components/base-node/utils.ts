@@ -3,12 +3,12 @@
  * SPDX-License-Identifier: MIT
  */
 
-import { FreeLayoutPluginContext, FlowNodeEntity } from '@flowgram.ai/free-layout-editor';
+import type { FreeLayoutPluginContext, FlowNodeEntity } from "@flowgram.ai/free-layout-editor";
 
 export function scrollToView(
   ctx: FreeLayoutPluginContext,
   node: FlowNodeEntity,
-  sidebarWidth = 448
+  sidebarWidth = 448,
 ) {
   const bounds = node.transform.bounds;
   ctx.playground.scrollToView({

@@ -3,17 +3,14 @@
  * SPDX-License-Identifier: MIT
  */
 
-import { nanoid } from 'nanoid';
-import {
-  WorkflowNodeEntity,
-  PositionSchema,
-  FlowNodeTransformData,
-} from '@flowgram.ai/free-layout-editor';
+import { nanoid } from "nanoid";
+import { FlowNodeTransformData } from "@flowgram.ai/free-layout-editor";
+import type { WorkflowNodeEntity, PositionSchema } from "@flowgram.ai/free-layout-editor";
 
-import { FlowNodeRegistry } from '../../typings';
-import iconLoop from '../../assets/icon-loop.jpg';
-import { formMeta } from './form-meta';
-import { WorkflowNodeType } from '../constants';
+import type { FlowNodeRegistry } from "../../typings";
+import iconLoop from "../../assets/icon-loop.jpg";
+import { formMeta } from "./form-meta";
+import { WorkflowNodeType } from "../constants";
 
 let index = 0;
 export const LoopNodeRegistry: FlowNodeRegistry = {
@@ -21,7 +18,7 @@ export const LoopNodeRegistry: FlowNodeRegistry = {
   info: {
     icon: iconLoop,
     description:
-      'Used to repeatedly execute a series of tasks by setting the number of iterations and logic.',
+      "Used to repeatedly execute a series of tasks by setting the number of iterations and logic.",
   },
   meta: {
     /**
@@ -72,8 +69,8 @@ export const LoopNodeRegistry: FlowNodeRegistry = {
     },
     // expandable: false, // disable expanded
     wrapperStyle: {
-      minWidth: 'unset',
-      width: '100%',
+      minWidth: "unset",
+      width: "100%",
     },
     // defaultPorts: [{ type: 'output', location: 'right' }, { type: 'input', location: 'left'}, { type: 'output', location: 'bottom', portID: 'bottom' }, { type: 'input', location: 'top', portID: 'top'}]
   },

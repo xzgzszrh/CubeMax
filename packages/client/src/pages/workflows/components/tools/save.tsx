@@ -3,14 +3,17 @@
  * SPDX-License-Identifier: MIT
  */
 
-import { useState, useEffect, useCallback } from 'react';
+import { Badge, Button } from "@douyinfe/semi-ui";
+import type { FlowNodeEntity } from "@flowgram.ai/free-layout-editor";
+import { useClientContext } from "@flowgram.ai/free-layout-editor";
+import { useCallback, useEffect, useState } from "react";
 
-import { useClientContext, FlowNodeEntity } from '@flowgram.ai/free-layout-editor';
-import { Button, Badge } from '@douyinfe/semi-ui';
+import { serializeWorkflowSchema, useWorkflowSave } from "../../context";
 
 export function Save(props: { disabled: boolean }) {
   const [errorCount, setErrorCount] = useState(0);
   const clientContext = useClientContext();
+  const { saveSchema, saving } = useWorkflowSave();
 
   const updateValidateData = useCallback(() => {
     const allForms = clientContext.document.getAllNodes().map((node) => node.form);
@@ -24,8 +27,8 @@ export function Save(props: { disabled: boolean }) {
   const onSave = useCallback(async () => {
     const allForms = clientContext.document.getAllNodes().map((node) => node.form);
     await Promise.all(allForms.map(async (form) => form?.validate()));
-    console.log('>>>>> save data: ', clientContext.document.toJSON());
-  }, [clientContext]);
+    await saveSchema(serializeWorkflowSchema(clientContext), { showSuccessToast: true });
+  }, [clientContext, saveSchema]);
 
   /**
    * Listen single node validate
@@ -38,19 +41,20 @@ export function Save(props: { disabled: boolean }) {
         node.onDispose(() => formValidateDispose.dispose());
       }
     };
-    clientContext.document.getAllNodes().map((node) => listenSingleNodeValidate(node));
+    clientContext.document.getAllNodes().forEach((node) => listenSingleNodeValidate(node));
     const dispose = clientContext.document.onNodeCreate(({ node }) =>
-      listenSingleNodeValidate(node)
+      listenSingleNodeValidate(node),
     );
     return () => dispose.dispose();
-  }, [clientContext]);
+  }, [clientContext, updateValidateData]);
 
   if (errorCount === 0) {
     return (
       <Button
-        disabled={props.disabled}
+        disabled={props.disabled || saving}
+        loading={saving}
         onClick={onSave}
-        style={{ backgroundColor: 'rgba(171,181,255,0.3)', borderRadius: '8px' }}
+        style={{ backgroundColor: "rgba(171,181,255,0.3)", borderRadius: "8px" }}
       >
         Save
       </Button>
@@ -60,11 +64,12 @@ export function Save(props: { disabled: boolean }) {
     <Badge count={errorCount} position="rightTop" type="danger">
       <Button
         type="danger"
-        disabled={props.disabled}
+        disabled={props.disabled || saving}
+        loading={saving}
         onClick={onSave}
-        style={{ backgroundColor: 'rgba(255, 179, 171, 0.3)', borderRadius: '8px' }}
+        style={{ backgroundColor: "rgba(255, 179, 171, 0.3)", borderRadius: "8px" }}
       >
-          Save
+        Save
       </Button>
     </Badge>
   );

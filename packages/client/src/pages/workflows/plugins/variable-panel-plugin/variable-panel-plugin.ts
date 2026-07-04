@@ -3,29 +3,26 @@
  * SPDX-License-Identifier: MIT
  */
 
-import {
-  ASTFactory,
-  definePluginCreator,
-  GlobalScope,
-  VariableDeclaration,
-} from '@flowgram.ai/free-layout-editor';
-import { IJsonSchema, JsonSchemaUtils } from '@flowgram.ai/form-materials';
+import { ASTFactory, definePluginCreator, GlobalScope } from "@flowgram.ai/free-layout-editor";
+import type { VariableDeclaration } from "@flowgram.ai/free-layout-editor";
+import { JsonSchemaUtils } from "@flowgram.ai/form-materials";
+import type { IJsonSchema } from "@flowgram.ai/form-materials";
 
-import iconVariable from '../../assets/icon-variable.png';
-import { VariablePanelLayer } from './variable-panel-layer';
+import iconVariable from "../../assets/icon-variable.png";
+import { VariablePanelLayer } from "./variable-panel-layer";
 
 const fetchMockVariableFromRemote = async () => {
   await new Promise((resolve) => setTimeout(resolve, 1000));
   return {
-    type: 'object',
+    type: "object",
     properties: {
-      userId: { type: 'string' },
+      userId: { type: "string" },
     },
   };
 };
 
 export type GetGlobalVariableSchema = () => IJsonSchema;
-export const GetGlobalVariableSchema = Symbol('GlobalVariableSchemaGetter');
+export const GetGlobalVariableSchema = Symbol("GlobalVariableSchemaGetter");
 
 export const createVariablePanelPlugin = definePluginCreator<{ initialData?: IJsonSchema }>({
   onBind({ bind }) {
@@ -42,26 +39,26 @@ export const createVariablePanelPlugin = definePluginCreator<{ initialData?: IJs
     if (opts.initialData) {
       globalScope.setVar(
         ASTFactory.createVariableDeclaration({
-          key: 'global',
+          key: "global",
           meta: {
-            title: 'Global',
+            title: "Global",
             icon: iconVariable,
           },
           type: JsonSchemaUtils.schemaToAST(opts.initialData),
-        })
+        }),
       );
     } else {
       // You can also fetch global variable from remote
       fetchMockVariableFromRemote().then((v) => {
         globalScope.setVar(
           ASTFactory.createVariableDeclaration({
-            key: 'global',
+            key: "global",
             meta: {
-              title: 'Global',
+              title: "Global",
               icon: iconVariable,
             },
             type: JsonSchemaUtils.schemaToAST(v),
-          })
+          }),
         );
       });
     }

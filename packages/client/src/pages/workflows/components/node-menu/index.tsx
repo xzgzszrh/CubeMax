@@ -3,7 +3,8 @@
  * SPDX-License-Identifier: MIT
  */
 
-import { FC, useCallback, useState, type MouseEvent } from 'react';
+import { useCallback, useState } from "react";
+import type { FC, MouseEvent } from "react";
 
 import {
   delay,
@@ -11,16 +12,16 @@ import {
   usePlaygroundTools,
   useService,
   WorkflowDragService,
-  WorkflowNodeEntity,
   WorkflowSelectService,
-} from '@flowgram.ai/free-layout-editor';
-import { NodeIntoContainerService } from '@flowgram.ai/free-container-plugin';
-import { IconButton, Dropdown } from '@douyinfe/semi-ui';
-import { IconMore } from '@douyinfe/semi-icons';
+} from "@flowgram.ai/free-layout-editor";
+import type { WorkflowNodeEntity } from "@flowgram.ai/free-layout-editor";
+import { NodeIntoContainerService } from "@flowgram.ai/free-container-plugin";
+import { IconButton, Dropdown } from "@douyinfe/semi-ui";
+import { IconMore } from "@douyinfe/semi-icons";
 
-import { FlowNodeRegistry } from '../../typings';
-import { PasteShortcut } from '../../shortcuts/paste';
-import { CopyShortcut } from '../../shortcuts/copy';
+import type { FlowNodeRegistry } from "../../typings";
+import { PasteShortcut } from "../../shortcuts/paste";
+import { CopyShortcut } from "../../shortcuts/copy";
 
 interface NodeMenuProps {
   node: WorkflowNodeEntity;
@@ -64,7 +65,7 @@ export const NodeMenu: FC<NodeMenuProps> = ({ node, deleteNode, updateTitleEdit 
       // start drag node - 开始拖拽
       dragService.startDragSelectedNodes(e);
     },
-    [nodeIntoContainerService, node, rerenderMenu]
+    [nodeIntoContainerService, node, rerenderMenu],
   );
 
   const handleCopy = useCallback(
@@ -75,7 +76,7 @@ export const NodeMenu: FC<NodeMenuProps> = ({ node, deleteNode, updateTitleEdit 
       pasteShortcut.apply(data);
       e.stopPropagation(); // Disable clicking prevents the sidebar from opening
     },
-    [clientContext, node]
+    [clientContext, node],
   );
 
   const handleDelete = useCallback(
@@ -83,14 +84,14 @@ export const NodeMenu: FC<NodeMenuProps> = ({ node, deleteNode, updateTitleEdit 
       deleteNode();
       e.stopPropagation(); // Disable clicking prevents the sidebar from opening
     },
-    [clientContext, node]
+    [clientContext, node],
   );
   const handleEditTitle = useCallback(
     (e: React.MouseEvent) => {
       updateTitleEdit?.(true);
       e.stopPropagation(); // Disable clicking prevents the sidebar from opening
     },
-    [updateTitleEdit]
+    [updateTitleEdit],
   );
 
   const handleAutoLayout = useCallback(
@@ -103,7 +104,7 @@ export const NodeMenu: FC<NodeMenuProps> = ({ node, deleteNode, updateTitleEdit 
         disableFitView: true,
       });
     },
-    [tools]
+    [tools],
   );
 
   if (!visible) {

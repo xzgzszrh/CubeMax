@@ -3,13 +3,10 @@
  * SPDX-License-Identifier: MIT
  */
 
-import {
-  definePluginCreator,
-  PluginCreator,
-  FreeLayoutPluginContext,
-} from '@flowgram.ai/free-layout-editor';
+import { definePluginCreator } from "@flowgram.ai/free-layout-editor";
+import type { PluginCreator, FreeLayoutPluginContext } from "@flowgram.ai/free-layout-editor";
 
-import { ContextMenuLayer } from './context-menu-layer';
+import { ContextMenuLayer } from "./context-menu-layer";
 
 export interface ContextMenuPluginOptions {}
 

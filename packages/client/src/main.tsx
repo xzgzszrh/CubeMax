@@ -7,7 +7,6 @@ import { Toaster } from "@buildingai/ui/components/ui/sonner";
 import { TooltipProvider } from "@buildingai/ui/components/ui/tooltip";
 import { AlertDialogProvider } from "@buildingai/ui/hooks/use-alert-dialog";
 // import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
-import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { RouterProvider } from "react-router-dom";
 
@@ -29,21 +28,19 @@ const queryClient = new QueryClient({
 });
 
 createRoot(document.getElementById("root")!).render(
-  <StrictMode>
-    <I18nProvider messages={messages} defaultLocale={defaultLocale}>
-      <QueryClientProvider client={queryClient}>
-        <ThemeProvider>
-          <TooltipProvider>
-            <AlertDialogProvider>
-              <SettingsDialogProvider>
-                {/* <ReactQueryDevtools buttonPosition="top-right"  /> */}
-                <Toaster position="top-center" />
-                <RouterProvider router={router} />
-              </SettingsDialogProvider>
-            </AlertDialogProvider>
-          </TooltipProvider>
-        </ThemeProvider>
-      </QueryClientProvider>
-    </I18nProvider>
-  </StrictMode>,
+  <I18nProvider messages={messages} defaultLocale={defaultLocale}>
+    <QueryClientProvider client={queryClient}>
+      <ThemeProvider>
+        <TooltipProvider>
+          <AlertDialogProvider>
+            <SettingsDialogProvider>
+              {/* <ReactQueryDevtools buttonPosition="top-right"  /> */}
+              <Toaster position="top-center" />
+              <RouterProvider router={router} />
+            </SettingsDialogProvider>
+          </AlertDialogProvider>
+        </TooltipProvider>
+      </ThemeProvider>
+    </QueryClientProvider>
+  </I18nProvider>,
 );

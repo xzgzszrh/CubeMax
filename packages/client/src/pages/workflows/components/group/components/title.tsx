@@ -3,12 +3,13 @@
  * SPDX-License-Identifier: MIT
  */
 
-import { FC, useState } from 'react';
+import { useState } from "react";
+import type { FC } from "react";
 
-import { Field } from '@flowgram.ai/free-layout-editor';
-import { Input } from '@douyinfe/semi-ui';
+import { Field } from "@flowgram.ai/free-layout-editor";
+import { Input } from "@douyinfe/semi-ui";
 
-import { GroupField } from '../constant';
+import { GroupField } from "../constant";
 
 export const GroupTitle: FC = () => {
   const [inputting, setInputting] = useState(false);
@@ -29,7 +30,7 @@ export const GroupTitle: FC = () => {
           />
         ) : (
           <p className="workflow-group-title" onDoubleClick={() => setInputting(true)}>
-            {field.value ?? 'Group'}
+            {field.value ?? "Group"}
           </p>
         )
       }

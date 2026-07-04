@@ -4,7 +4,7 @@
  */
 
 export enum PanelType {
-  NodeFormPanel = 'nodeFormPanel',
-  TestRunFormPanel = 'testRunFormPanel',
-  ProblemPanel = 'problemPanel',
+  NodeFormPanel = "nodeFormPanel",
+  TestRunFormPanel = "testRunFormPanel",
+  ProblemPanel = "problemPanel",
 }

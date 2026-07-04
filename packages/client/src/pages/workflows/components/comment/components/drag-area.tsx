@@ -3,11 +3,11 @@
  * SPDX-License-Identifier: MIT
  */
 
-import { CSSProperties, MouseEvent, TouchEvent, type FC } from 'react';
+import type { CSSProperties, MouseEvent, TouchEvent, FC } from "react";
 
-import { useNodeRender, usePlayground } from '@flowgram.ai/free-layout-editor';
+import { useNodeRender, usePlayground } from "@flowgram.ai/free-layout-editor";
 
-import { type CommentEditorModel } from '../model';
+import type { CommentEditorModel } from "../model";
 
 interface IDragArea {
   model: CommentEditorModel;

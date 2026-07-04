@@ -3,12 +3,12 @@
  * SPDX-License-Identifier: MIT
  */
 
-import type { FC, ReactNode, MouseEvent, CSSProperties, TouchEvent } from 'react';
+import type { FC, ReactNode, MouseEvent, CSSProperties, TouchEvent } from "react";
 
-import { useWatch } from '@flowgram.ai/free-layout-editor';
+import { useWatch } from "@flowgram.ai/free-layout-editor";
 
-import { GroupField } from '../constant';
-import { defaultColor, groupColors } from '../color';
+import { GroupField } from "../constant";
+import { defaultColor, groupColors } from "../color";
 
 interface GroupHeaderProps {
   onDrag: (e: MouseEvent | TouchEvent) => void;
@@ -31,8 +31,8 @@ export const GroupHeader: FC<GroupHeaderProps> = ({ onDrag, onFocus, onBlur, chi
       onBlur={onBlur}
       style={{
         ...style,
-        backgroundColor: color['50'],
-        borderColor: color['300'],
+        backgroundColor: color["50"],
+        borderColor: color["300"],
       }}
     >
       {children}

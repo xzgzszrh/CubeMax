@@ -3,10 +3,10 @@
  * SPDX-License-Identifier: MIT
  */
 
-import { useControlTips } from './use-control';
-import { GroupTipsStyle } from './style';
-import { isMacOS } from './is-mac-os';
-import { IconClose } from './icon-close';
+import { useControlTips } from "./use-control";
+import { GroupTipsStyle } from "./style";
+import { isMacOS } from "./is-mac-os";
+import { IconClose } from "./icon-close";
 
 export const GroupTips = () => {
   const { visible, close, closeForever } = useControlTips();
@@ -16,10 +16,10 @@ export const GroupTips = () => {
   }
 
   return (
-    <GroupTipsStyle className={'workflow-group-tips'}>
+    <GroupTipsStyle className={"workflow-group-tips"}>
       <div className="container">
         <div className="content">
-          <p className="text">{`Hold ${isMacOS ? 'Cmd ⌘' : 'Ctrl'} to drag node out`}</p>
+          <p className="text">{`Hold ${isMacOS ? "Cmd ⌘" : "Ctrl"} to drag node out`}</p>
           <div
             className="space"
             style={{

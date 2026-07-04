@@ -3,12 +3,12 @@
  * SPDX-License-Identifier: MIT
  */
 
-import { useEffect } from 'react';
+import { useEffect } from "react";
 
-import { TestRunFormMeta, TestRunFormMetaItem } from '../testrun-form/type';
+import type { TestRunFormMeta, TestRunFormMetaItem } from "../testrun-form/type";
 
 const getDefaultValue = (meta: TestRunFormMetaItem) => {
-  if (['object', 'array', 'map'].includes(meta.type) && typeof meta.defaultValue === 'string') {
+  if (["object", "array", "map"].includes(meta.type) && typeof meta.defaultValue === "string") {
     return JSON.parse(meta.defaultValue);
   }
   return meta.defaultValue;

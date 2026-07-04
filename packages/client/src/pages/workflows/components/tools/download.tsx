@@ -3,32 +3,33 @@
  * SPDX-License-Identifier: MIT
  */
 
-import { useEffect, useState, type FC } from 'react';
+import { useEffect, useState } from "react";
+import type { FC } from "react";
 
-import { usePlayground, useService } from '@flowgram.ai/free-layout-editor';
-import { FlowDownloadFormat, FlowDownloadService } from '@flowgram.ai/export-plugin';
-import { IconButton, Toast, Dropdown, Tooltip } from '@douyinfe/semi-ui';
-import { IconFilledArrowDown } from '@douyinfe/semi-icons';
+import { usePlayground, useService } from "@flowgram.ai/free-layout-editor";
+import { FlowDownloadFormat, FlowDownloadService } from "@flowgram.ai/export-plugin";
+import { IconButton, Toast, Dropdown, Tooltip } from "@douyinfe/semi-ui";
+import { IconFilledArrowDown } from "@douyinfe/semi-icons";
 
 const formatOptions = [
   {
-    label: 'PNG',
+    label: "PNG",
     value: FlowDownloadFormat.PNG,
   },
   {
-    label: 'JPEG',
+    label: "JPEG",
     value: FlowDownloadFormat.JPEG,
   },
   {
-    label: 'SVG',
+    label: "SVG",
     value: FlowDownloadFormat.SVG,
   },
   {
-    label: 'JSON',
+    label: "JSON",
     value: FlowDownloadFormat.JSON,
   },
   {
-    label: 'YAML',
+    label: "YAML",
     value: FlowDownloadFormat.YAML,
   },
 ];
@@ -63,7 +64,7 @@ export const DownloadTool: FC = () => {
     <IconButton
       type="tertiary"
       theme="borderless"
-      className={visible ? '!coz-mg-secondary-pressed' : undefined}
+      className={visible ? "!coz-mg-secondary-pressed" : undefined}
       icon={<IconFilledArrowDown />}
       loading={downloading}
       onClick={() => setVisible(true)}

@@ -3,11 +3,11 @@
  * SPDX-License-Identifier: MIT
  */
 
-import { nanoid } from 'nanoid';
+import { nanoid } from "nanoid";
 
-import { WorkflowNodeType } from '../constants';
-import { FlowNodeRegistry } from '../../typings';
-import iconLLM from '../../assets/icon-llm.jpg';
+import { WorkflowNodeType } from "../constants";
+import type { FlowNodeRegistry } from "../../typings";
+import iconLLM from "../../assets/icon-llm.jpg";
 
 let index = 0;
 export const LLMNodeRegistry: FlowNodeRegistry = {
@@ -15,7 +15,7 @@ export const LLMNodeRegistry: FlowNodeRegistry = {
   info: {
     icon: iconLLM,
     description:
-      'Call the large language model and use variables and prompt words to generate responses.',
+      "Call the large language model and use variables and prompt words to generate responses.",
   },
   meta: {
     size: {
@@ -26,69 +26,69 @@ export const LLMNodeRegistry: FlowNodeRegistry = {
   onAdd() {
     return {
       id: `llm_${nanoid(5)}`,
-      type: 'llm',
+      type: "llm",
       data: {
         title: `LLM_${++index}`,
         inputsValues: {
           modelName: {
-            type: 'constant',
-            content: 'gpt-3.5-turbo',
+            type: "constant",
+            content: "gpt-3.5-turbo",
           },
           apiKey: {
-            type: 'constant',
-            content: 'sk-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
+            type: "constant",
+            content: "sk-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
           },
           apiHost: {
-            type: 'constant',
-            content: 'https://mock-ai-url/api/v3',
+            type: "constant",
+            content: "https://mock-ai-url/api/v3",
           },
           temperature: {
-            type: 'constant',
+            type: "constant",
             content: 0.5,
           },
           systemPrompt: {
-            type: 'template',
-            content: '# Role\nYou are an AI assistant.\n',
+            type: "template",
+            content: "# Role\nYou are an AI assistant.\n",
           },
           prompt: {
-            type: 'template',
-            content: '',
+            type: "template",
+            content: "",
           },
         },
         inputs: {
-          type: 'object',
-          required: ['modelName', 'apiKey', 'apiHost', 'temperature', 'prompt'],
+          type: "object",
+          required: ["modelName", "apiKey", "apiHost", "temperature", "prompt"],
           properties: {
             modelName: {
-              type: 'string',
+              type: "string",
             },
             apiKey: {
-              type: 'string',
+              type: "string",
             },
             apiHost: {
-              type: 'string',
+              type: "string",
             },
             temperature: {
-              type: 'number',
+              type: "number",
             },
             systemPrompt: {
-              type: 'string',
+              type: "string",
               extra: {
-                formComponent: 'prompt-editor',
+                formComponent: "prompt-editor",
               },
             },
             prompt: {
-              type: 'string',
+              type: "string",
               extra: {
-                formComponent: 'prompt-editor',
+                formComponent: "prompt-editor",
               },
             },
           },
         },
         outputs: {
-          type: 'object',
+          type: "object",
           properties: {
-            result: { type: 'string' },
+            result: { type: "string" },
           },
         },
       },

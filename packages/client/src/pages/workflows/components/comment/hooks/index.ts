@@ -3,5 +3,5 @@
  * SPDX-License-Identifier: MIT
  */
 
-export { useSize } from './use-size';
-export { usePlaceholder } from './use-placeholder';
+export { useSize } from "./use-size";
+export { usePlaceholder } from "./use-placeholder";

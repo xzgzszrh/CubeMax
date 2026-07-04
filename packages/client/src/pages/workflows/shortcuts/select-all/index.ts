@@ -3,19 +3,19 @@
  * SPDX-License-Identifier: MIT
  */
 
-import {
+import { WorkflowDocument } from "@flowgram.ai/free-layout-editor";
+import type {
   FreeLayoutPluginContext,
   Playground,
   ShortcutsHandler,
-  WorkflowDocument,
-} from '@flowgram.ai/free-layout-editor';
+} from "@flowgram.ai/free-layout-editor";
 
-import { FlowCommandId } from '../constants';
+import { FlowCommandId } from "../constants";
 
 export class SelectAllShortcut implements ShortcutsHandler {
   public commandId = FlowCommandId.SELECT_ALL;
 
-  public shortcuts = ['meta a', 'ctrl a'];
+  public shortcuts = ["meta a", "ctrl a"];
 
   private document: WorkflowDocument;
 

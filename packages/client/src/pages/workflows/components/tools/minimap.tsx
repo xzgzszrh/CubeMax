@@ -3,9 +3,9 @@
  * SPDX-License-Identifier: MIT
  */
 
-import { MinimapRender } from '@flowgram.ai/minimap-plugin';
+import { MinimapRender } from "@flowgram.ai/minimap-plugin";
 
-import { MinimapContainer } from './styles';
+import { MinimapContainer } from "./styles";
 
 export const Minimap = ({ visible }: { visible?: boolean }) => {
   if (!visible) {
@@ -16,12 +16,12 @@ export const Minimap = ({ visible }: { visible?: boolean }) => {
       <MinimapRender
         panelStyles={{}}
         containerStyles={{
-          pointerEvents: 'auto',
-          position: 'relative',
-          top: 'unset',
-          right: 'unset',
-          bottom: 'unset',
-          left: 'unset',
+          pointerEvents: "auto",
+          position: "relative",
+          top: "unset",
+          right: "unset",
+          bottom: "unset",
+          left: "unset",
         }}
         inactiveStyle={{
           opacity: 1,

@@ -3,12 +3,13 @@
  * SPDX-License-Identifier: MIT
  */
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from "react";
 
-import { debounce } from 'lodash-es';
-import { useService, WorkflowDocument } from '@flowgram.ai/free-layout-editor';
+import { debounce } from "lodash-es";
+import { useService, WorkflowDocument } from "@flowgram.ai/free-layout-editor";
 
-import { ValidateService, type ValidateResult } from '../../services/validate-service';
+import { ValidateService } from "../../services/validate-service";
+import type { ValidateResult } from "../../services/validate-service";
 
 const DEBOUNCE_TIME = 1000;
 
@@ -26,7 +27,7 @@ export const useWatchValidate = () => {
       setResults(res);
       setLoading(false);
     }, DEBOUNCE_TIME),
-    [validateService]
+    [validateService],
   );
 
   const validate = () => {

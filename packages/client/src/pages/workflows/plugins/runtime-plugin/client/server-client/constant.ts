@@ -3,10 +3,10 @@
  * SPDX-License-Identifier: MIT
  */
 
-import { ServerConfig } from '../../type';
+import type { ServerConfig } from "../../type";
 
 export const DEFAULT_SERVER_CONFIG: ServerConfig = {
-  domain: 'localhost',
+  domain: "localhost",
   port: 4000,
-  protocol: 'http',
+  protocol: "http",
 };

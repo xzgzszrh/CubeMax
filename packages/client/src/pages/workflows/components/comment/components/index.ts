@@ -3,6 +3,6 @@
  * SPDX-License-Identifier: MIT
  */
 
-import './index.css';
+import "./index.css";
 
-export { CommentRender } from './render';
+export { CommentRender } from "./render";

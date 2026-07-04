@@ -3,18 +3,18 @@
  * SPDX-License-Identifier: MIT
  */
 
-import { useCallback, useEffect, startTransition } from 'react';
+import { useCallback, useEffect, startTransition } from "react";
 
 import {
   PlaygroundEntityContext,
   useRefresh,
   useClientContext,
-} from '@flowgram.ai/free-layout-editor';
+} from "@flowgram.ai/free-layout-editor";
 
-import { FlowNodeMeta } from '../../typings';
-import { useNodeFormPanel } from '../../plugins/panel-manager-plugin/hooks';
-import { IsSidebarContext } from '../../context';
-import { SidebarNodeRenderer } from './sidebar-node-renderer';
+import type { FlowNodeMeta } from "../../typings";
+import { useNodeFormPanel } from "../../plugins/panel-manager-plugin/hooks";
+import { IsSidebarContext } from "../../context";
+import { SidebarNodeRenderer } from "./sidebar-node-renderer";
 
 export interface NodeFormPanelProps {
   nodeId: string;

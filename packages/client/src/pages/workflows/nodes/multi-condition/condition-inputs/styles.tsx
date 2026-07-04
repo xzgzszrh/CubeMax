@@ -30,7 +30,7 @@ export const ConditionBranchLogic = styled.div`
   align-items: center;
 
   &::before {
-    content: '';
+    content: "";
     position: absolute;
     width: 50%;
     border: 1px solid var(--semi-color-tertiary-light-active);

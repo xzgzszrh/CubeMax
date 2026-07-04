@@ -3,18 +3,19 @@
  * SPDX-License-Identifier: MIT
  */
 
-import { useLayoutEffect } from 'react';
+import { useLayoutEffect } from "react";
 
-import { nanoid } from 'nanoid';
-import { Field, FieldArray, I18n } from '@flowgram.ai/free-layout-editor';
-import { ConditionRow, ConditionRowValueType } from '@flowgram.ai/form-materials';
-import { Button } from '@douyinfe/semi-ui';
-import { IconPlus, IconCrossCircleStroked } from '@douyinfe/semi-icons';
+import { nanoid } from "nanoid";
+import { Field, FieldArray, I18n } from "@flowgram.ai/free-layout-editor";
+import { ConditionRow } from "@flowgram.ai/form-materials";
+import type { ConditionRowValueType } from "@flowgram.ai/form-materials";
+import { Button } from "@douyinfe/semi-ui";
+import { IconPlus, IconCrossCircleStroked } from "@douyinfe/semi-icons";
 
-import { useNodeRenderContext } from '../../../hooks';
-import { FormItem } from '../../../form-components';
-import { Feedback } from '../../../form-components';
-import { ConditionPort } from './styles';
+import { useNodeRenderContext } from "../../../hooks";
+import { FormItem } from "../../../form-components";
+import { Feedback } from "../../../form-components";
+import { ConditionPort } from "./styles";
 
 interface ConditionValue {
   key: string;
@@ -38,10 +39,10 @@ export function ConditionInputs() {
             <Field<ConditionValue> key={child.name} name={child.name}>
               {({ field: childField, fieldState: childState }) => (
                 <FormItem name="if" type="boolean" required={true} labelWidth={50}>
-                  <div style={{ display: 'flex', alignItems: 'center' }}>
+                  <div style={{ display: "flex", alignItems: "center" }}>
                     <ConditionRow
                       readonly={readonly}
-                      style={{ flexGrow: 1, overflow: 'hidden' }}
+                      style={{ flexGrow: 1, overflow: "hidden" }}
                       value={childField.value.value}
                       onChange={(v) => childField.onChange({ value: v, key: childField.value.key })}
                     />
@@ -73,11 +74,11 @@ export function ConditionInputs() {
                 onClick={() =>
                   field.append({
                     key: `if_${nanoid(6)}`,
-                    value: { type: 'expression', content: '' },
+                    value: { type: "expression", content: "" },
                   })
                 }
               >
-                {I18n.t('Add')}
+                {I18n.t("Add")}
               </Button>
             </div>
           )}

@@ -3,15 +3,16 @@
  * SPDX-License-Identifier: MIT
  */
 
-import { FC, useState } from 'react';
+import { useState } from "react";
+import type { FC } from "react";
 
-import classNames from 'classnames';
-import { Tag } from '@douyinfe/semi-ui';
-import { IconSmallTriangleDown } from '@douyinfe/semi-icons';
+import classNames from "classnames";
+import { Tag } from "@douyinfe/semi-ui";
+import { IconSmallTriangleDown } from "@douyinfe/semi-icons";
 
-import { DataStructureViewer } from '../viewer';
+import { DataStructureViewer } from "../viewer";
 
-import styles from './index.module.less';
+import styles from "./index.module.less";
 
 interface NodeStatusGroupProps {
   title: string;
@@ -38,19 +39,19 @@ export const NodeStatusGroup: FC<NodeStatusGroupProps> = ({
   return (
     <>
       <div
-        className={styles['node-status-group']}
+        className={styles["node-status-group"]}
         onClick={() => hasContent && !disableCollapse && setIsExpanded(!isExpanded)}
       >
         {!disableCollapse && (
           <IconSmallTriangleDown
-            className={classNames(styles['node-status-group-icon'], {
-              [styles['node-status-group-icon-expanded']]: isExpanded && hasContent,
+            className={classNames(styles["node-status-group-icon"], {
+              [styles["node-status-group-icon-expanded"]]: isExpanded && hasContent,
             })}
           />
         )}
         <span>{title}:</span>
         {!hasContent && (
-          <Tag size="small" className={styles['node-status-group-tag']}>
+          <Tag size="small" className={styles["node-status-group-tag"]}>
             null
           </Tag>
         )}

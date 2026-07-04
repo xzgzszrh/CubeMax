@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: MIT
  */
 
-import type { CommentEditorEvent } from './constant';
+import type { CommentEditorEvent } from "./constant";
 
 interface CommentEditorChangeEvent {
   type: CommentEditorEvent.Change;

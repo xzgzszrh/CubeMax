@@ -152,11 +152,19 @@ export const router = createBrowserRouter([
           },
           {
             path: "/workflows",
-            element: <WorkflowsIndexPage />,
+            element: (
+              <AuthGuard>
+                <WorkflowsIndexPage />
+              </AuthGuard>
+            ),
           },
           {
             path: "/workflows/:id",
-            element: <WorkflowEditorApp />,
+            element: (
+              <AuthGuard>
+                <WorkflowEditorApp />
+              </AuthGuard>
+            ),
           },
           {
             path: "*",

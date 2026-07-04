@@ -3,17 +3,17 @@
  * SPDX-License-Identifier: MIT
  */
 
-import { FlowNodeJSON } from '@flowgram.ai/free-layout-editor';
-import { IFlowValue, IJsonSchema } from '@flowgram.ai/form-materials';
+import type { FlowNodeJSON } from "@flowgram.ai/free-layout-editor";
+import type { IFlowValue, IJsonSchema } from "@flowgram.ai/form-materials";
 
 export interface CodeNodeJSON extends FlowNodeJSON {
   data: {
     title: string;
     inputsValues: Record<string, IFlowValue>;
-    inputs: IJsonSchema<'object'>;
-    outputs: IJsonSchema<'object'>;
+    inputs: IJsonSchema<"object">;
+    outputs: IJsonSchema<"object">;
     script: {
-      language: 'javascript';
+      language: "javascript";
       content: string;
     };
   };

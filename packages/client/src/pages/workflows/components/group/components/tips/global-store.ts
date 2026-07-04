@@ -5,8 +5,8 @@
 
 /* eslint-disable @typescript-eslint/naming-convention -- no need */
 
-const STORAGE_KEY = 'workflow-move-into-group-tip-visible';
-const STORAGE_VALUE = 'false';
+const STORAGE_KEY = "workflow-move-into-group-tip-visible";
+const STORAGE_VALUE = "false";
 
 export class TipsGlobalStore {
   private static _instance?: TipsGlobalStore;

@@ -3,5 +3,5 @@
  * SPDX-License-Identifier: MIT
  */
 
-export { GroupNodeRender } from './node-render';
-export { IconGroup } from './icon-group';
+export { GroupNodeRender } from "./node-render";
+export { IconGroup } from "./icon-group";

@@ -3,11 +3,11 @@
  * SPDX-License-Identifier: MIT
  */
 
-import { FormRenderProps, FormMeta } from '@flowgram.ai/free-layout-editor';
-import { Avatar } from '@douyinfe/semi-ui';
+import type { FormRenderProps, FormMeta } from "@flowgram.ai/free-layout-editor";
+import { Avatar } from "@douyinfe/semi-ui";
 
-import { FlowNodeJSON } from '../../typings';
-import iconStart from '../../assets/icon-start.jpg';
+import type { FlowNodeJSON } from "../../typings";
+import iconStart from "../../assets/icon-start.jpg";
 
 export const renderForm = ({ form }: FormRenderProps<FlowNodeJSON>) => (
   <>
@@ -15,9 +15,9 @@ export const renderForm = ({ form }: FormRenderProps<FlowNodeJSON>) => (
       style={{
         width: 60,
         height: 60,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
       }}
     >
       <Avatar
@@ -25,8 +25,8 @@ export const renderForm = ({ form }: FormRenderProps<FlowNodeJSON>) => (
         style={{
           width: 40,
           height: 40,
-          borderRadius: '50%',
-          cursor: 'move',
+          borderRadius: "50%",
+          cursor: "move",
         }}
         alt="Icon"
         src={iconStart}

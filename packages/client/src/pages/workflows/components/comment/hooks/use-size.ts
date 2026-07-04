@@ -3,20 +3,20 @@
  * SPDX-License-Identifier: MIT
  */
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from "react";
 
 import {
   FlowNodeFormData,
-  FormModelV2,
   FreeOperationType,
   HistoryService,
   TransformData,
   useCurrentEntity,
   usePlayground,
   useService,
-} from '@flowgram.ai/free-layout-editor';
+} from "@flowgram.ai/free-layout-editor";
+import type { FormModelV2 } from "@flowgram.ai/free-layout-editor";
 
-import { CommentEditorFormField } from '../constant';
+import { CommentEditorFormField } from "../constant";
 
 export const useSize = () => {
   const node = useCurrentEntity();
@@ -27,7 +27,7 @@ export const useSize = () => {
   const transform = node.getData(TransformData);
   const formModel = node.getData(FlowNodeFormData).getFormModel<FormModelV2>();
   const formSize = formModel.getValueIn<{ width: number; height: number }>(
-    CommentEditorFormField.Size
+    CommentEditorFormField.Size,
   );
 
   const [width, setWidth] = useState(formSize?.width ?? size.width);
@@ -36,7 +36,7 @@ export const useSize = () => {
   // 初始化表单值
   useEffect(() => {
     const initSize = formModel.getValueIn<{ width: number; height: number }>(
-      CommentEditorFormField.Size
+      CommentEditorFormField.Size,
     );
     if (!initSize) {
       formModel.setValueIn(CommentEditorFormField.Size, {
@@ -49,11 +49,11 @@ export const useSize = () => {
   // 同步表单外部值变化：初始化/undo/redo/协同
   useEffect(() => {
     const disposer = formModel.onFormValuesChange(({ name }) => {
-      if (name !== CommentEditorFormField.Size && name !== '') {
+      if (name !== CommentEditorFormField.Size && name !== "") {
         return;
       }
       const newSize = formModel.getValueIn<{ width: number; height: number }>(
-        CommentEditorFormField.Size
+        CommentEditorFormField.Size,
       );
       if (!newSize) {
         return;
@@ -145,7 +145,7 @@ export const useSize = () => {
           },
           {
             noApply: true,
-          }
+          },
         );
         formModel.setValueIn(CommentEditorFormField.Size, {
           width: resizeState.width,

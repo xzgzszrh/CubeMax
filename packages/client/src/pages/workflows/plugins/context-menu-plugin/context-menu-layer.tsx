@@ -3,21 +3,24 @@
  * SPDX-License-Identifier: MIT
  */
 
-import { NodePanelResult, WorkflowNodePanelService } from '@flowgram.ai/free-node-panel-plugin';
+import { WorkflowNodePanelService } from "@flowgram.ai/free-node-panel-plugin";
+import type { NodePanelResult } from "@flowgram.ai/free-node-panel-plugin";
 import {
   Layer,
   injectable,
   inject,
   FreeLayoutPluginContext,
   WorkflowHoverService,
-  WorkflowNodeEntity,
-  WorkflowNodeJSON,
   WorkflowSelectService,
   WorkflowDocument,
-  PositionSchema,
   WorkflowDragService,
-} from '@flowgram.ai/free-layout-editor';
-import { ContainerUtils } from '@flowgram.ai/free-container-plugin';
+} from "@flowgram.ai/free-layout-editor";
+import type {
+  WorkflowNodeEntity,
+  WorkflowNodeJSON,
+  PositionSchema,
+} from "@flowgram.ai/free-layout-editor";
+import { ContainerUtils } from "@flowgram.ai/free-container-plugin";
 
 @injectable()
 export class ContextMenuLayer extends Layer {
@@ -34,7 +37,7 @@ export class ContextMenuLayer extends Layer {
   @inject(WorkflowDragService) dragService: WorkflowDragService;
 
   onReady() {
-    this.listenPlaygroundEvent('contextmenu', (e) => {
+    this.listenPlaygroundEvent("contextmenu", (e) => {
       if (this.config.readonlyOrDisabled) return;
       this.openNodePanel(e);
       e.preventDefault();
@@ -61,7 +64,7 @@ export class ContextMenuLayer extends Layer {
           nodeType,
           position,
           nodeJSON ?? ({} as WorkflowNodeJSON),
-          containerNode?.id
+          containerNode?.id,
         );
         // select the newly created node - 选择新创建的节点
         this.selectService.select(node);

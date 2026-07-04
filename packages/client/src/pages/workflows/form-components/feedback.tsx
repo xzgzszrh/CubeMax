@@ -3,12 +3,12 @@
  * SPDX-License-Identifier: MIT
  */
 
-import styled from 'styled-components';
-import { FieldError, FieldState, FieldWarning } from '@flowgram.ai/free-layout-editor';
+import styled from "styled-components";
+import type { FieldError, FieldState, FieldWarning } from "@flowgram.ai/free-layout-editor";
 
 interface StatePanelProps {
-  errors?: FieldState['errors'];
-  warnings?: FieldState['warnings'];
+  errors?: FieldState["errors"];
+  warnings?: FieldState["warnings"];
   invalid?: boolean;
 }
 

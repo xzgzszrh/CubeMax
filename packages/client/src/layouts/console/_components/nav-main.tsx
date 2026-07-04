@@ -52,6 +52,18 @@ function getVisibleChildren(menu: MenuItem): MenuItem[] {
   );
 }
 
+function normalizePath(path: string) {
+  return path.replace(/\/+/g, "/").replace(/\/$/, "") || "/";
+}
+
+function getMenuTargetPath(menu: MenuItem, menuPath: string) {
+  if (menu.component?.startsWith("/") && !menu.component.startsWith("/console")) {
+    return normalizePath(menu.component);
+  }
+
+  return normalizePath(`/console/${menuPath}`);
+}
+
 function NavMenuItem({ menu, basePath = "" }: { menu: MenuItem; basePath?: string }) {
   const location = useLocation();
   const { state, setOpenMobile, isMobile } = useSidebar();
@@ -62,8 +74,9 @@ function NavMenuItem({ menu, basePath = "" }: { menu: MenuItem; basePath?: strin
       setOpenMobile(false);
     }
   };
-  const menuPath = basePath ? `${basePath}/${menu.path}`.replace(/\/+/g, "/") : menu.path;
-  const fullPath = `/console/${menuPath}`.replace(/\/+/g, "/");
+  const relativePath = menu.path ?? "";
+  const menuPath = basePath ? `${basePath}/${relativePath}`.replace(/\/+/g, "/") : relativePath;
+  const fullPath = getMenuTargetPath(menu, menuPath);
   const visibleChildren = getVisibleChildren(menu);
   const isActive = location.pathname.startsWith(fullPath);
 
@@ -86,7 +99,8 @@ function NavMenuItem({ menu, basePath = "" }: { menu: MenuItem; basePath?: strin
             <HoverCardContent side="right" align="start" className="w-48 p-1">
               <div className="flex flex-col gap-0.5">
                 {visibleChildren.map((child) => {
-                  const childPath = `/console/${menuPath}/${child.path}`.replace(/\/+/g, "/");
+                  const childMenuPath = `${menuPath}/${child.path ?? ""}`.replace(/\/+/g, "/");
+                  const childPath = getMenuTargetPath(child, childMenuPath);
                   const isChildActive = location.pathname === childPath;
                   return (
                     <Link
@@ -130,7 +144,8 @@ function NavMenuItem({ menu, basePath = "" }: { menu: MenuItem; basePath?: strin
           <CollapsibleContent>
             <SidebarMenuSub>
               {visibleChildren.map((child) => {
-                const childPath = `/console/${menuPath}/${child.path}`.replace(/\/+/g, "/");
+                const childMenuPath = `${menuPath}/${child.path ?? ""}`.replace(/\/+/g, "/");
+                const childPath = getMenuTargetPath(child, childMenuPath);
                 return (
                   <SidebarMenuSubItem key={child.id}>
                     <SidebarMenuSubButton asChild isActive={location.pathname === childPath}>

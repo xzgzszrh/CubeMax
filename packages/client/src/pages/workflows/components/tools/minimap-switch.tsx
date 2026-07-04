@@ -3,9 +3,9 @@
  * SPDX-License-Identifier: MIT
  */
 
-import { Tooltip, IconButton } from '@douyinfe/semi-ui';
+import { Tooltip, IconButton } from "@douyinfe/semi-ui";
 
-import { UIIconMinimap } from './styles';
+import { UIIconMinimap } from "./styles";
 
 export const MinimapSwitch = (props: {
   minimapVisible: boolean;

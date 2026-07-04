@@ -3,15 +3,11 @@
  * SPDX-License-Identifier: MIT
  */
 
-import { useEffect } from 'react';
+import { useEffect } from "react";
 
-import {
-  BaseVariableField,
-  GlobalScope,
-  useRefresh,
-  useService,
-} from '@flowgram.ai/free-layout-editor';
-import { JsonSchemaEditor, JsonSchemaUtils } from '@flowgram.ai/form-materials';
+import { GlobalScope, useRefresh, useService } from "@flowgram.ai/free-layout-editor";
+import type { BaseVariableField } from "@flowgram.ai/free-layout-editor";
+import { JsonSchemaEditor, JsonSchemaUtils } from "@flowgram.ai/form-materials";
 
 export function GlobalVariableEditor() {
   const globalScope = useService(GlobalScope);
@@ -34,7 +30,7 @@ export function GlobalVariableEditor() {
     return null;
   }
 
-  const value = globalVar.type ? JsonSchemaUtils.astToSchema(globalVar.type) : { type: 'object' };
+  const value = globalVar.type ? JsonSchemaUtils.astToSchema(globalVar.type) : { type: "object" };
 
   return (
     <JsonSchemaEditor

@@ -3,11 +3,11 @@
  * SPDX-License-Identifier: MIT
  */
 
-import { CSSProperties, type FC } from 'react';
+import type { CSSProperties, FC } from "react";
 
-import { MouseTouchEvent, useNodeRender, usePlayground } from '@flowgram.ai/free-layout-editor';
+import { MouseTouchEvent, useNodeRender, usePlayground } from "@flowgram.ai/free-layout-editor";
 
-import type { CommentEditorModel } from '../model';
+import type { CommentEditorModel } from "../model";
 
 interface IResizeArea {
   model: CommentEditorModel;
@@ -32,7 +32,7 @@ export const ResizeArea: FC<IResizeArea> = (props) => {
   const { selectNode } = useNodeRender();
 
   const handleResizeStart = (
-    startResizeEvent: React.MouseEvent | React.TouchEvent | MouseEvent
+    startResizeEvent: React.MouseEvent | React.TouchEvent | MouseEvent,
   ) => {
     MouseTouchEvent.preventDefault(startResizeEvent);
     startResizeEvent.stopPropagation();
@@ -45,7 +45,7 @@ export const ResizeArea: FC<IResizeArea> = (props) => {
     playground.node.focus(); // 防止节点无法被删除
 
     const { clientX: startX, clientY: startY } = MouseTouchEvent.getEventCoord(
-      startResizeEvent as MouseEvent
+      startResizeEvent as MouseEvent,
     );
 
     const handleResizing = (mouseMoveEvent: MouseEvent | TouchEvent) => {
@@ -61,20 +61,20 @@ export const ResizeArea: FC<IResizeArea> = (props) => {
 
     const handleResizeEnd = () => {
       resizeEnd();
-      document.removeEventListener('mousemove', handleResizing);
-      document.removeEventListener('mouseup', handleResizeEnd);
-      document.removeEventListener('click', handleResizeEnd);
-      document.removeEventListener('touchmove', handleResizing);
-      document.removeEventListener('touchend', handleResizeEnd);
-      document.removeEventListener('touchcancel', handleResizeEnd);
+      document.removeEventListener("mousemove", handleResizing);
+      document.removeEventListener("mouseup", handleResizeEnd);
+      document.removeEventListener("click", handleResizeEnd);
+      document.removeEventListener("touchmove", handleResizing);
+      document.removeEventListener("touchend", handleResizeEnd);
+      document.removeEventListener("touchcancel", handleResizeEnd);
     };
 
-    document.addEventListener('mousemove', handleResizing);
-    document.addEventListener('mouseup', handleResizeEnd);
-    document.addEventListener('click', handleResizeEnd);
-    document.addEventListener('touchmove', handleResizing, { passive: false });
-    document.addEventListener('touchend', handleResizeEnd);
-    document.addEventListener('touchcancel', handleResizeEnd);
+    document.addEventListener("mousemove", handleResizing);
+    document.addEventListener("mouseup", handleResizeEnd);
+    document.addEventListener("click", handleResizeEnd);
+    document.addEventListener("touchmove", handleResizing, { passive: false });
+    document.addEventListener("touchend", handleResizeEnd);
+    document.addEventListener("touchcancel", handleResizeEnd);
   };
 
   return (

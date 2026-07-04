@@ -3,17 +3,18 @@
  * SPDX-License-Identifier: MIT
  */
 
-import { Field, FormMeta } from '@flowgram.ai/free-layout-editor';
+import { Field } from "@flowgram.ai/free-layout-editor";
+import type { FormMeta } from "@flowgram.ai/free-layout-editor";
 import {
   createInferInputsPlugin,
   DisplayInputsValues,
-  IFlowValue,
   InputsValues,
-} from '@flowgram.ai/form-materials';
+} from "@flowgram.ai/form-materials";
+import type { IFlowValue } from "@flowgram.ai/form-materials";
 
-import { defaultFormMeta } from '../default-form-meta';
-import { useIsSidebar } from '../../hooks';
-import { FormHeader, FormContent } from '../../form-components';
+import { defaultFormMeta } from "../default-form-meta";
+import { useIsSidebar } from "../../hooks";
+import { FormHeader, FormContent } from "../../form-components";
 
 export const renderForm = () => {
   const isSidebar = useIsSidebar();
@@ -54,8 +55,8 @@ export const formMeta: FormMeta = {
   render: renderForm,
   plugins: [
     createInferInputsPlugin({
-      sourceKey: 'inputsValues',
-      targetKey: 'inputs',
+      sourceKey: "inputsValues",
+      targetKey: "inputs",
     }),
   ],
 };

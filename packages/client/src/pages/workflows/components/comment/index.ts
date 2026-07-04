@@ -3,4 +3,4 @@
  * SPDX-License-Identifier: MIT
  */
 
-export { CommentRender } from './components';
+export { CommentRender } from "./components";

@@ -3,9 +3,10 @@
  * SPDX-License-Identifier: MIT
  */
 
-import { usePlayground, WorkflowLineEntity } from '@flowgram.ai/free-layout-editor';
+import { usePlayground } from "@flowgram.ai/free-layout-editor";
+import type { WorkflowLineEntity } from "@flowgram.ai/free-layout-editor";
 
-import './index.less';
+import "./index.less";
 
 export const useVisible = (params: {
   line: WorkflowLineEntity;

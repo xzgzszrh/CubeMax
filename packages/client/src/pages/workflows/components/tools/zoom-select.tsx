@@ -3,12 +3,12 @@
  * SPDX-License-Identifier: MIT
  */
 
-import { useState } from 'react';
+import { useState } from "react";
 
-import { usePlayground, usePlaygroundTools } from '@flowgram.ai/free-layout-editor';
-import { Divider, Dropdown } from '@douyinfe/semi-ui';
+import { usePlayground, usePlaygroundTools } from "@flowgram.ai/free-layout-editor";
+import { Divider, Dropdown } from "@douyinfe/semi-ui";
 
-import { SelectZoom } from './styles';
+import { SelectZoom } from "./styles";
 
 export const ZoomSelect = () => {
   const tools = usePlaygroundTools({ maxZoom: 2, minZoom: 0.25 });

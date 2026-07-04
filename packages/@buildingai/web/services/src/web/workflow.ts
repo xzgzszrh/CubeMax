@@ -1,9 +1,11 @@
 import { useAuthStore } from "@buildingai/stores";
 import type { MutationOptionsUtil, QueryOptionsUtil } from "@buildingai/web-types";
-import { useMutation, useQuery } from "@tanstack/react-query";
-import { nanoid } from "nanoid";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { apiHttpClient, generateWebApiBase } from "../base";
+
+const WORKFLOWS_PATH = "/workflows";
+const WORKFLOWS_QUERY_KEY = ["workflows"] as const;
 
 // ─────────────────────────────────────────────
 // Run single node
@@ -77,14 +79,9 @@ export interface WorkflowEdgeDto {
 export interface WorkflowItem {
     id: string;
     name: string;
-    code: string;
-    remark: string;
-    version: number;
-    isLatest: boolean;
-    isPublish: boolean;
-    nodes: WorkflowNodeDto[];
-    edges: WorkflowEdgeDto[];
-    env: Record<string, unknown>;
+    description?: string | null;
+    schema?: Record<string, unknown> | null;
+    createBy: string;
     createdAt: string;
     updatedAt: string;
 }
@@ -107,13 +104,24 @@ export interface ListWorkflowsResult {
     totalPages: number;
 }
 
+export const workflowQueryKeys = {
+    all: WORKFLOWS_QUERY_KEY,
+    listRoot: () => [...WORKFLOWS_QUERY_KEY, "list"] as const,
+    list: (params?: ListWorkflowsParams) => [...WORKFLOWS_QUERY_KEY, "list", params] as const,
+    detail: (id: string | undefined) => [...WORKFLOWS_QUERY_KEY, "detail", id] as const,
+};
+
+export function listWorkflows(params?: ListWorkflowsParams): Promise<ListWorkflowsResult> {
+    return apiHttpClient.get<ListWorkflowsResult>(WORKFLOWS_PATH, { params });
+}
+
 export function useWorkflowListQuery(
     params?: ListWorkflowsParams,
     options?: QueryOptionsUtil<ListWorkflowsResult>,
 ) {
     return useQuery<ListWorkflowsResult>({
-        queryKey: ["workflows", "list", params],
-        queryFn: () => apiHttpClient.get<ListWorkflowsResult>("/workflow", { params }),
+        queryKey: workflowQueryKeys.list(params),
+        queryFn: () => listWorkflows(params),
         ...options,
     });
 }
@@ -122,13 +130,17 @@ export function useWorkflowListQuery(
 // Workflow detail
 // ─────────────────────────────────────────────
 
+export function getWorkflowDetail(id: string): Promise<WorkflowItem> {
+    return apiHttpClient.get<WorkflowItem>(`${WORKFLOWS_PATH}/${id}`);
+}
+
 export function useWorkflowDetailQuery(
     id: string | undefined,
     options?: QueryOptionsUtil<WorkflowItem>,
 ) {
     return useQuery<WorkflowItem>({
-        queryKey: ["workflows", "detail", id],
-        queryFn: () => apiHttpClient.get<WorkflowItem>(`/workflow/${id}`),
+        queryKey: workflowQueryKeys.detail(id),
+        queryFn: () => getWorkflowDetail(id!),
         enabled: !!id,
         ...options,
     });
@@ -140,22 +152,27 @@ export function useWorkflowDetailQuery(
 
 export interface CreateWorkflowDto {
     name: string;
-    code: string;
-    remark?: string;
+    description?: string;
+    schema?: Record<string, unknown>;
+}
+
+export function createWorkflow(dto: CreateWorkflowDto): Promise<WorkflowItem> {
+    return apiHttpClient.post<WorkflowItem>(WORKFLOWS_PATH, dto);
 }
 
 export function useCreateWorkflowMutation(
     options?: MutationOptionsUtil<WorkflowItem, CreateWorkflowDto>,
 ) {
+    const queryClient = useQueryClient();
+
     return useMutation<WorkflowItem, Error, CreateWorkflowDto>({
-        mutationFn: (dto) => apiHttpClient.post<WorkflowItem>("/workflow", dto),
+        mutationFn: createWorkflow,
+        onSuccess: async (...args) => {
+            await queryClient.invalidateQueries({ queryKey: workflowQueryKeys.listRoot() });
+            options?.onSuccess?.(...args);
+        },
         ...options,
     });
-}
-
-/** 生成创建 workflow 所需的 code */
-export function generateWorkflowCode() {
-    return nanoid();
 }
 
 // ─────────────────────────────────────────────
@@ -163,15 +180,31 @@ export function generateWorkflowCode() {
 // ─────────────────────────────────────────────
 
 export interface UpdateWorkflowDto {
-    name: string;
-    remark?: string;
+    name?: string;
+    description?: string;
+    schema?: Record<string, unknown>;
+}
+
+export function updateWorkflow(id: string, dto: UpdateWorkflowDto): Promise<WorkflowItem> {
+    return apiHttpClient.patch<WorkflowItem>(`${WORKFLOWS_PATH}/${id}`, dto);
 }
 
 export function useUpdateWorkflowMutation(
     options?: MutationOptionsUtil<WorkflowItem, { id: string; dto: UpdateWorkflowDto }>,
 ) {
+    const queryClient = useQueryClient();
+
     return useMutation<WorkflowItem, Error, { id: string; dto: UpdateWorkflowDto }>({
-        mutationFn: ({ id, dto }) => apiHttpClient.patch<WorkflowItem>(`/workflow/${id}`, dto),
+        mutationFn: ({ id, dto }) => updateWorkflow(id, dto),
+        onSuccess: async (...args) => {
+            const [workflow, variables] = args;
+            await Promise.all([
+                queryClient.invalidateQueries({ queryKey: workflowQueryKeys.listRoot() }),
+                queryClient.invalidateQueries({ queryKey: workflowQueryKeys.detail(variables.id) }),
+            ]);
+            queryClient.setQueryData(workflowQueryKeys.detail(workflow.id), workflow);
+            options?.onSuccess?.(...args);
+        },
         ...options,
     });
 }
@@ -180,9 +213,19 @@ export function useUpdateWorkflowMutation(
 // Delete workflow
 // ─────────────────────────────────────────────
 
+export function deleteWorkflow(id: string): Promise<null> {
+    return apiHttpClient.delete<null>(`${WORKFLOWS_PATH}/${id}`);
+}
+
 export function useDeleteWorkflowMutation(options?: MutationOptionsUtil<null, string>) {
+    const queryClient = useQueryClient();
+
     return useMutation<null, Error, string>({
-        mutationFn: (id) => apiHttpClient.delete<null>(`/workflow/${id}`),
+        mutationFn: deleteWorkflow,
+        onSuccess: async (...args) => {
+            await queryClient.invalidateQueries({ queryKey: workflowQueryKeys.listRoot() });
+            options?.onSuccess?.(...args);
+        },
         ...options,
     });
 }
@@ -223,7 +266,12 @@ export function useSaveWorkflowNodesMutation(
 ) {
     return useMutation<WorkflowItem, Error, SaveWorkflowNodesDto>({
         mutationFn: (dto) =>
-            apiHttpClient.post<WorkflowItem>(`/workflow/${workflowId}/saveChart`, dto),
+            updateWorkflow(workflowId!, {
+                schema: {
+                    nodes: dto.nodes,
+                    edges: dto.edges,
+                },
+            }),
         ...options,
     });
 }
@@ -347,7 +395,7 @@ export function connectWorkflowRunSSE(
     onClose?: () => void,
 ): { close(): void } {
     return connectWebApiSSE({
-        path: `/workflow/${workflowId}/executeStream`,
+        path: `${WORKFLOWS_PATH}/${workflowId}/executeStream`,
         method: "POST",
         body: request,
         onError,

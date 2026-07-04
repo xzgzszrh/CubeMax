@@ -3,12 +3,13 @@
  * SPDX-License-Identifier: MIT
  */
 
-import { Field } from '@flowgram.ai/free-layout-editor';
-import { DisplayOutputs, IJsonSchema, JsonSchemaEditor } from '@flowgram.ai/form-materials';
-import { Divider } from '@douyinfe/semi-ui';
+import { Field } from "@flowgram.ai/free-layout-editor";
+import { DisplayOutputs, JsonSchemaEditor } from "@flowgram.ai/form-materials";
+import type { IJsonSchema } from "@flowgram.ai/form-materials";
+import { Divider } from "@douyinfe/semi-ui";
 
-import { useIsSidebar, useNodeRenderContext } from '../../../hooks';
-import { FormItem } from '../../../form-components';
+import { useIsSidebar, useNodeRenderContext } from "../../../hooks";
+import { FormItem } from "../../../form-components";
 
 export function Outputs() {
   const { readonly } = useNodeRenderContext();

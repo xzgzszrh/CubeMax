@@ -3,11 +3,11 @@
  * SPDX-License-Identifier: MIT
  */
 
-import { Field } from '@flowgram.ai/free-layout-editor';
-import { TypeScriptCodeEditor } from '@flowgram.ai/form-materials';
-import { Divider } from '@douyinfe/semi-ui';
+import { Field } from "@flowgram.ai/free-layout-editor";
+import { TypeScriptCodeEditor } from "@flowgram.ai/form-materials";
+import { Divider } from "@douyinfe/semi-ui";
 
-import { useIsSidebar, useNodeRenderContext } from '../../../hooks';
+import { useIsSidebar, useNodeRenderContext } from "../../../hooks";
 
 export function Code() {
   const isSidebar = useIsSidebar();

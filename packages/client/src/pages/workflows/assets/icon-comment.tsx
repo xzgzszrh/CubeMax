@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: MIT
  */
 
-import { CSSProperties, FC } from 'react';
+import type { CSSProperties, FC } from "react";
 
 interface IconCommentProps {
   style?: CSSProperties;

@@ -3,10 +3,10 @@
  * SPDX-License-Identifier: MIT
  */
 
-import { FlowNodeRegistry } from '../../typings';
-import iconStart from '../../assets/icon-start.jpg';
-import { formMeta } from './form-meta';
-import { WorkflowNodeType } from '../constants';
+import type { FlowNodeRegistry } from "../../typings";
+import iconStart from "../../assets/icon-start.jpg";
+import { formMeta } from "./form-meta";
+import { WorkflowNodeType } from "../constants";
 
 export const BlockEndNodeRegistry: FlowNodeRegistry = {
   type: WorkflowNodeType.BlockEnd,
@@ -16,22 +16,22 @@ export const BlockEndNodeRegistry: FlowNodeRegistry = {
     copyDisable: true,
     sidebarDisabled: true,
     nodePanelVisible: false,
-    defaultPorts: [{ type: 'input' }],
+    defaultPorts: [{ type: "input" }],
     size: {
       width: 100,
       height: 100,
     },
     wrapperStyle: {
-      minWidth: 'unset',
-      width: '100%',
+      minWidth: "unset",
+      width: "100%",
       borderWidth: 2,
       borderRadius: 12,
-      cursor: 'move',
+      cursor: "move",
     },
   },
   info: {
     icon: iconStart,
-    description: 'The final node of the block.',
+    description: "The final node of the block.",
   },
   /**
    * Render node via formMeta

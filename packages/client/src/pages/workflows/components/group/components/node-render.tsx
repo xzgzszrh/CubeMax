@@ -3,22 +3,19 @@
  * SPDX-License-Identifier: MIT
  */
 
-import { MouseEvent, useEffect } from 'react';
+import { useEffect } from "react";
+import type { MouseEvent } from "react";
 
-import {
-  FlowNodeFormData,
-  Form,
-  FormModelV2,
-  useNodeRender,
-} from '@flowgram.ai/free-layout-editor';
-import { useNodeSize } from '@flowgram.ai/free-container-plugin';
+import { FlowNodeFormData, Form, useNodeRender } from "@flowgram.ai/free-layout-editor";
+import type { FormModelV2 } from "@flowgram.ai/free-layout-editor";
+import { useNodeSize } from "@flowgram.ai/free-container-plugin";
 
-import { HEADER_HEIGHT, HEADER_PADDING } from '../constant';
-import { UngroupButton } from './ungroup';
-import { GroupTools } from './tools';
-import { GroupTips } from './tips';
-import { GroupHeader } from './header';
-import { GroupBackground } from './background';
+import { HEADER_HEIGHT, HEADER_PADDING } from "../constant";
+import { UngroupButton } from "./ungroup";
+import { GroupTools } from "./tools";
+import { GroupTips } from "./tips";
+import { GroupHeader } from "./header";
+import { GroupBackground } from "./background";
 
 export const GroupNodeRender = () => {
   const { node, selected, selectNode, nodeRef, startDrag, onFocus, onBlur } = useNodeRender();
@@ -32,12 +29,12 @@ export const GroupNodeRender = () => {
   useEffect(() => {
     // prevent lines in outside cannot be selected - 防止外层线条不可选中
     const element = node.renderData.node;
-    element.style.pointerEvents = 'none';
+    element.style.pointerEvents = "none";
   }, [node]);
 
   return (
     <div
-      className={`workflow-group-render ${selected ? 'selected' : ''}`}
+      className={`workflow-group-render ${selected ? "selected" : ""}`}
       ref={nodeRef}
       data-group-id={node.id}
       data-node-selected={String(selected)}

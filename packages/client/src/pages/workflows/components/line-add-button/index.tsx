@@ -3,13 +3,13 @@
  * SPDX-License-Identifier: MIT
  */
 
-import { useCallback } from 'react';
+import { useCallback } from "react";
 
 import {
   WorkflowNodePanelService,
   WorkflowNodePanelUtils,
-} from '@flowgram.ai/free-node-panel-plugin';
-import { LineRenderProps } from '@flowgram.ai/free-lines-plugin';
+} from "@flowgram.ai/free-node-panel-plugin";
+import type { LineRenderProps } from "@flowgram.ai/free-lines-plugin";
 import {
   delay,
   HistoryService,
@@ -17,13 +17,12 @@ import {
   WorkflowDocument,
   WorkflowDragService,
   WorkflowLinesManager,
-  WorkflowNodeEntity,
-  WorkflowNodeJSON,
-} from '@flowgram.ai/free-layout-editor';
+} from "@flowgram.ai/free-layout-editor";
+import type { WorkflowNodeEntity, WorkflowNodeJSON } from "@flowgram.ai/free-layout-editor";
 
-import './index.less';
-import { useVisible } from './use-visible';
-import { IconPlusCircle } from './button';
+import "./index.less";
+import { useVisible } from "./use-visible";
+import { IconPlusCircle } from "./button";
 
 export const LineAddButton = (props: LineRenderProps) => {
   const { line, selected, hovered, color } = props;
@@ -77,7 +76,7 @@ export const LineAddButton = (props: LineRenderProps) => {
       nodeType,
       nodePosition,
       nodeJSON ?? ({} as WorkflowNodeJSON),
-      containerNode?.id
+      containerNode?.id,
     );
 
     // auto offset subsequent nodes - 自动偏移后续节点

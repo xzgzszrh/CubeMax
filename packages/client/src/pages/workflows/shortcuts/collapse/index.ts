@@ -3,22 +3,19 @@
  * SPDX-License-Identifier: MIT
  */
 
-import {
-  FreeLayoutPluginContext,
-  ShortcutsHandler,
-  WorkflowSelectService,
-} from '@flowgram.ai/free-layout-editor';
+import { WorkflowSelectService } from "@flowgram.ai/free-layout-editor";
+import type { FreeLayoutPluginContext, ShortcutsHandler } from "@flowgram.ai/free-layout-editor";
 
-import { FlowCommandId } from '../constants';
+import { FlowCommandId } from "../constants";
 
 export class CollapseShortcut implements ShortcutsHandler {
   public commandId = FlowCommandId.COLLAPSE;
 
-  public commandDetail: ShortcutsHandler['commandDetail'] = {
-    label: 'Collapse',
+  public commandDetail: ShortcutsHandler["commandDetail"] = {
+    label: "Collapse",
   };
 
-  public shortcuts = ['meta alt openbracket', 'ctrl alt openbracket'];
+  public shortcuts = ["meta alt openbracket", "ctrl alt openbracket"];
 
   private selectService: WorkflowSelectService;
 

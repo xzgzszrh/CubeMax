@@ -3,15 +3,15 @@
  * SPDX-License-Identifier: MIT
  */
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from "react";
 
-import { useCurrentEntity, useService } from '@flowgram.ai/free-layout-editor';
+import { useCurrentEntity, useService } from "@flowgram.ai/free-layout-editor";
 import {
   NodeIntoContainerService,
   NodeIntoContainerType,
-} from '@flowgram.ai/free-container-plugin';
+} from "@flowgram.ai/free-container-plugin";
 
-import { TipsGlobalStore } from './global-store';
+import { TipsGlobalStore } from "./global-store";
 
 export const useControlTips = () => {
   const node = useCurrentEntity();

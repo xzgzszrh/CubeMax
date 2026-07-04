@@ -3,18 +3,18 @@
  * SPDX-License-Identifier: MIT
  */
 
-import {
+import type {
   WorkflowNodeJSON as FlowNodeJSONDefault,
   WorkflowNodeRegistry as FlowNodeRegistryDefault,
   FreeLayoutPluginContext,
   FlowNodeEntity,
-  type WorkflowEdgeJSON,
+  WorkflowEdgeJSON,
   WorkflowNodeMeta,
-} from '@flowgram.ai/free-layout-editor';
-import { IFlowValue } from '@flowgram.ai/form-materials';
+} from "@flowgram.ai/free-layout-editor";
+import type { IFlowValue } from "@flowgram.ai/form-materials";
 
-import { type JsonSchema } from './json-schema';
-import { WorkflowNodeType } from '../nodes';
+import type { JsonSchema } from "./json-schema";
+import type { WorkflowNodeType } from "../nodes";
 
 /**
  * You can customize the data of the node, and here you can use JsonSchema to define the input and output of the node

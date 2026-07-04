@@ -3,15 +3,16 @@
  * SPDX-License-Identifier: MIT
  */
 
-import { useCallback } from 'react';
+import { useCallback } from "react";
 
-import { FlowNodeEntity, useClientContext, useNodeRender } from '@flowgram.ai/free-layout-editor';
-import { ConfigProvider } from '@douyinfe/semi-ui';
+import { useClientContext, useNodeRender } from "@flowgram.ai/free-layout-editor";
+import type { FlowNodeEntity } from "@flowgram.ai/free-layout-editor";
+import { ConfigProvider } from "@douyinfe/semi-ui";
 
-import { NodeStatusBar } from '../testrun/node-status-bar';
-import { NodeRenderContext } from '../../context';
-import { ErrorIcon } from './styles';
-import { NodeWrapper } from './node-wrapper';
+import { NodeStatusBar } from "../testrun/node-status-bar";
+import { NodeRenderContext } from "../../context";
+import { ErrorIcon } from "./styles";
+import { NodeWrapper } from "./node-wrapper";
 
 export const BaseNode = ({ node }: { node: FlowNodeEntity }) => {
   /**
@@ -31,8 +32,8 @@ export const BaseNode = ({ node }: { node: FlowNodeEntity }) => {
    * 用于让 Tooltip 跟随节点缩放, 这个可以根据不同的 ui 库自己实现
    */
   const getPopupContainer = useCallback(
-    () => ctx.playground.node.querySelector('.gedit-flow-render-layer') as HTMLDivElement,
-    []
+    () => ctx.playground.node.querySelector(".gedit-flow-render-layer") as HTMLDivElement,
+    [],
   );
 
   return (

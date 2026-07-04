@@ -3,20 +3,20 @@
  * SPDX-License-Identifier: MIT
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect } from "react";
 
-import { useClientContext, CommandService } from '@flowgram.ai/free-layout-editor';
-import { Button } from '@douyinfe/semi-ui';
-import { IconClose, IconSmallTriangleDown, IconSmallTriangleLeft } from '@douyinfe/semi-icons';
+import { useClientContext, CommandService } from "@flowgram.ai/free-layout-editor";
+import { Button } from "@douyinfe/semi-ui";
+import { IconClose, IconSmallTriangleDown, IconSmallTriangleLeft } from "@douyinfe/semi-icons";
 
-import { toggleLoopExpanded } from '../../utils';
-import { FlowCommandId } from '../../shortcuts';
-import { useNodeFormPanel } from '../../plugins/panel-manager-plugin/hooks';
-import { useIsSidebar, useNodeRenderContext } from '../../hooks';
-import { NodeMenu } from '../../components/node-menu';
-import { getIcon } from './utils';
-import { TitleInput } from './title-input';
-import { Header, Operators } from './styles';
+import { toggleLoopExpanded } from "../../utils";
+import { FlowCommandId } from "../../shortcuts";
+import { useNodeFormPanel } from "../../plugins/panel-manager-plugin/hooks";
+import { useIsSidebar, useNodeRenderContext } from "../../hooks";
+import { NodeMenu } from "../../components/node-menu";
+import { getIcon } from "./utils";
+import { TitleInput } from "./title-input";
+import { Header, Operators } from "./styles";
 
 export function FormHeader() {
   const { node, expanded, toggleExpand, readonly } = useNodeRenderContext();
@@ -36,7 +36,7 @@ export function FormHeader() {
   };
   useEffect(() => {
     // 折叠 loop 子节点
-    if (node.flowNodeType === 'loop') {
+    if (node.flowNodeType === "loop") {
       toggleLoopExpanded(node, expanded);
     }
   }, [expanded]);

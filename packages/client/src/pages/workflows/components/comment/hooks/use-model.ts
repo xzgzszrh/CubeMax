@@ -3,18 +3,17 @@
  * SPDX-License-Identifier: MIT
  */
 
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo } from "react";
 
 import {
   FlowNodeFormData,
-  FormModelV2,
   useEntityFromContext,
   useNodeRender,
-  WorkflowNodeEntity,
-} from '@flowgram.ai/free-layout-editor';
+} from "@flowgram.ai/free-layout-editor";
+import type { FormModelV2, WorkflowNodeEntity } from "@flowgram.ai/free-layout-editor";
 
-import { CommentEditorModel } from '../model';
-import { CommentEditorFormField } from '../constant';
+import { CommentEditorModel } from "../model";
+import { CommentEditorFormField } from "../constant";
 
 export const useModel = () => {
   const node = useEntityFromContext<WorkflowNodeEntity>();
@@ -42,7 +41,7 @@ export const useModel = () => {
   // 同步表单外部值变化：undo/redo/协同
   useEffect(() => {
     const disposer = formModel.onFormValuesChange(({ name }) => {
-      if (name !== CommentEditorFormField.Note && name !== '') {
+      if (name !== CommentEditorFormField.Note && name !== "") {
         return;
       }
       const value = formModel.getValueIn<string>(CommentEditorFormField.Note);

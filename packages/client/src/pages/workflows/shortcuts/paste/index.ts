@@ -7,31 +7,33 @@ import {
   delay,
   EntityManager,
   FlowNodeTransformData,
-  FreeLayoutPluginContext,
-  IPoint,
-  PlaygroundConfigEntity,
   Rectangle,
-  ShortcutsHandler,
   WorkflowDocument,
   WorkflowDragService,
   WorkflowHoverService,
+  WorkflowSelectService,
+} from "@flowgram.ai/free-layout-editor";
+import type {
+  FreeLayoutPluginContext,
+  IPoint,
+  PlaygroundConfigEntity,
+  ShortcutsHandler,
   WorkflowJSON,
   WorkflowNodeEntity,
   WorkflowNodeMeta,
-  WorkflowSelectService,
   Playground,
-} from '@flowgram.ai/free-layout-editor';
-import { Toast } from '@douyinfe/semi-ui';
+} from "@flowgram.ai/free-layout-editor";
+import { Toast } from "@douyinfe/semi-ui";
 
-import { WorkflowClipboardData, WorkflowClipboardRect } from '../type';
-import { FlowCommandId, WorkflowClipboardDataID } from '../constants';
-import { canContainNode } from '../../utils';
-import { generateUniqueWorkflow } from './unique-workflow';
+import type { WorkflowClipboardData, WorkflowClipboardRect } from "../type";
+import { FlowCommandId, WorkflowClipboardDataID } from "../constants";
+import { canContainNode } from "../../utils";
+import { generateUniqueWorkflow } from "./unique-workflow";
 
 export class PasteShortcut implements ShortcutsHandler {
   public commandId = FlowCommandId.PASTE;
 
-  public shortcuts = ['meta v', 'ctrl v'];
+  public shortcuts = ["meta v", "ctrl v"];
 
   private playgroundConfig: PlaygroundConfigEntity;
 
@@ -78,7 +80,7 @@ export class PasteShortcut implements ShortcutsHandler {
     const nodes = this.apply(data);
     if (nodes.length > 0) {
       Toast.success({
-        content: 'Copy successfully',
+        content: "Copy successfully",
         showClose: false,
       });
       // wait for nodes to render - 等待节点渲染
@@ -125,14 +127,14 @@ export class PasteShortcut implements ShortcutsHandler {
   private isValidData(data?: WorkflowClipboardData): boolean {
     if (data?.type !== WorkflowClipboardDataID) {
       Toast.error({
-        content: 'Invalid clipboard data',
+        content: "Invalid clipboard data",
       });
       return false;
     }
     // Cross-domain means different environments, different plugins, cannot be copied - 跨域名表示不同环境，上架插件不同，不能复制
     if (data.source.host !== window.location.host) {
       Toast.error({
-        content: 'Cannot paste nodes from different host',
+        content: "Cannot paste nodes from different host",
       });
       return false;
     }
@@ -146,7 +148,7 @@ export class PasteShortcut implements ShortcutsHandler {
       });
       if (!res.allowDrop) {
         Toast.error({
-          content: res.message ?? 'Cannot paste nodes to invalid container',
+          content: res.message ?? "Cannot paste nodes to invalid container",
         });
         return false;
       }
@@ -158,7 +160,7 @@ export class PasteShortcut implements ShortcutsHandler {
   private async tryReadClipboard(): Promise<WorkflowClipboardData | undefined> {
     try {
       // need user permission to access clipboard, may throw NotAllowedError - 需要用户授予网页剪贴板读取权限, 如果用户没有授予权限, 代码可能会抛出异常 NotAllowedError
-      const text: string = (await navigator.clipboard.readText()) || '';
+      const text: string = (await navigator.clipboard.readText()) || "";
       const clipboardData: WorkflowClipboardData = JSON.parse(text);
       return clipboardData;
     } catch (e) {
@@ -202,7 +204,7 @@ export class PasteShortcut implements ShortcutsHandler {
         position = this.dragService.adjustSubNodePosition(
           nodeJSON.type as string,
           parent,
-          position
+          position,
         );
       }
       nodeJSON.meta.position = position;

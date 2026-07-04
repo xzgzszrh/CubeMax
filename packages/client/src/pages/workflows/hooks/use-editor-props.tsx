@@ -3,44 +3,35 @@
  * SPDX-License-Identifier: MIT
  */
 
-import { useMemo } from 'react';
+import { createDownloadPlugin } from "@flowgram.ai/export-plugin";
+import { createContainerNodePlugin } from "@flowgram.ai/free-container-plugin";
+import { createFreeGroupPlugin } from "@flowgram.ai/free-group-plugin";
+import type { FreeLayoutProps } from "@flowgram.ai/free-layout-editor";
+import { FlowNodeBaseType } from "@flowgram.ai/free-layout-editor";
+import { createFreeNodePanelPlugin } from "@flowgram.ai/free-node-panel-plugin";
+import { createFreeSnapPlugin } from "@flowgram.ai/free-snap-plugin";
+import { createMinimapPlugin } from "@flowgram.ai/minimap-plugin";
+import { useMemo } from "react";
 
-import { debounce } from 'lodash-es';
-import { createMinimapPlugin } from '@flowgram.ai/minimap-plugin';
-import { createFreeStackPlugin } from '@flowgram.ai/free-stack-plugin';
-import { createFreeSnapPlugin } from '@flowgram.ai/free-snap-plugin';
-import { createFreeNodePanelPlugin } from '@flowgram.ai/free-node-panel-plugin';
-import { createFreeLinesPlugin } from '@flowgram.ai/free-lines-plugin';
+import { BaseNode, CommentRender, GroupNodeRender, NodePanel } from "../components";
+import { SelectorBoxPopover } from "../components/selector-box-popover";
+import { WorkflowNodeType } from "../nodes";
+import { defaultFormMeta } from "../nodes/default-form-meta";
 import {
-  FlowNodeBaseType,
-  FreeLayoutPluginContext,
-  FreeLayoutProps,
-  WorkflowNodeEntity,
-} from '@flowgram.ai/free-layout-editor';
-import { createFreeGroupPlugin } from '@flowgram.ai/free-group-plugin';
-import { createContainerNodePlugin } from '@flowgram.ai/free-container-plugin';
-import { createDownloadPlugin } from '@flowgram.ai/export-plugin';
-
-import { canContainNode, onDragLineEnd } from '../utils';
-import { FlowNodeRegistry, FlowDocumentJSON } from '../typings';
-import { shortcuts } from '../shortcuts';
-import { CustomService, ValidateService } from '../services';
-import { GetGlobalVariableSchema } from '../plugins/variable-panel-plugin';
-import { WorkflowRuntimeService } from '../plugins/runtime-plugin/runtime-service';
-import {
-  createRuntimePlugin,
   createContextMenuPlugin,
-  createVariablePanelPlugin,
   createPanelManagerPlugin,
-} from '../plugins';
-import { defaultFormMeta } from '../nodes/default-form-meta';
-import { WorkflowNodeType } from '../nodes';
-import { SelectorBoxPopover } from '../components/selector-box-popover';
-import { BaseNode, CommentRender, GroupNodeRender, LineAddButton, NodePanel } from '../components';
+  createRuntimePlugin,
+  createVariablePanelPlugin,
+} from "../plugins";
+import { WorkflowRuntimeService } from "../plugins/runtime-plugin/runtime-service";
+import { CustomService, ValidateService } from "../services";
+import { shortcuts } from "../shortcuts";
+import type { FlowDocumentJSON, FlowNodeRegistry } from "../typings";
+import { canContainNode, onDragLineEnd } from "../utils";
 
 export function useEditorProps(
   initialData: FlowDocumentJSON,
-  nodeRegistries: FlowNodeRegistry[]
+  nodeRegistries: FlowNodeRegistry[],
 ): FreeLayoutProps {
   return useMemo<FreeLayoutProps>(
     () => ({
@@ -115,13 +106,13 @@ export function useEditorProps(
         return json;
       },
       lineColor: {
-        hidden: 'var(--g-workflow-line-color-hidden,transparent)',
-        default: 'var(--g-workflow-line-color-default,#4d53e8)',
-        drawing: 'var(--g-workflow-line-color-drawing, #5DD6E3)',
-        hovered: 'var(--g-workflow-line-color-hover,#37d0ff)',
-        selected: 'var(--g-workflow-line-color-selected,#37d0ff)',
-        error: 'var(--g-workflow-line-color-error,red)',
-        flowing: 'var(--g-workflow-line-color-flowing,#4d53e8)',
+        hidden: "var(--g-workflow-line-color-hidden,transparent)",
+        default: "var(--g-workflow-line-color-default,#4d53e8)",
+        drawing: "var(--g-workflow-line-color-drawing, #5DD6E3)",
+        hovered: "var(--g-workflow-line-color-hover,#37d0ff)",
+        selected: "var(--g-workflow-line-color-selected,#37d0ff)",
+        error: "var(--g-workflow-line-color-error,red)",
+        flowing: "var(--g-workflow-line-color-flowing,#4d53e8)",
       },
       /*
        * Check whether the line can be added
@@ -136,7 +127,7 @@ export function useEditorProps(
         if (
           fromPort.node.parent?.id !== toPort.node.parent?.id &&
           ![fromPort.node.parent?.flowNodeType, toPort.node.parent?.flowNodeType].includes(
-            FlowNodeBaseType.GROUP
+            FlowNodeBaseType.GROUP,
           )
         ) {
           return false;
@@ -151,14 +142,14 @@ export function useEditorProps(
        * Check whether the line can be deleted, this triggers on the default shortcut `Bakspace` or `Delete`
        * 判断是否能删除连线, 这个会在默认快捷键 (Backspace or Delete) 触发
        */
-      canDeleteLine(ctx, line, newLineInfo, silent) {
+      canDeleteLine(_ctx, _line, _newLineInfo, _silent) {
         return true;
       },
       /**
        * Check whether the node can be deleted, this triggers on the default shortcut `Bakspace` or `Delete`
        * 判断是否能删除节点, 这个会在默认快捷键 (Backspace or Delete) 触发
        */
-      canDeleteNode(ctx, node) {
+      canDeleteNode(_ctx, _node) {
         return true;
       },
       /**
@@ -173,7 +164,7 @@ export function useEditorProps(
        * @param oldLine
        * @param newLineInfo
        */
-      canResetLine: (ctx, oldLine, newLineInfo) => true,
+      canResetLine: (_ctx, _oldLine, _newLineInfo) => true,
       /**
        * Drag the end of the line to create an add panel (feature optional)
        * 拖拽线条结束需要创建一个添加面板 （功能可选）
@@ -226,17 +217,6 @@ export function useEditorProps(
         enableChangeNode: true,
       },
       /**
-       * Content change
-       */
-      onContentChange: debounce((ctx: FreeLayoutPluginContext, event) => {
-        if (ctx.document.disposed) return;
-
-        console.log('Auto Save: ', event, {
-          ...ctx.document.toJSON(),
-          globalVariable: ctx.get<GetGlobalVariableSchema>(GetGlobalVariableSchema)(),
-        });
-      }, 1000),
-      /**
        * Running line
        */
       isFlowingLine: (ctx, line) => ctx.get(WorkflowRuntimeService).isFlowingLine(line),
@@ -254,8 +234,8 @@ export function useEditorProps(
       /**
        * Playground init
        */
-      onInit(ctx) {
-        console.log('--- Playground init ---');
+      onInit(_ctx) {
+        console.log("--- Playground init ---");
       },
       /**
        * Playground render
@@ -263,50 +243,25 @@ export function useEditorProps(
       onAllLayersRendered(ctx) {
         // ctx.tools.autoLayout(); // init auto layout
         ctx.tools.fitView(false);
-        console.log('--- Playground rendered ---');
+        console.log("--- Playground rendered ---");
       },
       /**
        * Playground dispose
        */
       onDispose() {
-        console.log('---- Playground Dispose ----');
+        console.log("---- Playground Dispose ----");
       },
       i18n: {
         locale: navigator.language,
         languages: {
-          'zh-CN': {
-            'Never Remind': '不再提示',
-            'Hold {{key}} to drag node out': '按住 {{key}} 可以将节点拖出',
+          "zh-CN": {
+            "Never Remind": "不再提示",
+            "Hold {{key}} to drag node out": "按住 {{key}} 可以将节点拖出",
           },
-          'en-US': {},
+          "en-US": {},
         },
       },
       plugins: () => [
-        /**
-         * Custom node sorting, the code below will make the comment nodes always below the normal nodes
-         * 自定义节点排序，下边的代码会让 comment 节点永远在普通节点下边
-         */
-        createFreeStackPlugin({
-          sortNodes: (nodes: WorkflowNodeEntity[]) => {
-            const commentNodes: WorkflowNodeEntity[] = [];
-            const otherNodes: WorkflowNodeEntity[] = [];
-            nodes.forEach((node) => {
-              if (node.flowNodeType === WorkflowNodeType.Comment) {
-                commentNodes.push(node);
-              } else {
-                otherNodes.push(node);
-              }
-            });
-            return [...commentNodes, ...otherNodes];
-          },
-        }),
-        /**
-         * Line render plugin
-         * 连线渲染插件
-         */
-        createFreeLinesPlugin({
-          renderInsideLine: LineAddButton,
-        }),
         /**
          * Minimap plugin
          * 缩略图插件
@@ -317,18 +272,18 @@ export function useEditorProps(
             canvasWidth: 182,
             canvasHeight: 102,
             canvasPadding: 50,
-            canvasBackground: 'rgba(242, 243, 245, 1)',
+            canvasBackground: "rgba(242, 243, 245, 1)",
             canvasBorderRadius: 10,
-            viewportBackground: 'rgba(255, 255, 255, 1)',
+            viewportBackground: "rgba(255, 255, 255, 1)",
             viewportBorderRadius: 4,
-            viewportBorderColor: 'rgba(6, 7, 9, 0.10)',
+            viewportBorderColor: "rgba(6, 7, 9, 0.10)",
             viewportBorderWidth: 1,
             viewportBorderDashLength: undefined,
-            nodeColor: 'rgba(0, 0, 0, 0.10)',
+            nodeColor: "rgba(0, 0, 0, 0.10)",
             nodeBorderRadius: 2,
             nodeBorderWidth: 0.145,
-            nodeBorderColor: 'rgba(6, 7, 9, 0.10)',
-            overlayColor: 'rgba(255, 255, 255, 0.55)',
+            nodeBorderColor: "rgba(6, 7, 9, 0.10)",
+            overlayColor: "rgba(255, 255, 255, 0.55)",
           },
         }),
         /**
@@ -341,8 +296,8 @@ export function useEditorProps(
          * 自动对齐及辅助线插件
          */
         createFreeSnapPlugin({
-          edgeColor: '#00B2B2',
-          alignColor: '#00B2B2',
+          edgeColor: "#00B2B2",
+          alignColor: "#00B2B2",
           edgeLineWidth: 1,
           alignLineWidth: 1,
           alignCrossWidth: 8,
@@ -375,7 +330,7 @@ export function useEditorProps(
          * https://flowgram.ai/guide/runtime/introduction.html
          */
         createRuntimePlugin({
-          mode: 'browser', // browser mode is for demo only!
+          mode: "browser", // browser mode is for demo only!
           // mode: 'server',
           // serverConfig: {
           //   domain: 'localhost',
@@ -395,6 +350,6 @@ export function useEditorProps(
         createPanelManagerPlugin(),
       ],
     }),
-    []
+    [initialData, nodeRegistries],
   );
 }
