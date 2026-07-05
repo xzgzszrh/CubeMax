@@ -24,10 +24,24 @@ import {
   createVariablePanelPlugin,
 } from "../plugins";
 import { WorkflowRuntimeService } from "../plugins/runtime-plugin/runtime-service";
+import type { ServerConfig } from "../plugins/runtime-plugin/type";
 import { CustomService, ValidateService } from "../services";
 import { shortcuts } from "../shortcuts";
 import type { FlowDocumentJSON, FlowNodeRegistry } from "../typings";
 import { canContainNode, onDragLineEnd } from "../utils";
+
+function getWorkflowRuntimeServerConfig(): ServerConfig {
+  const baseUrl = import.meta.env.DEV
+    ? import.meta.env.VITE_DEVELOP_APP_BASE_URL
+    : import.meta.env.VITE_PRODUCTION_APP_BASE_URL;
+  const url = new URL(baseUrl || window.location.origin, window.location.origin);
+
+  return {
+    protocol: url.protocol.replace(":", ""),
+    domain: url.hostname,
+    port: url.port ? Number(url.port) : undefined,
+  };
+}
 
 export function useEditorProps(
   initialData: FlowDocumentJSON,
@@ -326,17 +340,10 @@ export function useEditorProps(
         createContextMenuPlugin({}),
         /**
          * Runtime plugin
-         * ⚠️ Browser mode is for demo only; for production, please deploy the server-side runtime
-         * https://flowgram.ai/guide/runtime/introduction.html
          */
         createRuntimePlugin({
-          mode: "browser", // browser mode is for demo only!
-          // mode: 'server',
-          // serverConfig: {
-          //   domain: 'localhost',
-          //   port: 4000,
-          //   protocol: 'http',
-          // },
+          mode: "server",
+          serverConfig: getWorkflowRuntimeServerConfig(),
         }),
 
         /**

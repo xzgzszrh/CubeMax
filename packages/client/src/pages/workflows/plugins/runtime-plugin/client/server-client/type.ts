@@ -4,6 +4,6 @@
  */
 
 export interface ServerError {
-  code: string;
+  code: string | number;
   message: string;
 }
