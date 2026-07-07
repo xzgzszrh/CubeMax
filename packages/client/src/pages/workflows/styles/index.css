@@ -31,6 +31,23 @@
   background-color: var(--g-playground-selectBox-background);
 }
 
+/*
+ * FlowGram registers several canvas utility layers with z-index: 9999.
+ * Keep them above the canvas, but below app-level portals such as the user menu.
+ */
+.doc-free-feature-overview .gedit-selector-box-block,
+.doc-free-feature-overview .gedit-node-panel-layer,
+.doc-free-feature-overview .gedit-minimap-layer,
+.doc-free-feature-overview .gedit-flow-snap-layer,
+.doc-free-feature-overview .gedit-flow-panel-layer,
+.doc-free-feature-overview .gedit-playground-loading {
+  z-index: 40 !important;
+}
+
+.doc-free-feature-overview .gedit-flow-render-layer {
+  z-index: 10 !important;
+}
+
 @keyframes blink {
   0% {
     opacity: 1;

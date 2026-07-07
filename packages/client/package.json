@@ -48,7 +48,7 @@
         "@flowgram.ai/minimap-plugin": "1.0.11",
         "@flowgram.ai/panel-manager-plugin": "1.0.11",
         "@flowgram.ai/runtime-interface": "1.0.11",
-        "@flowgram.ai/runtime-js": "1.0.11",
+        "@flowgram.ai/runtime-js": "workspace:*",
         "@flowgram.ai/select-box-plugin": "1.0.11",
         "@flowgram.ai/shortcuts-plugin": "1.0.11",
         "@hookform/resolvers": "^5.2.2",

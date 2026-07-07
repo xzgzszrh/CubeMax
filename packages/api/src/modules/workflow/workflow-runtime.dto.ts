@@ -6,6 +6,10 @@ export class WorkflowRuntimeTaskDto {
 
     @IsObject()
     inputs: Record<string, unknown>;
+
+    context?: {
+        userId?: string;
+    };
 }
 
 export class WorkflowRuntimeTaskIdDto {

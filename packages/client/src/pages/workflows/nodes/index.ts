@@ -9,21 +9,22 @@
  */
 
 import type { FlowNodeRegistry } from "../typings";
-import { VariableNodeRegistry } from "./variable";
-import { StartNodeRegistry } from "./start";
-import { LoopNodeRegistry } from "./loop";
-import { LLMNodeRegistry } from "./llm";
-import { HTTPNodeRegistry } from "./http";
-import { GroupNodeRegistry } from "./group";
-import { EndNodeRegistry } from "./end";
-import { ContinueNodeRegistry } from "./continue";
-import { ConditionNodeRegistry } from "./condition";
-import { CommentNodeRegistry } from "./comment";
-import { CodeNodeRegistry } from "./code";
-import { BreakNodeRegistry } from "./break";
-import { BlockStartNodeRegistry } from "./block-start";
 import { BlockEndNodeRegistry } from "./block-end";
+import { BlockStartNodeRegistry } from "./block-start";
+import { BreakNodeRegistry } from "./break";
+import { CodeNodeRegistry } from "./code";
+import { CommentNodeRegistry } from "./comment";
+import { ConditionNodeRegistry } from "./condition";
+import { ContinueNodeRegistry } from "./continue";
+import { EndNodeRegistry } from "./end";
+import { GroupNodeRegistry } from "./group";
+import { HTTPNodeRegistry } from "./http";
+import { LLMNodeRegistry } from "./llm";
+import { LoopNodeRegistry } from "./loop";
+import { MCPNodeRegistry } from "./mcp";
 import { MultiConditionNodeRegistry } from "./multi-condition";
+import { StartNodeRegistry } from "./start";
+import { VariableNodeRegistry } from "./variable";
 export { WorkflowNodeType } from "./constants";
 
 export const nodeRegistries: FlowNodeRegistry[] = [
@@ -31,6 +32,7 @@ export const nodeRegistries: FlowNodeRegistry[] = [
   StartNodeRegistry,
   EndNodeRegistry,
   LLMNodeRegistry,
+  MCPNodeRegistry,
   LoopNodeRegistry,
   CommentNodeRegistry,
   BlockStartNodeRegistry,

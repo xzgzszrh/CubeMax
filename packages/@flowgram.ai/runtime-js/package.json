@@ -1,0 +1,24 @@
+{
+  "name": "@flowgram.ai/runtime-js",
+  "version": "1.0.11",
+  "homepage": "https://flowgram.ai/",
+  "repository": "https://github.com/bytedance/flowgram.ai",
+  "license": "MIT",
+  "type": "module",
+  "exports": {
+    "types": "./dist/index.d.ts",
+    "import": "./dist/esm/index.js",
+    "require": "./dist/index.js"
+  },
+  "main": "./dist/index.js",
+  "module": "./dist/esm/index.js",
+  "types": "./dist/index.d.ts",
+  "dependencies": {
+    "@langchain/openai": "0.5.18",
+    "@langchain/core": "^0.3.58",
+    "lodash-es": "^4.17.21",
+    "quickjs-emscripten": "^0.32.0",
+    "uuid": "^9.0.0",
+    "zod": "^3.24.4"
+  }
+}

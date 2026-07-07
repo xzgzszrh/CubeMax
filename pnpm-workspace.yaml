@@ -2,6 +2,7 @@ packages:
   - packages/*
   - extensions/*
   - packages/@buildingai/*
+  - packages/@flowgram.ai/*
   - packages/@buildingai/web/*
 
 catalog:

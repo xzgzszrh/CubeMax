@@ -46,7 +46,7 @@
         "@buildingai/utils": "workspace:*",
         "@buildingai/wechat-sdk": "workspace:*",
         "@flowgram.ai/runtime-interface": "1.0.11",
-        "@flowgram.ai/runtime-js": "1.0.11",
+        "@flowgram.ai/runtime-js": "workspace:*",
         "@nestjs/axios": "catalog:api",
         "@nestjs/common": "catalog:api",
         "@nestjs/config": "catalog:api",
