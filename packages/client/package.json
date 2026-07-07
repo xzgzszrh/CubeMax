@@ -34,6 +34,7 @@
         "@douyinfe/semi-icons": "^2.100.0",
         "@douyinfe/semi-ui": "^2.100.0",
         "@flowgram.ai/background-plugin": "1.0.11",
+        "@flowgram.ai/coze-editor": "1.0.11",
         "@flowgram.ai/export-plugin": "1.0.11",
         "@flowgram.ai/form-materials": "1.0.11",
         "@flowgram.ai/free-container-plugin": "1.0.11",

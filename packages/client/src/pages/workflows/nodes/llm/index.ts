@@ -5,9 +5,10 @@
 
 import { nanoid } from "nanoid";
 
-import { WorkflowNodeType } from "../constants";
-import type { FlowNodeRegistry } from "../../typings";
 import iconLLM from "../../assets/icon-llm.jpg";
+import type { FlowNodeRegistry } from "../../typings";
+import { createLLMInputsSchema, createLLMInputsValues } from "../../utils/llm-schema";
+import { WorkflowNodeType } from "../constants";
 
 let index = 0;
 export const LLMNodeRegistry: FlowNodeRegistry = {
@@ -29,62 +30,8 @@ export const LLMNodeRegistry: FlowNodeRegistry = {
       type: "llm",
       data: {
         title: `LLM_${++index}`,
-        inputsValues: {
-          modelName: {
-            type: "constant",
-            content: "gpt-3.5-turbo",
-          },
-          apiKey: {
-            type: "constant",
-            content: "sk-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
-          },
-          apiHost: {
-            type: "constant",
-            content: "https://mock-ai-url/api/v3",
-          },
-          temperature: {
-            type: "constant",
-            content: 0.5,
-          },
-          systemPrompt: {
-            type: "template",
-            content: "# Role\nYou are an AI assistant.\n",
-          },
-          prompt: {
-            type: "template",
-            content: "",
-          },
-        },
-        inputs: {
-          type: "object",
-          required: ["modelName", "apiKey", "apiHost", "temperature", "prompt"],
-          properties: {
-            modelName: {
-              type: "string",
-            },
-            apiKey: {
-              type: "string",
-            },
-            apiHost: {
-              type: "string",
-            },
-            temperature: {
-              type: "number",
-            },
-            systemPrompt: {
-              type: "string",
-              extra: {
-                formComponent: "prompt-editor",
-              },
-            },
-            prompt: {
-              type: "string",
-              extra: {
-                formComponent: "prompt-editor",
-              },
-            },
-          },
-        },
+        inputsValues: createLLMInputsValues(),
+        inputs: createLLMInputsSchema(),
         outputs: {
           type: "object",
           properties: {

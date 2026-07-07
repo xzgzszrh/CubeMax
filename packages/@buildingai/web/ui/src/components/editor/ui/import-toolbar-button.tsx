@@ -1,6 +1,5 @@
 "use client";
 
-import { importDocx } from "@platejs/docx-io";
 import { MarkdownPlugin } from "@platejs/markdown";
 import type { DropdownMenuProps } from "@radix-ui/react-dropdown-menu";
 import { ArrowUpToLineIcon } from "lucide-react";
@@ -70,6 +69,7 @@ export function ImportToolbarButton(props: DropdownMenuProps) {
     multiple: false,
     onFilesSelected: async ({ plainFiles }) => {
       const arrayBuffer = await plainFiles[0].arrayBuffer();
+      const { importDocx } = await import("@platejs/docx-io");
       const result = await importDocx(editor, arrayBuffer);
 
       editor.tf.insertNodes(result.nodes as typeof editor.children);

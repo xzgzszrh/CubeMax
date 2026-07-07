@@ -15,6 +15,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { Editor } from "./editor";
 import { initialData } from "./initial-data";
 import type { FlowDocumentJSON } from "./typings";
+import { normalizeWorkflowSchema } from "./utils/llm-schema";
 
 /**
  * React 18/19 polyfill for form-materials
@@ -28,7 +29,7 @@ function resolveWorkflowSchema(schema: unknown): FlowDocumentJSON {
     Array.isArray((schema as FlowDocumentJSON).nodes) &&
     Array.isArray((schema as FlowDocumentJSON).edges)
   ) {
-    return schema as FlowDocumentJSON;
+    return normalizeWorkflowSchema(schema as FlowDocumentJSON);
   }
 
   return initialData;

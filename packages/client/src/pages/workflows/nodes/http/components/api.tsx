@@ -3,13 +3,13 @@
  * SPDX-License-Identifier: MIT
  */
 
-import { Field } from "@flowgram.ai/free-layout-editor";
-import { PromptEditorWithVariables } from "@flowgram.ai/form-materials";
-import type { IFlowTemplateValue } from "@flowgram.ai/form-materials";
 import { Select } from "@douyinfe/semi-ui";
+import type { IFlowTemplateValue } from "@flowgram.ai/form-materials";
+import { Field } from "@flowgram.ai/free-layout-editor";
 
-import { useNodeRenderContext } from "../../../hooks";
+import { SafePromptEditorWithVariables } from "../../../components/safe-editor-with-variables";
 import { FormItem } from "../../../form-components";
+import { useNodeRenderContext } from "../../../hooks";
 
 export function Api() {
   const { readonly } = useNodeRenderContext();
@@ -42,7 +42,7 @@ export function Api() {
 
           <Field<IFlowTemplateValue> name="api.url">
             {({ field }) => (
-              <PromptEditorWithVariables
+              <SafePromptEditorWithVariables
                 disableMarkdownHighlight
                 readonly={readonly}
                 style={{ flexGrow: 1 }}

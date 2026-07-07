@@ -19,6 +19,7 @@ import { toast } from "sonner";
 
 import { GetGlobalVariableSchema } from "../plugins/variable-panel-plugin";
 import type { FlowDocumentJSON } from "../typings";
+import { normalizeWorkflowSchema } from "../utils/llm-schema";
 
 interface SaveSchemaOptions {
   showSuccessToast?: boolean;
@@ -33,10 +34,10 @@ interface WorkflowSaveContextValue {
 const WorkflowSaveContext = createContext<WorkflowSaveContextValue | null>(null);
 
 export function serializeWorkflowSchema(ctx: FreeLayoutPluginContext): FlowDocumentJSON {
-  return {
+  return normalizeWorkflowSchema({
     ...ctx.document.toJSON(),
     globalVariable: ctx.get<GetGlobalVariableSchema>(GetGlobalVariableSchema)(),
-  } as FlowDocumentJSON;
+  } as FlowDocumentJSON);
 }
 
 export function WorkflowSaveProvider({

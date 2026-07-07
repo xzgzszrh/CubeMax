@@ -1,7 +1,6 @@
 "use client";
 
 import { BaseEditorKit } from "@buildingai/ui/components/editor/editor-base-kit";
-import { exportToDocx } from "@platejs/docx-io";
 import { MarkdownPlugin } from "@platejs/markdown";
 import type { DropdownMenuProps } from "@radix-ui/react-dropdown-menu";
 import { ArrowDownToLineIcon } from "lucide-react";
@@ -18,7 +17,6 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "../../ui/dropdown-menu";
-import { DocxExportKit } from "./../plugins/docx-export-kit";
 import { EditorStatic } from "./editor-static";
 import { ToolbarButton } from "./toolbar";
 
@@ -150,6 +148,11 @@ export function ExportToolbarButton(props: DropdownMenuProps) {
     if (typeof globalThis.global === "undefined") {
       (globalThis as any).global = globalThis;
     }
+
+    const [{ exportToDocx }, { DocxExportKit }] = await Promise.all([
+      import("@platejs/docx-io"),
+      import("./../plugins/docx-export-kit"),
+    ]);
 
     const blob = await exportToDocx(editor.children, {
       editorPlugins: [...BaseEditorKit, ...DocxExportKit] as SlatePlugin[],

@@ -3,13 +3,15 @@
  * SPDX-License-Identifier: MIT
  */
 
+import { DynamicValueInput } from "@flowgram.ai/form-materials";
 import { Field } from "@flowgram.ai/free-layout-editor";
-import { DynamicValueInput, PromptEditorWithVariables } from "@flowgram.ai/form-materials";
 
-import { FormItem } from "../form-item";
-import { Feedback } from "../feedback";
-import type { JsonSchema } from "../../typings";
+import { SafePromptEditorWithVariables } from "../../components/safe-editor-with-variables";
 import { useNodeRenderContext } from "../../hooks";
+import type { JsonSchema } from "../../typings";
+import { Feedback } from "../feedback";
+import { FormItem } from "../form-item";
+import { LLMModelSelect } from "./model-select";
 
 export function FormInputs() {
   const { readonly } = useNodeRenderContext();
@@ -39,12 +41,15 @@ export function FormInputs() {
                   required={required.includes(key)}
                 >
                   {formComponent === "prompt-editor" && (
-                    <PromptEditorWithVariables
+                    <SafePromptEditorWithVariables
                       value={field.value}
                       onChange={field.onChange}
                       readonly={readonly}
                       hasError={Object.keys(fieldState?.errors || {}).length > 0}
                     />
+                  )}
+                  {formComponent === "llm-model-select" && (
+                    <LLMModelSelect value={field.value} onChange={field.onChange} />
                   )}
                   {!formComponent && (
                     <DynamicValueInput

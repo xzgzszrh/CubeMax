@@ -12,7 +12,6 @@ import { ColumnKit } from "@buildingai/ui/components/editor/plugins/column-kit";
 import { CursorOverlayKit } from "@buildingai/ui/components/editor/plugins/cursor-overlay-kit";
 import { DateKit } from "@buildingai/ui/components/editor/plugins/date-kit";
 import { DndKit } from "@buildingai/ui/components/editor/plugins/dnd-kit";
-import { DocxKit } from "@buildingai/ui/components/editor/plugins/docx-kit";
 import { EmojiKit } from "@buildingai/ui/components/editor/plugins/emoji-kit";
 import { ExitBreakKit } from "@buildingai/ui/components/editor/plugins/exit-break-kit";
 import { FixedToolbarKit } from "@buildingai/ui/components/editor/plugins/fixed-toolbar-kit";
@@ -65,7 +64,6 @@ export const EditorKit = [
   TrailingBlockPlugin,
 
   // Parsers
-  ...DocxKit,
   ...MarkdownKit,
 
   // UI

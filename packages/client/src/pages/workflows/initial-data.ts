@@ -218,17 +218,9 @@ export const initialData: FlowDocumentJSON = {
           data: {
             title: "LLM_3",
             inputsValues: {
-              modelName: {
+              modelId: {
                 type: "constant",
-                content: "gpt-3.5-turbo",
-              },
-              apiKey: {
-                type: "constant",
-                content: "sk-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
-              },
-              apiHost: {
-                type: "constant",
-                content: "https://mock-ai-url/api/v3",
+                content: "",
               },
               temperature: {
                 type: "constant",
@@ -245,16 +237,13 @@ export const initialData: FlowDocumentJSON = {
             },
             inputs: {
               type: "object",
-              required: ["modelName", "apiKey", "apiHost", "temperature", "prompt"],
+              required: ["modelId", "temperature", "prompt"],
               properties: {
-                modelName: {
+                modelId: {
                   type: "string",
-                },
-                apiKey: {
-                  type: "string",
-                },
-                apiHost: {
-                  type: "string",
+                  extra: {
+                    formComponent: "llm-model-select",
+                  },
                 },
                 temperature: {
                   type: "number",
@@ -295,17 +284,9 @@ export const initialData: FlowDocumentJSON = {
           data: {
             title: "LLM_4",
             inputsValues: {
-              modelName: {
+              modelId: {
                 type: "constant",
-                content: "gpt-3.5-turbo",
-              },
-              apiKey: {
-                type: "constant",
-                content: "sk-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
-              },
-              apiHost: {
-                type: "constant",
-                content: "https://mock-ai-url/api/v3",
+                content: "",
               },
               temperature: {
                 type: "constant",
@@ -322,16 +303,13 @@ export const initialData: FlowDocumentJSON = {
             },
             inputs: {
               type: "object",
-              required: ["modelName", "apiKey", "apiHost", "temperature", "prompt"],
+              required: ["modelId", "temperature", "prompt"],
               properties: {
-                modelName: {
+                modelId: {
                   type: "string",
-                },
-                apiKey: {
-                  type: "string",
-                },
-                apiHost: {
-                  type: "string",
+                  extra: {
+                    formComponent: "llm-model-select",
+                  },
                 },
                 temperature: {
                   type: "number",
@@ -424,17 +402,9 @@ export const initialData: FlowDocumentJSON = {
       data: {
         title: "LLM_1",
         inputsValues: {
-          modelName: {
+          modelId: {
             type: "constant",
-            content: "gpt-3.5-turbo",
-          },
-          apiKey: {
-            type: "constant",
-            content: "sk-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
-          },
-          apiHost: {
-            type: "constant",
-            content: "https://mock-ai-url/api/v3",
+            content: "",
           },
           temperature: {
             type: "constant",
@@ -451,16 +421,13 @@ export const initialData: FlowDocumentJSON = {
         },
         inputs: {
           type: "object",
-          required: ["modelName", "apiKey", "apiHost", "temperature", "prompt"],
+          required: ["modelId", "temperature", "prompt"],
           properties: {
-            modelName: {
+            modelId: {
               type: "string",
-            },
-            apiKey: {
-              type: "string",
-            },
-            apiHost: {
-              type: "string",
+              extra: {
+                formComponent: "llm-model-select",
+              },
             },
             temperature: {
               type: "number",
@@ -501,17 +468,9 @@ export const initialData: FlowDocumentJSON = {
       data: {
         title: "LLM_2",
         inputsValues: {
-          modelName: {
+          modelId: {
             type: "constant",
-            content: "gpt-3.5-turbo",
-          },
-          apiKey: {
-            type: "constant",
-            content: "sk-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
-          },
-          apiHost: {
-            type: "constant",
-            content: "https://mock-ai-url/api/v3",
+            content: "",
           },
           temperature: {
             type: "constant",
@@ -528,16 +487,13 @@ export const initialData: FlowDocumentJSON = {
         },
         inputs: {
           type: "object",
-          required: ["modelName", "apiKey", "apiHost", "temperature", "prompt"],
+          required: ["modelId", "temperature", "prompt"],
           properties: {
-            modelName: {
+            modelId: {
               type: "string",
-            },
-            apiKey: {
-              type: "string",
-            },
-            apiHost: {
-              type: "string",
+              extra: {
+                formComponent: "llm-model-select",
+              },
             },
             temperature: {
               type: "number",

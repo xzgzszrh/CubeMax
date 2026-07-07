@@ -3,24 +3,26 @@
  * SPDX-License-Identifier: MIT
  */
 
-import type {
-  WorkflowNodeJSON as FlowNodeJSONDefault,
-  WorkflowNodeRegistry as FlowNodeRegistryDefault,
-  FreeLayoutPluginContext,
-  FlowNodeEntity,
-  WorkflowEdgeJSON,
-  WorkflowNodeMeta,
-} from "@flowgram.ai/free-layout-editor";
 import type { IFlowValue } from "@flowgram.ai/form-materials";
+import type {
+  FlowNodeEntity,
+  FreeLayoutPluginContext,
+  WorkflowEdgeJSON,
+  WorkflowNodeJSON as FlowNodeJSONDefault,
+  WorkflowNodeMeta,
+  WorkflowNodeRegistry as FlowNodeRegistryDefault,
+} from "@flowgram.ai/free-layout-editor";
 
-import type { JsonSchema } from "./json-schema";
 import type { WorkflowNodeType } from "../nodes";
+import type { JsonSchema } from "./json-schema";
 
 /**
  * You can customize the data of the node, and here you can use JsonSchema to define the input and output of the node
  * 你可以自定义节点的 data 业务数据, 这里演示 通过 JsonSchema 来定义节点的输入/输出
  */
 export interface FlowNodeJSON extends FlowNodeJSONDefault {
+  blocks?: FlowNodeJSON[];
+  edges?: WorkflowEdgeJSON[];
   data: {
     /**
      * Node title

@@ -3,13 +3,16 @@
  * SPDX-License-Identifier: MIT
  */
 
-import { Field } from "@flowgram.ai/free-layout-editor";
-import { JsonEditorWithVariables, PromptEditorWithVariables } from "@flowgram.ai/form-materials";
-import type { IFlowTemplateValue } from "@flowgram.ai/form-materials";
 import { Select } from "@douyinfe/semi-ui";
+import type { IFlowTemplateValue } from "@flowgram.ai/form-materials";
+import { Field } from "@flowgram.ai/free-layout-editor";
 
-import { useNodeRenderContext } from "../../../hooks";
+import {
+  SafeJsonEditorWithVariables,
+  SafePromptEditorWithVariables,
+} from "../../../components/safe-editor-with-variables";
 import { FormItem } from "../../../form-components";
+import { useNodeRenderContext } from "../../../hooks";
 
 const BODY_TYPE_OPTIONS = [
   {
@@ -35,7 +38,7 @@ export function Body() {
         return (
           <Field<IFlowTemplateValue> name="body.json">
             {({ field }) => (
-              <JsonEditorWithVariables
+              <SafeJsonEditorWithVariables
                 value={field.value?.content}
                 readonly={readonly}
                 activeLinePlaceholder="use var by '@'"
@@ -50,7 +53,7 @@ export function Body() {
         return (
           <Field<IFlowTemplateValue> name="body.rawText">
             {({ field }) => (
-              <PromptEditorWithVariables
+              <SafePromptEditorWithVariables
                 disableMarkdownHighlight
                 readonly={readonly}
                 style={{ flexGrow: 1 }}

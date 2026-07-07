@@ -2099,6 +2099,9 @@ importers:
       '@flowgram.ai/background-plugin':
         specifier: 1.0.11
         version: 1.0.11(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
+      '@flowgram.ai/coze-editor':
+        specifier: 1.0.11
+        version: 1.0.11(@babel/core@7.29.0)(@babel/template@8.0.0)(@codemirror/autocomplete@6.20.1)(@codemirror/language@6.12.2)(@codemirror/merge@6.12.2)(@codemirror/state@6.6.0)(@codemirror/view@6.39.16)(@coze-editor/code-language-shared@0.1.0-alpha.868621(@codemirror/autocomplete@6.20.1)(@codemirror/language@6.12.2)(@codemirror/state@6.6.0)(@codemirror/view@6.39.16)(@lezer/common@1.5.1))(@lezer/common@1.5.1)(@types/react@19.2.14)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(styled-components@6.4.3(react-dom@19.2.4(react@19.2.4))(react@19.2.4))(vue@3.5.30(typescript@5.9.3))
       '@flowgram.ai/export-plugin':
         specifier: 1.0.11
         version: 1.0.11(react-dom@19.2.4(react@19.2.4))(react@19.2.4)

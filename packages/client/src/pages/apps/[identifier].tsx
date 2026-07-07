@@ -6,12 +6,12 @@ import { useLocation, useNavigate, useParams } from "react-router-dom";
 
 /**
  * Resolve the base URL for extension iframe.
- * - Dev: uses VITE_DEVELOP_APP_BASE_URL or falls back to localhost:4090
+ * - Dev: uses VITE_DEVELOP_APP_BASE_URL or falls back to local tunnel
  * - Prod: uses current origin (same domain)
  */
 function getExtensionBaseUrl() {
   if (import.meta.env.DEV) {
-    return import.meta.env.VITE_DEVELOP_APP_BASE_URL || "http://localhost:4090";
+    return import.meta.env.VITE_DEVELOP_APP_BASE_URL || "http://127.0.0.1:9001";
   }
   return window.location.origin;
 }
