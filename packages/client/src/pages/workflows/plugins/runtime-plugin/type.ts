@@ -3,16 +3,10 @@
  * SPDX-License-Identifier: MIT
  */
 
-export interface RuntimeBrowserOptions {
-  mode?: "browser";
-}
-
-export interface RuntimeServerOptions {
+export interface RuntimePluginOptions {
   mode: "server";
   serverConfig: ServerConfig;
 }
-
-export type RuntimePluginOptions = RuntimeBrowserOptions | RuntimeServerOptions;
 
 export interface ServerConfig {
   domain: string;

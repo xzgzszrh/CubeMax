@@ -68,6 +68,7 @@ export default defineConfig({
   ],
   clearScreen: false,
   resolve: {
+    conditions: ["style"],
     tsconfigPaths: true,
     alias: {
       "@": path.resolve(__dirname, "src"),

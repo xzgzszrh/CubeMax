@@ -20,6 +20,7 @@ storage/*
 
 # Testing
 coverage
+hello-page/
 
 # Turbo
 .turbo
