@@ -148,8 +148,9 @@ export const McpImportDialog = ({ open, onOpenChange, onSuccess }: McpImportDial
                   <FormControl>
                     <Textarea
                       placeholder={JSON_EXAMPLE}
-                      className="font-mono text-xs"
+                      className="field-sizing-fixed h-72 max-h-[50vh] resize-y overflow-auto font-mono text-xs break-normal whitespace-pre"
                       rows={12}
+                      wrap="off"
                       {...field}
                     />
                   </FormControl>
