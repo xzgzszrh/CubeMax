@@ -80,7 +80,7 @@ export class WebAiMcpServerWebController {
             .map((item: AiMcpServer) => {
                 if (item.type === McpServerType.SYSTEM) {
                     const userSetting = item.userMcpServer?.find((ums) => ums.userId === user.id);
-                    item.isDisabled = userSetting ? userSetting.isDisabled : true;
+                    item.isDisabled = userSetting?.isDisabled ?? false;
                 }
 
                 if (item.type !== McpServerType.USER) {
@@ -132,7 +132,7 @@ export class WebAiMcpServerWebController {
                         const userSetting = item.userMcpServer?.find(
                             (ums) => ums.userId === user.id,
                         );
-                        item.isDisabled = userSetting ? userSetting.isDisabled : true;
+                        item.isDisabled = userSetting?.isDisabled ?? false;
                     }
                 } else {
                     if (item.type !== McpServerType.SYSTEM) return null;

@@ -21,6 +21,7 @@ storage/*
 # Testing
 coverage
 hello-page/
+test-mcp-server/
 
 # Turbo
 .turbo

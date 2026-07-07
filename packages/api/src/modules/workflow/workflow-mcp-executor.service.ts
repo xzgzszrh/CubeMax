@@ -50,8 +50,12 @@ export class WorkflowMcpExecutorService {
 
     async execute(input: WorkflowMcpExecutorInput) {
         const { userId, node, inputs } = input;
-        const { mcpServerId, toolName, timeoutMs = 60000, failOnToolError = true } =
-            node.data ?? {};
+        const {
+            mcpServerId,
+            toolName,
+            timeoutMs = 60000,
+            failOnToolError = true,
+        } = node.data ?? {};
 
         if (!userId) {
             throw new Error("MCP node requires an authenticated user");
@@ -129,7 +133,7 @@ export class WorkflowMcpExecutorService {
             },
         });
 
-        if (!userSetting || userSetting.isDisabled) {
+        if (userSetting?.isDisabled) {
             throw new Error("MCP server is disabled for current user");
         }
 
