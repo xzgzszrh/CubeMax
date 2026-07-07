@@ -66,11 +66,11 @@
                 "code": "workflow",
                 "path": "workflow",
                 "icon": "git-branch",
-                "component": "/workflows",
+                "component": "/console/workflow",
                 "permissionCode": null,
                 "sort": 150,
                 "isHidden": 0,
-                "type": 1,
+                "type": 2,
                 "sourceType": 1
             },
             {

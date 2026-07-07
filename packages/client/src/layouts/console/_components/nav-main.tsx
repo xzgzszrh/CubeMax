@@ -56,7 +56,15 @@ function normalizePath(path: string) {
   return path.replace(/\/+/g, "/").replace(/\/$/, "") || "/";
 }
 
+function isLegacyWorkflowConsoleMenu(menu: MenuItem) {
+  return menu.code === "workflow" && menu.component === "/workflows";
+}
+
 function getMenuTargetPath(menu: MenuItem, menuPath: string) {
+  if (isLegacyWorkflowConsoleMenu(menu)) {
+    return normalizePath(`/console/${menuPath || "workflow"}`);
+  }
+
   if (menu.component?.startsWith("/") && !menu.component.startsWith("/console")) {
     return normalizePath(menu.component);
   }

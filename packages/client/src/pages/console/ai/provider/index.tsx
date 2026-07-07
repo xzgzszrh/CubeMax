@@ -55,7 +55,6 @@ import {
   ChevronRight,
   Edit,
   EllipsisVertical,
-  FileJson2,
   FileText,
   Plus,
   PlusCircle,
@@ -336,9 +335,6 @@ const AiProviderIndexPage = () => {
               </div>
 
               <div className="flex min-h-12 flex-1 items-end gap-4">
-                <Button size="xs" className="flex-1" variant="outline" disabled>
-                  <FileJson2 /> 从配置文件导入
-                </Button>
                 <PermissionGuard permissions="ai-providers:create">
                   <Button
                     size="xs"
@@ -557,9 +553,17 @@ const AiProviderIndexPage = () => {
                       key={model.id}
                       className="group/model-item flex min-h-9 items-center justify-between"
                     >
-                      <span className="hidden break-all md:block">{model.name}</span>
+                      <div className="hidden min-w-0 flex-col md:flex">
+                        <span className="break-all">{model.name}</span>
+                        <span className="text-muted-foreground text-xs break-all">
+                          {model.model}
+                        </span>
+                      </div>
                       <div className="flex flex-col gap-1 md:hidden">
                         <span className="break-all">{model.name}</span>
+                        <span className="text-muted-foreground text-xs break-all">
+                          {model.model}
+                        </span>
                         <div className="flex items-center gap-1">
                           <Badge variant="outline">
                             {model.modelType.replace("-", " ").toUpperCase()}

@@ -22,13 +22,21 @@ function normalizePath(path: string) {
     return path.replace(/\/+/g, "/").replace(/\/$/, "") || "/";
 }
 
+function isLegacyWorkflowConsoleMenu(item: MenuItem) {
+    return item.code === "workflow" && item.component === "/workflows";
+}
+
 function collectConsoleMenuPaths(items: MenuItem[], parentPath = "", out: string[] = []) {
     for (const item of items) {
         const currentPath = item.path
             ? [parentPath, item.path].filter(Boolean).join("/")
             : parentPath;
 
-        if (item.type === 2 && item.path && item.path !== "#") {
+        if (
+            (item.type === 2 || isLegacyWorkflowConsoleMenu(item)) &&
+            item.path &&
+            item.path !== "#"
+        ) {
             out.push(normalizePath(`/console/${currentPath}`));
         }
 

@@ -53,6 +53,7 @@ import SystemPm2LogRotateIndexPage from "@/pages/console/system/pm2-log-rotate";
 import SystemStorageConfigIndexPage from "@/pages/console/system/storage-config";
 import SystemWebsiteConfigIndexPage from "@/pages/console/system/website-config";
 import UserListIndexPage from "@/pages/console/user/list";
+import WorkflowConfigPage from "@/pages/console/workflow";
 
 import AppNavbar from "./_components/app-navbar";
 import { AppSidebar } from "./_components/app-sidebar";
@@ -102,6 +103,7 @@ function ConsoleRoutes() {
       { path: "/datasets", element: <DatasetsIndexPage /> },
       { path: "/datasets/config", element: <DatasetsConfigPage /> },
       { path: "/provider", element: <AiProviderIndexPage /> },
+      { path: "/workflow", element: <WorkflowConfigPage /> },
       { path: "/mcp", element: <AiMcpIndexPage /> },
       { path: "/extension", element: <ExtensionIndexPage /> },
       { path: "/secret", element: <AiSecretIndexPage /> },
