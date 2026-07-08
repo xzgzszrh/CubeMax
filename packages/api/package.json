@@ -39,6 +39,7 @@
         "@buildingai/dict": "workspace:*",
         "@buildingai/dto": "workspace:*",
         "@buildingai/errors": "workspace:*",
+        "@buildingai/alipay-sdk": "workspace:*",
         "@buildingai/llm-file-parser": "workspace:*",
         "@buildingai/logger": "workspace:*",
         "@buildingai/pipe": "workspace:*",
@@ -66,6 +67,7 @@
         "adm-zip": "catalog:api",
         "ajv": "^8.17.1",
         "bcryptjs": "^3.0.2",
+        "body-parser": "2.2.0",
         "body-parser-xml": "^2.0.5",
         "callsites": "^4.1.0",
         "cli-table3": "catalog:",
@@ -91,7 +93,6 @@
         "xlsx": "^0.18.5"
     },
     "devDependencies": {
-        "@buildingai/alipay-sdk": "workspace:*",
         "@buildingai/eslint-config": "workspace:*",
         "@buildingai/types": "workspace:*",
         "@buildingai/typescript-config": "workspace:*",

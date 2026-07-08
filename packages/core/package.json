@@ -61,6 +61,7 @@
         "ali-oss": "catalog:",
         "cli-table3": "catalog:",
         "cos-nodejs-sdk-v5": "catalog:",
+        "mime-types": "3.0.1",
         "tencentcloud-sdk-nodejs-sts": "catalog:"
     },
     "devDependencies": {
