@@ -1,0 +1,97 @@
+name: cubemax-only
+
+services:
+  cubemax:
+    image: xzgzszrh/cubemax:latest
+    container_name: cubemax-app
+    restart: unless-stopped
+    ports:
+      - "4090:4090"
+    # Allows the container to reach services running on the Docker host.
+    # If your Postgres/Redis are in another Docker network, set DB_HOST/REDIS_HOST
+    # to that service name and attach this service to the same network.
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    environment:
+      TZ: Asia/Shanghai
+      NODE_ENV: production
+
+      # Base
+      APP_NAME: CubeMax
+      APP_DOMAIN: http://localhost:4090
+
+      # Server
+      SERVER_PORT: 4090
+      SERVER_CORS_ENABLED: "true"
+      SERVER_CORS_ORIGIN: "*"
+      SERVER_SHOW_DETAILED_ERRORS: "false"
+      SERVER_IS_DEMO_ENV: "false"
+
+      # JWT: replace with a long random string before public deployment.
+      JWT_SECRET: change-me-to-a-long-random-secret
+      JWT_EXPIRES_IN: 30d
+
+      # Database: fill these with your external Postgres connection.
+      DB_TYPE: postgres
+      DB_HOST: host.docker.internal
+      DB_PORT: 5432
+      DB_USERNAME: postgres
+      DB_PASSWORD: change-me-postgres-password
+      DB_DATABASE: cubemax
+      # For an empty first-time database, you can temporarily set this to "true".
+      # Set it back to "false" after initialization.
+      DB_SYNCHRONIZE: "false"
+      DB_DEV_SYNCHRONIZE: "false"
+      DB_LOGGING: "false"
+
+      # Redis: fill these with your external Redis connection.
+      REDIS_HOST: host.docker.internal
+      REDIS_PORT: 6379
+      REDIS_USERNAME: ""
+      REDIS_PASSWORD: change-me-redis-password
+      REDIS_DB: 0
+      REDIS_TTL: 86400
+      REDIS_MAX_RECONNECT_ATTEMPTS: 5
+      REDIS_RECONNECT_DELAY: 3000
+
+      # Cache
+      CACHE_TTL: 86400
+      CACHE_MAX_ITEMS: 1000
+
+      # Logs
+      LOG_LEVELS: error,warn,debug,fatal
+      LOG_WRITE_LEVELS: error,warn,debug,fatal,log
+      LOG_TO_FILE: "true"
+      LOG_DATABASE_SCHEMA: "false"
+      LOG_CLEAN_INTERVAL: 3
+
+      # Web/API prefixes
+      VITE_PRODUCTION_APP_BASE_URL: ""
+      VITE_APP_WEB_API_PREFIX: /api
+      VITE_APP_CONSOLE_API_PREFIX: /consoleapi
+
+      # Built-in MCP
+      BUILTIN_MCP_SERVER_URLS: ""
+      BUILTIN_MCP_DISCOVERY_TIMEOUT_MS: 10000
+
+      # Tavily web search/extract tools
+      TAVILY_API_KEY: ""
+    volumes:
+      - cubemax-storage:/app/storage
+      - cubemax-logs:/app/logs
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://localhost:' + (process.env.SERVER_PORT || 4090) + '/consoleapi/health').then((response) => process.exit(response.ok ? 0 : 1)).catch(() => process.exit(1))",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 120s
+
+volumes:
+  cubemax-storage:
+  cubemax-logs:
