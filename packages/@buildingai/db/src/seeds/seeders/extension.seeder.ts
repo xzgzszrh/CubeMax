@@ -30,7 +30,7 @@ interface ExtensionConfig {
  * Extension initialization seeder
  *
  * Responsible for:
- * 1. Initializing PostgreSQL extensions (pgvector, zhparser)
+ * 1. Initializing PostgreSQL extensions (required pgvector, optional zhparser)
  * 2. Initializing application extensions from configuration file
  */
 export class ExtensionSeeder extends BaseSeeder {
@@ -48,10 +48,11 @@ export class ExtensionSeeder extends BaseSeeder {
             // Initialize pgvector extension
             await this.initPgvector(dataSource);
 
-            // Initialize zhparser extension and Chinese segmentation configuration
+            // Initialize optional zhparser extension and Chinese segmentation configuration.
+            // Search falls back to PostgreSQL's simple parser when zhparser is unavailable.
             await this.initZhparser(dataSource);
 
-            this.logSuccess("Database extensions initialized successfully");
+            this.logSuccess("Required database extensions initialized successfully");
         } catch (error) {
             this.logError(`Database extension initialization failed: ${error.message}`);
             throw error;
@@ -75,7 +76,7 @@ export class ExtensionSeeder extends BaseSeeder {
     }
 
     /**
-     * Initialize zhparser extension and Chinese segmentation configuration
+     * Initialize optional zhparser extension and Chinese segmentation configuration
      */
     private async initZhparser(dataSource: DataSource): Promise<void> {
         try {
@@ -111,8 +112,9 @@ export class ExtensionSeeder extends BaseSeeder {
 
             this.logSuccess("zhparser segmentation configuration and full-text index initialized");
         } catch (error) {
-            this.logError(`zhparser initialization failed: ${error.message}`);
-            throw error;
+            this.logInfo(
+                `zhparser is unavailable, falling back to simple full-text search: ${error.message}`,
+            );
         }
     }
 
