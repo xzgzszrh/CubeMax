@@ -56,7 +56,12 @@ export function FormHeader() {
       )}
       {readonly ? undefined : (
         <Operators>
-          <NodeMenu node={node} deleteNode={handleDelete} updateTitleEdit={updateTitleEdit} />
+          <NodeMenu
+            node={node}
+            deleteNode={handleDelete}
+            updateTitleEdit={updateTitleEdit}
+            canEditTitle={isSidebar}
+          />
         </Operators>
       )}
       {isSidebar && (

@@ -12,8 +12,8 @@ import type { FormMeta } from "@flowgram.ai/free-layout-editor";
 import { Field } from "@flowgram.ai/free-layout-editor";
 import { useMemo } from "react";
 
-import { FormContent, FormHeader, FormInputs, FormItem } from "../../form-components";
-import { useNodeRenderContext } from "../../hooks";
+import { FormContent, FormHeader, FormInputs, FormItem, ReadonlyValue } from "../../form-components";
+import { useIsSidebar, useNodeRenderContext } from "../../hooks";
 import type { JsonSchema } from "../../typings";
 import {
   createEmptyMcpInputsSchema,
@@ -38,6 +38,7 @@ function findTool(servers: McpServer[], serverId?: string, toolName?: string): M
 
 function McpConfig() {
   const { readonly } = useNodeRenderContext();
+  const isSidebar = useIsSidebar();
   const { data: servers = [], isLoading } = useMcpServersAllQuery({ isDisabled: false });
 
   const serverOptions = useMemo(
@@ -54,6 +55,11 @@ function McpConfig() {
       <Field<string | undefined> name="mcpServerId">
         {({ field: serverField }) => {
           const currentServer = servers.find((server) => server.id === serverField.value);
+          const serverDisplay = isLoading
+            ? "加载中..."
+            : currentServer
+              ? getServerLabel(currentServer)
+              : serverField.value;
           const toolOptions =
             currentServer?.tools?.map((tool) => ({
               label: getToolLabel(tool),
@@ -62,69 +68,89 @@ function McpConfig() {
 
           return (
             <Field<string | undefined> name="toolName">
-              {({ field: toolField }) => (
-                <Field<JsonSchema> name="inputs">
-                  {({ field: inputsField }) => (
-                    <Field<Record<string, IFlowValue>> name="inputsValues">
-                      {({ field: inputsValuesField }) => (
-                        <Field<Record<string, unknown>> name="toolInputSchema">
-                          {({ field: toolInputSchemaField }) => (
-                            <>
-                              <FormItem name="MCP 服务" required type="string">
-                                <Select
-                                  value={serverField.value}
-                                  onChange={(value) => {
-                                    serverField.onChange(value as string);
-                                    toolField.onChange(undefined);
-                                    toolInputSchemaField.onChange({});
-                                    inputsField.onChange(createEmptyMcpInputsSchema());
-                                    inputsValuesField.onChange({});
-                                  }}
-                                  disabled={readonly || isLoading}
-                                  emptyContent={isLoading ? "加载中..." : "暂无 MCP 服务"}
-                                  filter
-                                  optionList={serverOptions}
-                                  placeholder={isLoading ? "加载中..." : "选择 MCP 服务"}
-                                  showClear
-                                  size="small"
-                                  style={{ width: "100%" }}
-                                />
-                              </FormItem>
+              {({ field: toolField }) => {
+                const selectedTool = currentServer?.tools?.find(
+                  (tool) => tool.name === toolField.value,
+                );
+                const toolDisplay = selectedTool ? getToolLabel(selectedTool) : toolField.value;
 
-                              <FormItem name="工具" required type="string">
-                                <Select
-                                  value={toolField.value}
-                                  onChange={(value) => {
-                                    const toolName = value as string;
-                                    const tool = findTool(servers, serverField.value, toolName);
-                                    const inputSchema = tool?.inputSchema ?? {};
-                                    const inputsSchema = createMcpToolInputsSchema(inputSchema);
+                if (!isSidebar) {
+                  return (
+                    <>
+                      <FormItem name="MCP 服务" required type="string">
+                        <ReadonlyValue value={serverDisplay} />
+                      </FormItem>
+                      <FormItem name="工具" required type="string">
+                        <ReadonlyValue value={toolDisplay} />
+                      </FormItem>
+                    </>
+                  );
+                }
 
-                                    toolField.onChange(toolName);
-                                    toolInputSchemaField.onChange(inputSchema);
-                                    inputsField.onChange(inputsSchema);
-                                    inputsValuesField.onChange(
-                                      createMcpInputsValues(inputsSchema, inputsValuesField.value),
-                                    );
-                                  }}
-                                  disabled={readonly || !serverField.value}
-                                  emptyContent="暂无工具"
-                                  filter
-                                  optionList={toolOptions}
-                                  placeholder="选择工具"
-                                  showClear
-                                  size="small"
-                                  style={{ width: "100%" }}
-                                />
-                              </FormItem>
-                            </>
-                          )}
-                        </Field>
-                      )}
-                    </Field>
-                  )}
-                </Field>
-              )}
+                return (
+                  <Field<JsonSchema> name="inputs">
+                    {({ field: inputsField }) => (
+                      <Field<Record<string, IFlowValue>> name="inputsValues">
+                        {({ field: inputsValuesField }) => (
+                          <Field<Record<string, unknown>> name="toolInputSchema">
+                            {({ field: toolInputSchemaField }) => (
+                              <>
+                                <FormItem name="MCP 服务" required type="string">
+                                  <Select
+                                    value={serverField.value}
+                                    onChange={(value) => {
+                                      serverField.onChange(value as string);
+                                      toolField.onChange(undefined);
+                                      toolInputSchemaField.onChange({});
+                                      inputsField.onChange(createEmptyMcpInputsSchema());
+                                      inputsValuesField.onChange({});
+                                    }}
+                                    disabled={readonly || isLoading}
+                                    emptyContent={isLoading ? "加载中..." : "暂无 MCP 服务"}
+                                    filter
+                                    optionList={serverOptions}
+                                    placeholder={isLoading ? "加载中..." : "选择 MCP 服务"}
+                                    showClear
+                                    size="small"
+                                    style={{ width: "100%" }}
+                                  />
+                                </FormItem>
+
+                                <FormItem name="工具" required type="string">
+                                  <Select
+                                    value={toolField.value}
+                                    onChange={(value) => {
+                                      const toolName = value as string;
+                                      const tool = findTool(servers, serverField.value, toolName);
+                                      const inputSchema = tool?.inputSchema ?? {};
+                                      const inputsSchema = createMcpToolInputsSchema(inputSchema);
+
+                                      toolField.onChange(toolName);
+                                      toolInputSchemaField.onChange(inputSchema);
+                                      inputsField.onChange(inputsSchema);
+                                      inputsValuesField.onChange(
+                                        createMcpInputsValues(inputsSchema, inputsValuesField.value),
+                                      );
+                                    }}
+                                    disabled={readonly || !serverField.value}
+                                    emptyContent="暂无工具"
+                                    filter
+                                    optionList={toolOptions}
+                                    placeholder="选择工具"
+                                    showClear
+                                    size="small"
+                                    style={{ width: "100%" }}
+                                  />
+                                </FormItem>
+                              </>
+                            )}
+                          </Field>
+                        )}
+                      </Field>
+                    )}
+                  </Field>
+                );
+              }}
             </Field>
           );
         }}
@@ -135,34 +161,43 @@ function McpConfig() {
 
 function McpOptions() {
   const { readonly } = useNodeRenderContext();
+  const isSidebar = useIsSidebar();
 
   return (
     <>
       <FormItem name="超时(ms)" required type="number">
         <Field<number> name="timeoutMs" defaultValue={60000}>
-          {({ field }) => (
-            <InputNumber
-              disabled={readonly}
-              min={1000}
-              onChange={(value) => field.onChange(value as number)}
-              size="small"
-              style={{ width: "100%" }}
-              value={field.value}
-            />
-          )}
+          {({ field }) =>
+            isSidebar ? (
+              <InputNumber
+                disabled={readonly}
+                min={1000}
+                onChange={(value) => field.onChange(value as number)}
+                size="small"
+                style={{ width: "100%" }}
+                value={field.value}
+              />
+            ) : (
+              <ReadonlyValue value={field.value} />
+            )
+          }
         </Field>
       </FormItem>
 
       <FormItem name="出错时失败" required type="boolean">
         <Field<boolean> name="failOnToolError" defaultValue>
-          {({ field }) => (
-            <Switch
-              checked={field.value}
-              disabled={readonly}
-              onChange={(checked) => field.onChange(checked)}
-              size="small"
-            />
-          )}
+          {({ field }) =>
+            isSidebar ? (
+              <Switch
+                checked={field.value}
+                disabled={readonly}
+                onChange={(checked) => field.onChange(checked)}
+                size="small"
+              />
+            ) : (
+              <ReadonlyValue value={field.value} />
+            )
+          }
         </Field>
       </FormItem>
     </>

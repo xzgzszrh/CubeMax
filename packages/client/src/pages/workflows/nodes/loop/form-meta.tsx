@@ -17,7 +17,7 @@ import type { IFlowRefValue } from "@flowgram.ai/form-materials";
 
 import { defaultFormMeta } from "../default-form-meta";
 import { useIsSidebar, useNodeRenderContext } from "../../hooks";
-import { FormHeader, FormContent, FormItem, Feedback } from "../../form-components";
+import { FormHeader, FormContent, FormItem, Feedback, ReadonlyValue } from "../../form-components";
 
 interface LoopNodeJSON extends FlowNodeJSON {
   data: {
@@ -34,13 +34,17 @@ export const LoopFormRender = ({ form }: FormRenderProps<LoopNodeJSON>) => {
     <Field<IFlowRefValue> name={`loopFor`}>
       {({ field, fieldState }) => (
         <FormItem name={"循环数组"} type={"array"} required>
-          <BatchVariableSelector
-            style={{ width: "100%" }}
-            value={field.value?.content}
-            onChange={(val) => field.onChange({ type: "ref", content: val })}
-            readonly={readonly}
-            hasError={Object.keys(fieldState?.errors || {}).length > 0}
-          />
+          {isSidebar ? (
+            <BatchVariableSelector
+              style={{ width: "100%" }}
+              value={field.value?.content}
+              onChange={(val) => field.onChange({ type: "ref", content: val })}
+              readonly={readonly}
+              hasError={Object.keys(fieldState?.errors || {}).length > 0}
+            />
+          ) : (
+            <ReadonlyValue value={field.value} />
+          )}
           <Feedback errors={fieldState?.errors} />
         </FormItem>
       )}

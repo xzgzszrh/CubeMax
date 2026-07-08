@@ -3,14 +3,15 @@
  * SPDX-License-Identifier: MIT
  */
 
-import { Badge, Button } from "@douyinfe/semi-ui";
+import { IconSaveStroked } from "@douyinfe/semi-icons";
+import { Badge, Button, IconButton, Tooltip } from "@douyinfe/semi-ui";
 import type { FlowNodeEntity } from "@flowgram.ai/free-layout-editor";
 import { useClientContext } from "@flowgram.ai/free-layout-editor";
 import { useCallback, useEffect, useState } from "react";
 
 import { serializeWorkflowSchema, useWorkflowSave } from "../../context";
 
-export function Save(props: { disabled: boolean }) {
+export function Save(props: { disabled: boolean; compact?: boolean }) {
   const [errorCount, setErrorCount] = useState(0);
   const clientContext = useClientContext();
   const { saveSchema, saving } = useWorkflowSave();
@@ -47,6 +48,30 @@ export function Save(props: { disabled: boolean }) {
     );
     return () => dispose.dispose();
   }, [clientContext, updateValidateData]);
+
+  if (props.compact) {
+    const button = (
+      <IconButton
+        aria-label="保存"
+        disabled={props.disabled || saving}
+        icon={<IconSaveStroked />}
+        loading={saving}
+        onClick={onSave}
+        theme="borderless"
+        type={errorCount === 0 ? "tertiary" : "danger"}
+      />
+    );
+
+    if (errorCount === 0) {
+      return <Tooltip content="保存">{button}</Tooltip>;
+    }
+
+    return (
+      <Badge count={errorCount} position="rightTop" type="danger">
+        <Tooltip content="保存">{button}</Tooltip>
+      </Badge>
+    );
+  }
 
   if (errorCount === 0) {
     return (

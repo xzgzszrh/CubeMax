@@ -7,14 +7,14 @@ import { useState, useEffect, useCallback } from "react";
 
 import { useClientContext } from "@flowgram.ai/free-layout-editor";
 import type { FlowNodeEntity } from "@flowgram.ai/free-layout-editor";
-import { Button, Badge } from "@douyinfe/semi-ui";
+import { Button, Badge, IconButton, Tooltip } from "@douyinfe/semi-ui";
 import { IconPlay } from "@douyinfe/semi-icons";
 
 import { useTestRunFormPanel } from "../../../plugins/panel-manager-plugin/hooks";
 
 import styles from "./index.module.less";
 
-export function TestRunButton(props: { disabled: boolean }) {
+export function TestRunButton(props: { disabled: boolean; compact?: boolean }) {
   const [errorCount, setErrorCount] = useState(0);
   const clientContext = useClientContext();
   const updateValidateData = useCallback(() => {
@@ -50,6 +50,29 @@ export function TestRunButton(props: { disabled: boolean }) {
     );
     return () => dispose.dispose();
   }, [clientContext]);
+
+  if (props.compact) {
+    const button = (
+      <IconButton
+        aria-label="测试运行"
+        disabled={props.disabled}
+        icon={<IconPlay size="small" />}
+        onClick={onTestRun}
+        theme="borderless"
+        type={errorCount === 0 ? "tertiary" : "danger"}
+      />
+    );
+
+    if (errorCount === 0) {
+      return <Tooltip content="测试运行">{button}</Tooltip>;
+    }
+
+    return (
+      <Badge count={errorCount} position="rightTop" type="danger">
+        <Tooltip content="测试运行">{button}</Tooltip>
+      </Badge>
+    );
+  }
 
   const button =
     errorCount === 0 ? (

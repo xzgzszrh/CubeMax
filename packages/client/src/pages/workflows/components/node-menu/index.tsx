@@ -27,9 +27,15 @@ interface NodeMenuProps {
   node: WorkflowNodeEntity;
   updateTitleEdit?: (setEditing: boolean) => void;
   deleteNode: () => void;
+  canEditTitle?: boolean;
 }
 
-export const NodeMenu: FC<NodeMenuProps> = ({ node, deleteNode, updateTitleEdit }) => {
+export const NodeMenu: FC<NodeMenuProps> = ({
+  node,
+  deleteNode,
+  updateTitleEdit,
+  canEditTitle = true,
+}) => {
   const [visible, setVisible] = useState(true);
   const clientContext = useClientContext();
   const registry = node.getNodeRegistry<FlowNodeRegistry>();
@@ -117,7 +123,7 @@ export const NodeMenu: FC<NodeMenuProps> = ({ node, deleteNode, updateTitleEdit 
       position="bottomRight"
       render={
         <Dropdown.Menu>
-          <Dropdown.Item onClick={handleEditTitle}>编辑标题</Dropdown.Item>
+          {canEditTitle && <Dropdown.Item onClick={handleEditTitle}>编辑标题</Dropdown.Item>}
           {canMoveOut && <Dropdown.Item onClick={handleMoveOut}>移出容器</Dropdown.Item>}
           <Dropdown.Item onClick={handleCopy} disabled={registry.meta!.copyDisable === true}>
             创建副本

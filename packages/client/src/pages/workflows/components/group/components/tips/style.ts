@@ -20,7 +20,7 @@ export const GroupTipsStyle = styled.div`
     height: 100%;
     width: 100%;
     background-color: rgb(255 255 255);
-    border-radius: 8px 8px 0 0;
+    border-radius: 16px 16px 0 0;
 
     .content {
       overflow: hidden;

@@ -19,7 +19,7 @@ export function SidebarNodeRenderer(props: { node: FlowNodeEntity }) {
           background: "rgb(251, 251, 251)",
           height: "100%",
           width: "100%",
-          borderRadius: 8,
+          borderRadius: 16,
           border: "1px solid rgba(82,100,154, 0.13)",
           boxSizing: "border-box",
         }}

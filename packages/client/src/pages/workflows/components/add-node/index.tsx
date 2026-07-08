@@ -4,12 +4,33 @@
  */
 
 import { Button } from "@douyinfe/semi-ui";
+import { IconButton, Tooltip } from "@douyinfe/semi-ui";
 import { IconPlus } from "@douyinfe/semi-icons";
 
 import { useAddNode } from "./use-add-node";
 
-export const AddNode = (props: { disabled: boolean }) => {
+export const AddNode = (props: { disabled: boolean; compact?: boolean }) => {
   const addNode = useAddNode();
+
+  if (props.compact) {
+    return (
+      <Tooltip content="添加节点">
+        <IconButton
+          aria-label="添加节点"
+          data-testid="demo.free-layout.add-node"
+          disabled={props.disabled}
+          icon={<IconPlus />}
+          onClick={(e) => {
+            const rect = e.currentTarget.getBoundingClientRect();
+            addNode(rect);
+          }}
+          theme="borderless"
+          type="tertiary"
+        />
+      </Tooltip>
+    );
+  }
+
   return (
     <Button
       data-testid="demo.free-layout.add-node"

@@ -7,14 +7,16 @@ import { DynamicValueInput } from "@flowgram.ai/form-materials";
 import { Field } from "@flowgram.ai/free-layout-editor";
 
 import { SafePromptEditorWithVariables } from "../../components/safe-editor-with-variables";
-import { useNodeRenderContext } from "../../hooks";
+import { useIsSidebar, useNodeRenderContext } from "../../hooks";
 import type { JsonSchema } from "../../typings";
 import { Feedback } from "../feedback";
 import { FormItem } from "../form-item";
+import { ReadonlyValue } from "../readonly-value";
 import { LLMModelSelect } from "./model-select";
 
 export function FormInputs() {
   const { readonly } = useNodeRenderContext();
+  const isSidebar = useIsSidebar();
 
   return (
     <Field<JsonSchema> name="inputs">
@@ -44,25 +46,31 @@ export function FormInputs() {
                   type={property.type as string}
                   required={required.includes(key)}
                 >
-                  {formComponent === "prompt-editor" && (
-                    <SafePromptEditorWithVariables
-                      value={field.value}
-                      onChange={field.onChange}
-                      readonly={readonly}
-                      hasError={Object.keys(fieldState?.errors || {}).length > 0}
-                    />
-                  )}
-                  {formComponent === "llm-model-select" && (
-                    <LLMModelSelect value={field.value} onChange={field.onChange} />
-                  )}
-                  {!formComponent && (
-                    <DynamicValueInput
-                      value={field.value}
-                      onChange={field.onChange}
-                      readonly={readonly}
-                      hasError={Object.keys(fieldState?.errors || {}).length > 0}
-                      schema={property}
-                    />
+                  {!isSidebar ? (
+                    <ReadonlyValue value={field.value} multiline={vertical} />
+                  ) : (
+                    <>
+                      {formComponent === "prompt-editor" && (
+                        <SafePromptEditorWithVariables
+                          value={field.value}
+                          onChange={field.onChange}
+                          readonly={readonly}
+                          hasError={Object.keys(fieldState?.errors || {}).length > 0}
+                        />
+                      )}
+                      {formComponent === "llm-model-select" && (
+                        <LLMModelSelect value={field.value} onChange={field.onChange} />
+                      )}
+                      {!formComponent && (
+                        <DynamicValueInput
+                          value={field.value}
+                          onChange={field.onChange}
+                          readonly={readonly}
+                          hasError={Object.keys(fieldState?.errors || {}).length > 0}
+                          schema={property}
+                        />
+                      )}
+                    </>
                   )}
                   <Feedback errors={fieldState?.errors} warnings={fieldState?.warnings} />
                 </FormItem>

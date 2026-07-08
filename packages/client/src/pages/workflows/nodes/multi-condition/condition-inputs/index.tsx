@@ -13,7 +13,7 @@ import { Button, Select, Space } from "@douyinfe/semi-ui";
 import { IconCrossCircleStroked, IconDelete, IconPlus } from "@douyinfe/semi-icons";
 
 import { useNodeRenderContext, useIsSidebar } from "../../../hooks";
-import { Feedback, FormItem } from "../../../form-components";
+import { Feedback, FormItem, ReadonlyValue } from "../../../form-components";
 import { ConditionBranch, ConditionBranchLogic, ConditionPort } from "./styles";
 
 interface ConditionValue {
@@ -29,6 +29,7 @@ interface BranchItem {
 export function ConditionInputs() {
   const { node, readonly } = useNodeRenderContext();
   const isSidebar = useIsSidebar();
+  const inputReadonly = readonly || !isSidebar;
 
   useLayoutEffect(() => {
     window.requestAnimationFrame(() => {
@@ -53,20 +54,25 @@ export function ConditionInputs() {
                   <ConditionBranch>
                     {field.value.conditions.length > 1 && (
                       <ConditionBranchLogic>
-                        <Select
-                          size="small"
-                          value={field.value.logic}
-                          style={{ backgroundColor: "var(--semi-color-bg-0)" }}
-                          onChange={(v) =>
-                            field.onChange({
-                              ...field.value,
-                              logic: (v as string) ?? "and",
-                            })
-                          }
-                        >
-                          <Select.Option value="and">并且</Select.Option>
-                          <Select.Option value="or">或者</Select.Option>
-                        </Select>
+                        {isSidebar ? (
+                          <Select
+                            size="small"
+                            value={field.value.logic}
+                            disabled={readonly}
+                            style={{ backgroundColor: "var(--semi-color-bg-0)" }}
+                            onChange={(v) =>
+                              field.onChange({
+                                ...field.value,
+                                logic: (v as string) ?? "and",
+                              })
+                            }
+                          >
+                            <Select.Option value="and">并且</Select.Option>
+                            <Select.Option value="or">或者</Select.Option>
+                          </Select>
+                        ) : (
+                          <ReadonlyValue value={field.value.logic === "or" ? "或者" : "并且"} />
+                        )}
                       </ConditionBranchLogic>
                     )}
                     <div style={{ flex: 1 }}>
@@ -79,9 +85,12 @@ export function ConditionInputs() {
                             <Space align="center" style={{ padding: "6px 0", width: "100%" }}>
                               <div style={{ flex: 1 }}>
                                 <ConditionRow
-                                  readonly={readonly}
+                                  readonly={inputReadonly}
                                   value={conditionField.value.value}
                                   onChange={(v) => {
+                                    if (inputReadonly) {
+                                      return;
+                                    }
                                     conditionField.onChange({
                                       value: v,
                                       key: conditionField.value.key,
@@ -158,7 +167,7 @@ export function ConditionInputs() {
             <ConditionPort data-port-id="else" data-port-type="output" />
           </FormItem>
 
-          {!readonly && (
+          {isSidebar && !readonly && (
             <div>
               <Button
                 theme="borderless"

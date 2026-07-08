@@ -11,8 +11,8 @@ import {
   SafeJsonEditorWithVariables,
   SafePromptEditorWithVariables,
 } from "../../../components/safe-editor-with-variables";
-import { FormItem } from "../../../form-components";
-import { useNodeRenderContext } from "../../../hooks";
+import { FormItem, ReadonlyValue } from "../../../form-components";
+import { useIsSidebar, useNodeRenderContext } from "../../../hooks";
 
 const BODY_TYPE_OPTIONS = [
   {
@@ -31,38 +31,47 @@ const BODY_TYPE_OPTIONS = [
 
 export function Body() {
   const { readonly } = useNodeRenderContext();
+  const isSidebar = useIsSidebar();
 
   const renderBodyEditor = (bodyType: string) => {
     switch (bodyType) {
       case "JSON":
         return (
           <Field<IFlowTemplateValue> name="body.json">
-            {({ field }) => (
-              <SafeJsonEditorWithVariables
-                value={field.value?.content}
-                readonly={readonly}
-                activeLinePlaceholder="输入 '@' 使用变量"
-                onChange={(value) => {
-                  field.onChange({ type: "template", content: value });
-                }}
-              />
-            )}
+            {({ field }) =>
+              isSidebar ? (
+                <SafeJsonEditorWithVariables
+                  value={field.value?.content}
+                  readonly={readonly}
+                  activeLinePlaceholder="输入 '@' 使用变量"
+                  onChange={(value) => {
+                    field.onChange({ type: "template", content: value });
+                  }}
+                />
+              ) : (
+                <ReadonlyValue value={field.value} multiline />
+              )
+            }
           </Field>
         );
       case "raw-text":
         return (
           <Field<IFlowTemplateValue> name="body.rawText">
-            {({ field }) => (
-              <SafePromptEditorWithVariables
-                disableMarkdownHighlight
-                readonly={readonly}
-                style={{ flexGrow: 1 }}
-                placeholder="请输入原始文本，输入 '{' 使用变量"
-                onChange={(value) => {
-                  field.onChange(value!);
-                }}
-              />
-            )}
+            {({ field }) =>
+              isSidebar ? (
+                <SafePromptEditorWithVariables
+                  disableMarkdownHighlight
+                  readonly={readonly}
+                  style={{ flexGrow: 1 }}
+                  placeholder="请输入原始文本，输入 '{' 使用变量"
+                  onChange={(value) => {
+                    field.onChange(value!);
+                  }}
+                />
+              ) : (
+                <ReadonlyValue value={field.value} multiline />
+              )
+            }
           </Field>
         );
       default:
@@ -75,16 +84,23 @@ export function Body() {
       {({ field }) => (
         <div style={{ marginTop: 5 }}>
           <FormItem name="请求体" vertical type="object">
-            <Select
-              value={field.value}
-              onChange={(value) => {
-                field.onChange(value as string);
-              }}
-              style={{ width: "100%", marginBottom: 10 }}
-              disabled={readonly}
-              size="small"
-              optionList={BODY_TYPE_OPTIONS}
-            />
+            {isSidebar ? (
+              <Select
+                value={field.value}
+                onChange={(value) => {
+                  field.onChange(value as string);
+                }}
+                style={{ width: "100%", marginBottom: 10 }}
+                disabled={readonly}
+                size="small"
+                optionList={BODY_TYPE_OPTIONS}
+              />
+            ) : (
+              <ReadonlyValue
+                value={BODY_TYPE_OPTIONS.find((item) => item.value === field.value)?.label}
+                style={{ marginBottom: 10 }}
+              />
+            )}
             {renderBodyEditor(field.value)}
           </FormItem>
         </div>

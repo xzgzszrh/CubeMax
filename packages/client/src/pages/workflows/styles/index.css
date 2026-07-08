@@ -62,7 +62,7 @@
 
 .node-running {
   border: 1px dashed rgb(78, 64, 229) !important;
-  border-radius: 8px;
+  border-radius: 16px;
 }
 .demo-editor {
   flex-grow: 1;

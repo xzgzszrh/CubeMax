@@ -25,7 +25,7 @@ export const BlockStartNodeRegistry: FlowNodeRegistry = {
       minWidth: "unset",
       width: "100%",
       borderWidth: 2,
-      borderRadius: 12,
+      borderRadius: 20,
       cursor: "move",
     },
   },

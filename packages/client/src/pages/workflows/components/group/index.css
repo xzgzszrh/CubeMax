@@ -4,7 +4,7 @@
  */
 
 .workflow-group-render {
-    border-radius: 8px;
+    border-radius: 16px;
     pointer-events: none;
 }
 
@@ -16,7 +16,7 @@
     width: fit-content;
     background-color: #fefce8;
     border: 1px solid #facc15;
-    border-radius: 8px;
+    border-radius: 16px;
     padding-right: 8px;
     pointer-events: auto;
 }
@@ -30,7 +30,7 @@
     position: absolute;
     top: 35px;
     right: 0;
-    border-radius: 8px;
+    border-radius: 16px;
     cursor: pointer;
     pointer-events: auto;
 }
@@ -49,7 +49,7 @@
     top: 0;
     background-color: #fddf4729;
     border: 1px solid #fde047;
-    border-radius: 8px;
+    border-radius: 16px;
     width: 100%;
 }
 
@@ -87,7 +87,7 @@
 .workflow-group-color {
     width: 16px;
     height: 16px;
-    border-radius: 8px;
+    border-radius: 16px;
     background-color: #fde047;
     margin-left: 4px;
     cursor: pointer;

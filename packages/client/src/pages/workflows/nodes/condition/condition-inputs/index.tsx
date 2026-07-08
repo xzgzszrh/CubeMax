@@ -12,7 +12,7 @@ import type { ConditionRowValueType } from "@flowgram.ai/form-materials";
 import { Button } from "@douyinfe/semi-ui";
 import { IconPlus, IconCrossCircleStroked } from "@douyinfe/semi-icons";
 
-import { useNodeRenderContext } from "../../../hooks";
+import { useIsSidebar, useNodeRenderContext } from "../../../hooks";
 import { FormItem } from "../../../form-components";
 import { Feedback } from "../../../form-components";
 import { ConditionPort } from "./styles";
@@ -24,6 +24,8 @@ interface ConditionValue {
 
 export function ConditionInputs() {
   const { node, readonly } = useNodeRenderContext();
+  const isSidebar = useIsSidebar();
+  const inputReadonly = readonly || !isSidebar;
 
   useLayoutEffect(() => {
     window.requestAnimationFrame(() => {
@@ -41,13 +43,18 @@ export function ConditionInputs() {
                 <FormItem name="如果" type="boolean" required={true} labelWidth={50}>
                   <div style={{ display: "flex", alignItems: "center" }}>
                     <ConditionRow
-                      readonly={readonly}
+                      readonly={inputReadonly}
                       style={{ flexGrow: 1, overflow: "hidden" }}
                       value={childField.value.value}
-                      onChange={(v) => childField.onChange({ value: v, key: childField.value.key })}
+                      onChange={(v) => {
+                        if (inputReadonly) {
+                          return;
+                        }
+                        childField.onChange({ value: v, key: childField.value.key });
+                      }}
                     />
 
-                    {!readonly && (
+                    {isSidebar && !readonly && (
                       <Button
                         theme="borderless"
                         disabled={readonly}
@@ -66,7 +73,7 @@ export function ConditionInputs() {
           <FormItem name="否则" type="boolean" required={true} labelWidth={100}>
             <ConditionPort data-port-id="else" data-port-type="output" />
           </FormItem>
-          {!readonly && (
+          {isSidebar && !readonly && (
             <div>
               <Button
                 theme="borderless"

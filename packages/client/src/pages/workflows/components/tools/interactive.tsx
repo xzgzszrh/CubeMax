@@ -31,7 +31,8 @@ export enum InteractiveType {
   Pad = "PAD",
 }
 
-export const Interactive = () => {
+export const Interactive = (props: { compact?: boolean }) => {
+  const { compact = false } = props;
   const tools = usePlaygroundTools();
   const [visible, setVisible] = useState(false);
 
@@ -57,6 +58,7 @@ export const Interactive = () => {
     <Popover trigger="custom" position="top" visible={visible} onClickOutSide={handleClose}>
       <Tooltip
         content={mousePadTooltip}
+        position={compact ? "right" : "top"}
         style={{ display: showInteractivePanel ? "none" : "block" }}
       >
         <div className="workflow-toolbar-interactive">
@@ -70,18 +72,18 @@ export const Interactive = () => {
             onPopupVisibleChange={setShowInteractivePanel}
             containerStyle={{
               border: "none",
-              height: "32px",
-              width: "32px",
+              height: compact ? "40px" : "32px",
+              width: compact ? "40px" : "32px",
               justifyContent: "center",
               alignItems: "center",
               gap: "2px",
               padding: "4px",
-              borderRadius: "var(--small, 6px)",
+              borderRadius: compact ? "12px" : "var(--small, 6px)",
             }}
             iconStyle={{
               margin: "0",
-              width: "16px",
-              height: "16px",
+              width: compact ? "18px" : "16px",
+              height: compact ? "18px" : "16px",
             }}
             arrowStyle={{
               width: "12px",
