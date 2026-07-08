@@ -1,6 +1,7 @@
+import type { UserPlayground } from "@buildingai/db";
 import { SkipTransform } from "@buildingai/decorators";
 import { Playground } from "@buildingai/decorators/playground.decorator";
-import type { UserPlayground } from "@buildingai/db";
+import { WebController } from "@common/decorators/controller.decorator";
 import type {
     TaskCancelOutput,
     TaskReportOutput,
@@ -8,12 +9,12 @@ import type {
     TaskRunOutput,
     TaskValidateOutput,
 } from "@flowgram.ai/runtime-interface";
-import { WebController } from "@common/decorators/controller.decorator";
 import { Body, Get, Post, Put, Query } from "@nestjs/common";
 
 import { WorkflowEmbeddedExecutorService } from "./workflow-embedded-executor.service";
-import { WorkflowRuntimeTaskDto, WorkflowRuntimeTaskIdDto } from "./workflow-runtime.dto";
+import { WorkflowLlmExecutorService } from "./workflow-llm-executor.service";
 import { WorkflowMcpExecutorService } from "./workflow-mcp-executor.service";
+import { WorkflowRuntimeTaskDto, WorkflowRuntimeTaskIdDto } from "./workflow-runtime.dto";
 
 type WorkflowRuntimeJsModule = typeof import("@flowgram.ai/runtime-js");
 
@@ -32,11 +33,13 @@ export class WorkflowRuntimeController {
     constructor(
         private readonly workflowMcpExecutorService: WorkflowMcpExecutorService,
         private readonly workflowEmbeddedExecutorService: WorkflowEmbeddedExecutorService,
+        private readonly workflowLlmExecutorService: WorkflowLlmExecutorService,
     ) {}
 
     private async loadConfiguredRuntime(): Promise<WorkflowRuntimeJsModule> {
         const runtime = await loadRuntimeJs();
         runtime.registerMCPExecutor((input) => this.workflowMcpExecutorService.execute(input));
+        runtime.registerLLMExecutor((input) => this.workflowLlmExecutorService.execute(input));
         return runtime;
     }
 

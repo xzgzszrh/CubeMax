@@ -1,0 +1,68 @@
+import type {
+    FlowGramAPIName,
+    TaskCancelInput,
+    TaskCancelOutput,
+    TaskReportInput,
+    TaskReportOutput,
+    TaskResultInput,
+    TaskResultOutput,
+    TaskRunInput,
+    TaskRunOutput,
+    TaskValidateInput,
+    TaskValidateOutput,
+} from "@flowgram.ai/runtime-interface";
+
+export type WorkflowRuntimeContextInput = {
+    userId?: string;
+    [key: string]: unknown;
+};
+
+export type WorkflowRuntimeTaskValidateInput = TaskValidateInput & {
+    context?: WorkflowRuntimeContextInput;
+};
+
+export type WorkflowRuntimeTaskRunInput = TaskRunInput & {
+    context?: WorkflowRuntimeContextInput;
+};
+
+export declare const TaskValidateAPI: (
+    input: WorkflowRuntimeTaskValidateInput,
+) => Promise<TaskValidateOutput>;
+export declare const TaskRunAPI: (input: WorkflowRuntimeTaskRunInput) => Promise<TaskRunOutput>;
+export declare const TaskResultAPI: (input: TaskResultInput) => Promise<TaskResultOutput>;
+export declare const TaskReportAPI: (input: TaskReportInput) => Promise<TaskReportOutput>;
+export declare const TaskCancelAPI: (input: TaskCancelInput) => Promise<TaskCancelOutput>;
+
+export declare const WorkflowRuntimeAPIs: Record<FlowGramAPIName, (input: any) => any>;
+
+export type LLMExecutorInput = {
+    userId?: string;
+    node: {
+        id: string;
+        type: string;
+        data?: Record<string, unknown>;
+    };
+    inputs: Record<string, unknown>;
+};
+
+export type LLMExecutorHandler = (
+    input: LLMExecutorInput,
+) => Promise<Record<string, unknown>> | Record<string, unknown>;
+
+export declare const registerLLMExecutor: (executor: LLMExecutorHandler) => void;
+
+export type MCPExecutorInput = {
+    userId?: string;
+    node: {
+        id: string;
+        type: string;
+        data?: Record<string, unknown>;
+    };
+    inputs: Record<string, unknown>;
+};
+
+export type MCPExecutorHandler = (
+    input: MCPExecutorInput,
+) => Promise<Record<string, unknown>> | Record<string, unknown>;
+
+export declare const registerMCPExecutor: (executor: MCPExecutorHandler) => void;
