@@ -15,10 +15,10 @@ export const LLMNodeRegistry: FlowNodeRegistry = {
   type: WorkflowNodeType.LLM,
   info: {
     icon: iconLLM,
-    description:
-      "Call the large language model and use variables and prompt words to generate responses.",
+    description: "调用大语言模型，并结合变量和提示词生成回复。",
   },
   meta: {
+    nodePanelLabel: "大模型",
     size: {
       width: 360,
       height: 390,
@@ -29,13 +29,13 @@ export const LLMNodeRegistry: FlowNodeRegistry = {
       id: `llm_${nanoid(5)}`,
       type: "llm",
       data: {
-        title: `LLM_${++index}`,
+        title: `大模型_${++index}`,
         inputsValues: createLLMInputsValues(),
         inputs: createLLMInputsSchema(),
         outputs: {
           type: "object",
           properties: {
-            result: { type: "string" },
+            result: { type: "string", title: "结果" },
           },
         },
       },

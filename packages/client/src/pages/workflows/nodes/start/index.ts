@@ -23,8 +23,7 @@ export const StartNodeRegistry: FlowNodeRegistry = {
   },
   info: {
     icon: iconStart,
-    description:
-      "The starting node of the workflow, used to set the information needed to initiate the workflow.",
+    description: "工作流的开始节点，用于配置启动工作流所需的输入信息。",
   },
   /**
    * Render node via formMeta

@@ -82,11 +82,11 @@ export const MousePadSelector: React.FC<
       spacing={20}
       content={
         <div className={"ui-mouse-pad-selector-popover"}>
-          <Typography.Title heading={4}>{"Interaction mode"}</Typography.Title>
+          <Typography.Title heading={4}>{"交互模式"}</Typography.Title>
           <div className={"ui-mouse-pad-selector-popover-options"}>
             <InteractiveItem
-              title={"Mouse-Friendly"}
-              subTitle={"Drag the canvas with the left mouse button, zoom with the scroll wheel."}
+              title={"鼠标模式"}
+              subTitle={"按住鼠标左键拖动画布，滚轮缩放。"}
               value={InteractiveType.Mouse}
               selected={value === InteractiveType.Mouse}
               icon={<IconMouse />}
@@ -94,10 +94,8 @@ export const MousePadSelector: React.FC<
             />
 
             <InteractiveItem
-              title={"Touchpad-Friendly"}
-              subTitle={
-                "Drag with two fingers moving in the same direction, zoom by pinching or spreading two fingers."
-              }
+              title={"触控板模式"}
+              subTitle={"双指同向移动拖动画布，双指捏合或张开缩放。"}
               value={InteractiveType.Pad}
               selected={value === InteractiveType.Pad}
               icon={<IconPad />}

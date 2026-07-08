@@ -44,6 +44,7 @@ export type BuiltinMcpTool = {
  */
 export type BuiltinMcpServer = {
     id: string;
+    key: string;
     name: string;
     alias?: string;
     description?: string;
@@ -115,6 +116,13 @@ export class BuiltinMcpRegistryService implements OnApplicationBootstrap {
     }
 
     /**
+     * 根据 catalog key 获取内置MCP服务
+     */
+    getServerByKey(key: string): BuiltinMcpServer | undefined {
+        return this.listServers().find((server) => server.key === key);
+    }
+
+    /**
      * 获取某个内置MCP服务下的工具
      */
     getTool(serverId: string, toolName: string): BuiltinMcpTool | undefined {
@@ -164,6 +172,7 @@ export class BuiltinMcpRegistryService implements OnApplicationBootstrap {
 
         const base: BuiltinMcpServer = {
             id,
+            key: item.key,
             name: item.name,
             alias: item.name,
             description: item.description,

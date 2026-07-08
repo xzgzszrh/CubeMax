@@ -14,6 +14,7 @@ let index = 0;
 export const BreakNodeRegistry: FlowNodeRegistry = {
   type: WorkflowNodeType.Break,
   meta: {
+    nodePanelLabel: "跳出循环",
     defaultPorts: [{ type: "input" }],
     sidebarDisabled: true,
     size: {
@@ -25,8 +26,7 @@ export const BreakNodeRegistry: FlowNodeRegistry = {
   },
   info: {
     icon: iconBreak,
-    description:
-      "The final node of the workflow, used to return the result information after the workflow is run.",
+    description: "在循环中提前结束整个循环。",
   },
   /**
    * Render node via formMeta
@@ -37,7 +37,7 @@ export const BreakNodeRegistry: FlowNodeRegistry = {
       id: `break_${nanoid(5)}`,
       type: "break",
       data: {
-        title: `Break_${++index}`,
+        title: `跳出循环_${++index}`,
       },
     };
   },

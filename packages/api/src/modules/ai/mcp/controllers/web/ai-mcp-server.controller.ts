@@ -121,6 +121,7 @@ export class WebAiMcpServerWebController {
      */
     private toWebBuiltinServer(server: {
         id: string;
+        key: string;
         name: string;
         alias?: string;
         description?: string;

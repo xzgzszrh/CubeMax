@@ -54,6 +54,9 @@ export interface FlowNodeJSON extends FlowNodeJSONDefault {
 export interface FlowNodeMeta extends WorkflowNodeMeta {
   sidebarDisabled?: boolean;
   nodePanelHidden?: boolean;
+  nodePanelLabel?: string;
+  nodePanelGroup?: string;
+  nodePanelGroupLabel?: string;
   wrapperStyle?: React.CSSProperties;
   onlyInContainer?: WorkflowNodeType;
 }

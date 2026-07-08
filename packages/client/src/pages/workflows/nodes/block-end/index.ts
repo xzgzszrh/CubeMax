@@ -31,7 +31,7 @@ export const BlockEndNodeRegistry: FlowNodeRegistry = {
   },
   info: {
     icon: iconStart,
-    description: "The final node of the block.",
+    description: "子流程块的结束节点。",
   },
   /**
    * Render node via formMeta

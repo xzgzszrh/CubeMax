@@ -4,6 +4,7 @@ import { AiMcpModule } from "@modules/ai/mcp/ai-mcp.module";
 import { Module } from "@nestjs/common";
 
 import { WorkflowController } from "./workflow.controller";
+import { WorkflowEmbeddedExecutorService } from "./workflow-embedded-executor.service";
 import { WorkflowMcpExecutorService } from "./workflow-mcp-executor.service";
 import { WorkflowRuntimeController } from "./workflow-runtime.controller";
 import { WorkflowService } from "./workflow.service";
@@ -14,6 +15,6 @@ import { WorkflowService } from "./workflow.service";
         TypeOrmModule.forFeature([AiWorkflow, AiMcpServer, AiMcpTool, AiUserMcpServer]),
     ],
     controllers: [WorkflowController, WorkflowRuntimeController],
-    providers: [WorkflowService, WorkflowMcpExecutorService],
+    providers: [WorkflowService, WorkflowMcpExecutorService, WorkflowEmbeddedExecutorService],
 })
 export class WorkflowModule {}

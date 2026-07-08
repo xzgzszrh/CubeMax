@@ -20,7 +20,7 @@ interface UngroupButtonProps {
 export const UngroupButton: FC<UngroupButtonProps> = ({ node, style }) => {
   const commandRegistry = useService(CommandRegistry);
   return (
-    <Tooltip content="Ungroup">
+    <Tooltip content="取消分组">
       <div className="workflow-group-ungroup" style={style}>
         <Button
           icon={<IconUngroup size={14} />}

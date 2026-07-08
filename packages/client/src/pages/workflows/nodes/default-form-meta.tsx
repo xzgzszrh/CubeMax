@@ -39,16 +39,19 @@ export const defaultFormMeta: FormMeta<FlowNodeJSON> = {
    * 2: validate as dynamic function: (values,  ctx) => ({ title: () => {}, ... })
    */
   validate: {
-    title: ({ value }) => (value ? undefined : "Title is required"),
+    title: ({ value }) => (value ? undefined : "标题为必填项"),
     "inputsValues.*": ({ value, context, formValues, name }) => {
       const valuePropertyKey = name.replace(/^inputsValues\./, "");
       const required = formValues.inputs?.required || [];
+      const property = formValues.inputs?.properties?.[valuePropertyKey];
+      const fieldLabel =
+        property && typeof property.title === "string" ? property.title : valuePropertyKey;
 
       return validateFlowValue(value, {
         node: context.node,
         required: required.includes(valuePropertyKey),
         errorMessages: {
-          required: `${valuePropertyKey} is required`,
+          required: `${fieldLabel}为必填项`,
         },
       });
     },

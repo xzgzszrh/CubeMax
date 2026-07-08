@@ -93,7 +93,7 @@ export class DeleteShortcut implements ShortcutsHandler {
     );
     if (hasSystemNodes) {
       Toast.error({
-        content: "Start or End node cannot be deleted",
+        content: "开始或结束节点不能删除",
         showClose: false,
       });
       return false;

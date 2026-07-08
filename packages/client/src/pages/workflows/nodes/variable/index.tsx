@@ -16,9 +16,10 @@ export const VariableNodeRegistry: FlowNodeRegistry = {
   type: WorkflowNodeType.Variable,
   info: {
     icon: iconVariable,
-    description: "Variable Assign and Declaration",
+    description: "声明变量或为变量赋值，供后续节点使用。",
   },
   meta: {
+    nodePanelLabel: "变量",
     size: {
       width: 360,
       height: 390,
@@ -29,7 +30,7 @@ export const VariableNodeRegistry: FlowNodeRegistry = {
       id: `variable_${nanoid(5)}`,
       type: "variable",
       data: {
-        title: `Variable_${++index}`,
+        title: `变量_${++index}`,
         assign: [
           {
             operator: "declare",

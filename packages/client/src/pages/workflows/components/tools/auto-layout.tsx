@@ -15,7 +15,7 @@ export const AutoLayout = () => {
   const playground = usePlayground();
   const autoLayout = useCallback(async () => {
     if (playground.config.readonly) {
-      console.warn("Auto layout is disabled in readonly mode");
+      console.warn("只读模式下无法自动布局");
       return;
     }
     await tools.autoLayout({
@@ -31,7 +31,7 @@ export const AutoLayout = () => {
   }, [tools]);
 
   return (
-    <Tooltip content={"Auto Layout"}>
+    <Tooltip content={"自动布局"}>
       <IconButton
         disabled={playground.config.readonly}
         type="tertiary"

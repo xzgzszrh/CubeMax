@@ -6,7 +6,7 @@
 import { useLayoutEffect } from "react";
 
 import { nanoid } from "nanoid";
-import { Field, FieldArray, I18n, WorkflowNodePortsData } from "@flowgram.ai/free-layout-editor";
+import { Field, FieldArray, WorkflowNodePortsData } from "@flowgram.ai/free-layout-editor";
 import { ConditionRow } from "@flowgram.ai/form-materials";
 import type { ConditionRowValueType } from "@flowgram.ai/form-materials";
 import { Button, Select, Space } from "@douyinfe/semi-ui";
@@ -46,7 +46,7 @@ export function ConditionInputs() {
                 <FormItem
                   type="boolean"
                   labelWidth={100}
-                  name={index === 0 ? I18n.t("IF") : I18n.t("ELSE-IF")}
+                  name={index === 0 ? "如果" : "否则如果"}
                   vertical
                   required={index === 0}
                 >
@@ -64,8 +64,8 @@ export function ConditionInputs() {
                             })
                           }
                         >
-                          <Select.Option value="and">{I18n.t("AND")}</Select.Option>
-                          <Select.Option value="or">{I18n.t("OR")}</Select.Option>
+                          <Select.Option value="and">并且</Select.Option>
+                          <Select.Option value="or">或者</Select.Option>
                         </Select>
                       </ConditionBranchLogic>
                     )}
@@ -134,7 +134,7 @@ export function ConditionInputs() {
                           });
                         }}
                       >
-                        {I18n.t("Add condition")}
+                        添加条件
                       </Button>
                       <Button
                         disabled={conditions.value?.length === 1}
@@ -143,7 +143,7 @@ export function ConditionInputs() {
                         icon={<IconDelete />}
                         onClick={() => conditions.remove(index)}
                       >
-                        {I18n.t("Remove branch")}
+                        删除分支
                       </Button>
                     </div>
                   )}
@@ -154,7 +154,7 @@ export function ConditionInputs() {
           ))}
 
           {/*  else */}
-          <FormItem name={I18n.t("ELSE")} type="boolean" required={true} labelWidth={100}>
+          <FormItem name="否则" type="boolean" required={true} labelWidth={100}>
             <ConditionPort data-port-id="else" data-port-type="output" />
           </FormItem>
 
@@ -175,7 +175,7 @@ export function ConditionInputs() {
                   })
                 }
               >
-                {I18n.t("Add branch")}
+                添加分支
               </Button>
             </div>
           )}

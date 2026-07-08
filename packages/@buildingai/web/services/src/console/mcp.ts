@@ -23,6 +23,7 @@ export type McpTool = {
 
 export type McpServer = {
     id: string;
+    key?: string;
     name: string;
     alias?: string;
     description?: string;

@@ -14,7 +14,7 @@ export function Timeout() {
 
   return (
     <div>
-      <FormItem name="Timeout(ms)" required style={{ flex: 1 }} type="number">
+      <FormItem name="超时(ms)" required style={{ flex: 1 }} type="number">
         <Field<number> name="timeout.timeout" defaultValue={10000}>
           {({ field }) => (
             <InputNumber
@@ -30,7 +30,7 @@ export function Timeout() {
           )}
         </Field>
       </FormItem>
-      <FormItem name="Retry Times" required type="number">
+      <FormItem name="重试次数" required type="number">
         <Field<number> name="timeout.retryTimes" defaultValue={1}>
           {({ field }) => (
             <InputNumber

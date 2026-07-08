@@ -14,6 +14,7 @@ let index = 0;
 export const ContinueNodeRegistry: FlowNodeRegistry = {
   type: WorkflowNodeType.Continue,
   meta: {
+    nodePanelLabel: "继续循环",
     defaultPorts: [{ type: "input" }],
     sidebarDisabled: true,
     size: {
@@ -25,8 +26,7 @@ export const ContinueNodeRegistry: FlowNodeRegistry = {
   },
   info: {
     icon: iconContinue,
-    description:
-      "The final node of the workflow, used to return the result information after the workflow is run.",
+    description: "跳过本次循环剩余步骤，继续下一次循环。",
   },
   /**
    * Render node via formMeta
@@ -37,7 +37,7 @@ export const ContinueNodeRegistry: FlowNodeRegistry = {
       id: `continue_${nanoid(5)}`,
       type: "continue",
       data: {
-        title: `Continue_${++index}`,
+        title: `继续循环_${++index}`,
       },
     };
   },

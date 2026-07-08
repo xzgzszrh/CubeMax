@@ -70,7 +70,7 @@ function McpConfig() {
                         <Field<Record<string, unknown>> name="toolInputSchema">
                           {({ field: toolInputSchemaField }) => (
                             <>
-                              <FormItem name="MCP Server" required type="string">
+                              <FormItem name="MCP 服务" required type="string">
                                 <Select
                                   value={serverField.value}
                                   onChange={(value) => {
@@ -81,17 +81,17 @@ function McpConfig() {
                                     inputsValuesField.onChange({});
                                   }}
                                   disabled={readonly || isLoading}
-                                  emptyContent={isLoading ? "Loading..." : "No MCP servers"}
+                                  emptyContent={isLoading ? "加载中..." : "暂无 MCP 服务"}
                                   filter
                                   optionList={serverOptions}
-                                  placeholder={isLoading ? "Loading..." : "Select MCP server"}
+                                  placeholder={isLoading ? "加载中..." : "选择 MCP 服务"}
                                   showClear
                                   size="small"
                                   style={{ width: "100%" }}
                                 />
                               </FormItem>
 
-                              <FormItem name="Tool" required type="string">
+                              <FormItem name="工具" required type="string">
                                 <Select
                                   value={toolField.value}
                                   onChange={(value) => {
@@ -108,10 +108,10 @@ function McpConfig() {
                                     );
                                   }}
                                   disabled={readonly || !serverField.value}
-                                  emptyContent="No tools"
+                                  emptyContent="暂无工具"
                                   filter
                                   optionList={toolOptions}
-                                  placeholder="Select tool"
+                                  placeholder="选择工具"
                                   showClear
                                   size="small"
                                   style={{ width: "100%" }}
@@ -138,7 +138,7 @@ function McpOptions() {
 
   return (
     <>
-      <FormItem name="Timeout(ms)" required type="number">
+      <FormItem name="超时(ms)" required type="number">
         <Field<number> name="timeoutMs" defaultValue={60000}>
           {({ field }) => (
             <InputNumber
@@ -153,7 +153,7 @@ function McpOptions() {
         </Field>
       </FormItem>
 
-      <FormItem name="Fail On Error" required type="boolean">
+      <FormItem name="出错时失败" required type="boolean">
         <Field<boolean> name="failOnToolError" defaultValue>
           {({ field }) => (
             <Switch
@@ -189,7 +189,7 @@ export const formMeta: FormMeta = {
   render: renderForm,
   validate: {
     ...defaultFormMeta.validate,
-    mcpServerId: ({ value }: { value?: string }) => (value ? undefined : "MCP Server is required"),
-    toolName: ({ value }: { value?: string }) => (value ? undefined : "Tool is required"),
+    mcpServerId: ({ value }: { value?: string }) => (value ? undefined : "MCP 服务为必填项"),
+    toolName: ({ value }: { value?: string }) => (value ? undefined : "工具为必填项"),
   },
 };

@@ -17,21 +17,29 @@ const LLM_INPUTS_SCHEMA: NonNullable<FlowNodeJSON["data"]["inputs"]> = {
   properties: {
     modelId: {
       type: "string",
+      title: "模型",
+      description: "选择用于生成回复的大语言模型。",
       extra: {
         formComponent: "llm-model-select",
       },
     },
     temperature: {
       type: "number",
+      title: "温度",
+      description: "控制生成结果的随机性，数值越高越发散。",
     },
     systemPrompt: {
       type: "string",
+      title: "系统提示词",
+      description: "用于设定模型角色和行为边界。",
       extra: {
         formComponent: "prompt-editor",
       },
     },
     prompt: {
       type: "string",
+      title: "用户提示词",
+      description: "发送给模型的主要输入内容。",
       extra: {
         formComponent: "prompt-editor",
       },
@@ -57,7 +65,7 @@ export function createLLMInputsValues(
     },
     systemPrompt: inputsValues.systemPrompt ?? {
       type: "template",
-      content: "# Role\nYou are an AI assistant.\n",
+      content: "# 角色\n你是一个 AI 助手。\n",
     },
     prompt: inputsValues.prompt ?? {
       type: "template",

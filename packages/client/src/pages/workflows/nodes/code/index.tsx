@@ -12,19 +12,19 @@ import { formMeta } from "./form-meta";
 
 let index = 0;
 
-const defaultCode = `// Here, you can retrieve input variables from the node using 'params' and output results using 'ret'.
-// 'params' has been correctly injected into the environment.
-// Here's an example of getting the value of the parameter named 'input' from the node input:
+const defaultCode = `// 可以通过 'params' 读取节点输入，并通过返回值输出结果。
+// 'params' 已经注入到运行环境中。
+// 下面示例从节点输入中读取名为 'input' 的参数：
 // const input = params.input;
-// Here's an example of outputting a 'ret' object containing multiple data types:
+// 下面示例返回一个包含多种数据类型的对象：
 // const ret = { "name": 'Xiaoming', "hobbies": ["Reading", "Traveling"] };
 
 async function main({ params }) {
-  // Build the output object
+  // 构造输出对象
   const ret = {
-    key0: params.input + params.input, // Concatenate the input parameter 'input' twice
-    key1: ["hello", "world"], // Output an array
-    key2: { // Output an Object
+    key0: params.input + params.input, // 将输入参数 'input' 拼接两次
+    key1: ["hello", "world"], // 输出数组
+    key2: { // 输出对象
       key21: "hi"
     },
   };
@@ -36,9 +36,10 @@ export const CodeNodeRegistry: FlowNodeRegistry = {
   type: WorkflowNodeType.Code,
   info: {
     icon: iconCode,
-    description: "Run the Script",
+    description: "运行自定义脚本并输出结构化结果。",
   },
   meta: {
+    nodePanelLabel: "代码",
     size: {
       width: 360,
       height: 390,
@@ -49,7 +50,7 @@ export const CodeNodeRegistry: FlowNodeRegistry = {
       id: `code_${nanoid(5)}`,
       type: "code",
       data: {
-        title: `Code_${++index}`,
+        title: `代码_${++index}`,
         inputsValues: {
           input: { type: "constant", content: "" },
         },

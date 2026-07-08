@@ -78,7 +78,7 @@ export class WorkflowRuntimeService {
     const isFormValid = await this.validateForm();
     if (!isFormValid) {
       this.resultEmitter.fire({
-        errors: ["Form validation failed"],
+        errors: ["表单校验失败"],
       });
       return;
     }
@@ -93,7 +93,7 @@ export class WorkflowRuntimeService {
     });
     if (!validateResult?.valid) {
       this.resultEmitter.fire({
-        errors: validateResult?.errors ?? ["Internal Server Error"],
+        errors: validateResult?.errors ?? ["服务内部错误"],
       });
       return;
     }
@@ -113,7 +113,7 @@ export class WorkflowRuntimeService {
     }
     if (!taskID) {
       this.resultEmitter.fire({
-        errors: ["Task run failed"],
+        errors: ["任务运行失败"],
       });
       return;
     }

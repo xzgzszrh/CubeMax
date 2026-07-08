@@ -57,7 +57,7 @@ export const DownloadTool: FC = () => {
       format,
     });
     const formatOption = formatOptions.find((option) => option.value === format);
-    Toast.success(`Download ${formatOption?.label} successfully`);
+    Toast.success(`${formatOption?.label} 下载成功`);
   };
 
   const button = (
@@ -95,7 +95,7 @@ export const DownloadTool: FC = () => {
         button
       ) : (
         <div>
-          <Tooltip content="Download">{button}</Tooltip>
+          <Tooltip content="下载">{button}</Tooltip>
         </div>
       )}
     </Dropdown>

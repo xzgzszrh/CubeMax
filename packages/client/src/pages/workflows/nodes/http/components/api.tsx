@@ -16,7 +16,7 @@ export function Api() {
 
   return (
     <div>
-      <FormItem name="API" required vertical type="string">
+        <FormItem name="接口" required vertical type="string">
         <div style={{ display: "flex", gap: 5 }}>
           <Field<string> name="api.method" defaultValue="GET">
             {({ field }) => (
@@ -46,7 +46,7 @@ export function Api() {
                 disableMarkdownHighlight
                 readonly={readonly}
                 style={{ flexGrow: 1 }}
-                placeholder="Input URL, use var by '{'"
+                placeholder="请输入 URL，输入 '{' 使用变量"
                 value={field.value}
                 onChange={(value) => {
                   field.onChange(value!);

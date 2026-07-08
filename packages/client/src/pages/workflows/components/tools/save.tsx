@@ -56,7 +56,7 @@ export function Save(props: { disabled: boolean }) {
         onClick={onSave}
         style={{ backgroundColor: "rgba(171,181,255,0.3)", borderRadius: "8px" }}
       >
-        Save
+        保存
       </Button>
     );
   }
@@ -69,7 +69,7 @@ export function Save(props: { disabled: boolean }) {
         onClick={onSave}
         style={{ backgroundColor: "rgba(255, 179, 171, 0.3)", borderRadius: "8px" }}
       >
-        Save
+        保存
       </Button>
     </Badge>
   );

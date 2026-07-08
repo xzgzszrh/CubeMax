@@ -22,8 +22,7 @@ export const EndNodeRegistry: FlowNodeRegistry = {
   },
   info: {
     icon: iconEnd,
-    description:
-      "The final node of the workflow, used to return the result information after the workflow is run.",
+    description: "工作流的结束节点，用于返回工作流运行后的结果信息。",
   },
   /**
    * Render node via formMeta

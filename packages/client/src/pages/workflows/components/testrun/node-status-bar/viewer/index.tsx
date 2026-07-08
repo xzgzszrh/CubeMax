@@ -27,7 +27,7 @@ const TreeNode: React.FC<TreeNodeProps> = ({ label, value, level, isLast = false
 
   const handleCopy = (text: string) => {
     navigator.clipboard.writeText(text);
-    Toast.success("Copied");
+    Toast.success("已复制");
   };
 
   const isExpandable = (val: any) =>
@@ -166,7 +166,7 @@ export const DataStructureViewer: React.FC<DataStructureViewerProps> = ({ data, 
   if (data === null || data === undefined || typeof data !== "object") {
     return (
       <div className={styles.dataStructureViewer}>
-        <TreeNode label="value" value={data} level={0} />
+        <TreeNode label="值" value={data} level={0} />
       </div>
     );
   }

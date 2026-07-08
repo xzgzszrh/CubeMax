@@ -20,10 +20,10 @@ export const MultiConditionNodeRegistry: FlowNodeRegistry = {
   type: WorkflowNodeType.MultiCondition,
   info: {
     icon: iconCondition,
-    description:
-      "Connect multiple downstream branches. Only the corresponding branch will be executed if the set conditions are met.",
+    description: "按多组条件连接下游分支，满足条件时只执行对应分支。",
   },
   meta: {
+    nodePanelLabel: "多条件分支",
     defaultPorts: [{ type: "input" }],
     // Condition Outputs use dynamic port
     useDynamicPort: true,
@@ -39,7 +39,7 @@ export const MultiConditionNodeRegistry: FlowNodeRegistry = {
       id: `multi_condition_${nanoid(5)}`,
       type: "condition",
       data: {
-        title: `multi_condition_${++index}`,
+        title: `多条件_${++index}`,
         branch: [
           {
             logic: "and",

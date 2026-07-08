@@ -17,9 +17,10 @@ export const MCPNodeRegistry: FlowNodeRegistry = {
   type: WorkflowNodeType.MCP,
   info: {
     icon: iconMCP,
-    description: "Execute a selected tool from an MCP server.",
+    description: "从 MCP 服务中选择并执行一个工具。",
   },
   meta: {
+    nodePanelLabel: "MCP 工具",
     size: {
       width: 360,
       height: 390,
@@ -30,7 +31,7 @@ export const MCPNodeRegistry: FlowNodeRegistry = {
       id: `mcp_${nanoid(5)}`,
       type: WorkflowNodeType.MCP,
       data: {
-        title: `MCP_${++index}`,
+        title: `MCP工具_${++index}`,
         mcpServerId: "",
         toolName: "",
         toolInputSchema: {},

@@ -17,7 +17,7 @@ export const initialData: FlowDocumentJSON = {
         },
       },
       data: {
-        title: "Start",
+        title: "开始",
         outputs: {
           type: "object",
           properties: {
@@ -57,7 +57,7 @@ export const initialData: FlowDocumentJSON = {
         },
       },
       data: {
-        title: "Condition",
+        title: "条件分支",
         conditions: [
           {
             key: "if_0",
@@ -86,7 +86,7 @@ export const initialData: FlowDocumentJSON = {
         },
       },
       data: {
-        title: "End",
+        title: "结束",
         inputsValues: {
           success: {
             type: "constant",
@@ -127,7 +127,7 @@ export const initialData: FlowDocumentJSON = {
           width: 240,
           height: 150,
         },
-        note: "hi ~\n\nthis is a comment node\n\n- flowgram.ai",
+        note: "你好 ~\n\n这是一个注释节点\n\n- flowgram.ai",
       },
     },
     {
@@ -140,18 +140,21 @@ export const initialData: FlowDocumentJSON = {
         },
       },
       data: {
-        title: "HTTP_1",
+        title: "HTTP请求_1",
         outputs: {
           type: "object",
           properties: {
             body: {
               type: "string",
+              title: "响应体",
             },
             headers: {
               type: "object",
+              title: "响应头",
             },
             statusCode: {
               type: "integer",
+              title: "状态码",
             },
           },
         },
@@ -181,7 +184,7 @@ export const initialData: FlowDocumentJSON = {
         },
       },
       data: {
-        title: "Loop_1",
+        title: "循环_1",
         loopFor: {
           type: "ref",
           content: ["start_0", "array_obj"],
@@ -216,7 +219,7 @@ export const initialData: FlowDocumentJSON = {
             },
           },
           data: {
-            title: "LLM_3",
+            title: "大模型_3",
             inputsValues: {
               modelId: {
                 type: "constant",
@@ -228,7 +231,7 @@ export const initialData: FlowDocumentJSON = {
               },
               systemPrompt: {
                 type: "template",
-                content: "# Role\nYou are an AI assistant.\n",
+                content: "# 角色\n你是一个 AI 助手。\n",
               },
               prompt: {
                 type: "template",
@@ -241,21 +244,29 @@ export const initialData: FlowDocumentJSON = {
               properties: {
                 modelId: {
                   type: "string",
+                  title: "模型",
+                  description: "选择用于生成回复的大语言模型。",
                   extra: {
                     formComponent: "llm-model-select",
                   },
                 },
                 temperature: {
                   type: "number",
+                  title: "温度",
+                  description: "控制生成结果的随机性，数值越高越发散。",
                 },
                 systemPrompt: {
                   type: "string",
+                  title: "系统提示词",
+                  description: "用于设定模型角色和行为边界。",
                   extra: {
                     formComponent: "prompt-editor",
                   },
                 },
                 prompt: {
                   type: "string",
+                  title: "用户提示词",
+                  description: "发送给模型的主要输入内容。",
                   extra: {
                     formComponent: "prompt-editor",
                   },
@@ -267,6 +278,7 @@ export const initialData: FlowDocumentJSON = {
               properties: {
                 result: {
                   type: "string",
+                  title: "结果",
                 },
               },
             },
@@ -282,7 +294,7 @@ export const initialData: FlowDocumentJSON = {
             },
           },
           data: {
-            title: "LLM_4",
+            title: "大模型_4",
             inputsValues: {
               modelId: {
                 type: "constant",
@@ -294,7 +306,7 @@ export const initialData: FlowDocumentJSON = {
               },
               systemPrompt: {
                 type: "template",
-                content: "# Role\nYou are an AI assistant.\n",
+                content: "# 角色\n你是一个 AI 助手。\n",
               },
               prompt: {
                 type: "template",
@@ -307,21 +319,29 @@ export const initialData: FlowDocumentJSON = {
               properties: {
                 modelId: {
                   type: "string",
+                  title: "模型",
+                  description: "选择用于生成回复的大语言模型。",
                   extra: {
                     formComponent: "llm-model-select",
                   },
                 },
                 temperature: {
                   type: "number",
+                  title: "温度",
+                  description: "控制生成结果的随机性，数值越高越发散。",
                 },
                 systemPrompt: {
                   type: "string",
+                  title: "系统提示词",
+                  description: "用于设定模型角色和行为边界。",
                   extra: {
                     formComponent: "prompt-editor",
                   },
                 },
                 prompt: {
                   type: "string",
+                  title: "用户提示词",
+                  description: "发送给模型的主要输入内容。",
                   extra: {
                     formComponent: "prompt-editor",
                   },
@@ -333,6 +353,7 @@ export const initialData: FlowDocumentJSON = {
               properties: {
                 result: {
                   type: "string",
+                  title: "结果",
                 },
               },
             },
@@ -400,7 +421,7 @@ export const initialData: FlowDocumentJSON = {
         },
       },
       data: {
-        title: "LLM_1",
+        title: "大模型_1",
         inputsValues: {
           modelId: {
             type: "constant",
@@ -412,11 +433,11 @@ export const initialData: FlowDocumentJSON = {
           },
           systemPrompt: {
             type: "template",
-            content: "# Role\nYou are an AI assistant.\n",
+            content: "# 角色\n你是一个 AI 助手。\n",
           },
           prompt: {
             type: "template",
-            content: "# User Input\nquery:{{start_0.query}}\nenable:{{start_0.enable}}",
+            content: "# 用户输入\nquery:{{start_0.query}}\nenable:{{start_0.enable}}",
           },
         },
         inputs: {
@@ -425,21 +446,29 @@ export const initialData: FlowDocumentJSON = {
           properties: {
             modelId: {
               type: "string",
+              title: "模型",
+              description: "选择用于生成回复的大语言模型。",
               extra: {
                 formComponent: "llm-model-select",
               },
             },
             temperature: {
               type: "number",
+              title: "温度",
+              description: "控制生成结果的随机性，数值越高越发散。",
             },
             systemPrompt: {
               type: "string",
+              title: "系统提示词",
+              description: "用于设定模型角色和行为边界。",
               extra: {
                 formComponent: "prompt-editor",
               },
             },
             prompt: {
               type: "string",
+              title: "用户提示词",
+              description: "发送给模型的主要输入内容。",
               extra: {
                 formComponent: "prompt-editor",
               },
@@ -451,6 +480,7 @@ export const initialData: FlowDocumentJSON = {
           properties: {
             result: {
               type: "string",
+              title: "结果",
             },
           },
         },
@@ -466,7 +496,7 @@ export const initialData: FlowDocumentJSON = {
         },
       },
       data: {
-        title: "LLM_2",
+        title: "大模型_2",
         inputsValues: {
           modelId: {
             type: "constant",
@@ -478,11 +508,11 @@ export const initialData: FlowDocumentJSON = {
           },
           systemPrompt: {
             type: "template",
-            content: "# Role\nYou are an AI assistant.\n",
+            content: "# 角色\n你是一个 AI 助手。\n",
           },
           prompt: {
             type: "template",
-            content: "# LLM Input\nresult:{{llm_8--A3.result}}",
+            content: "# 大模型输入\nresult:{{llm_8--A3.result}}",
           },
         },
         inputs: {
@@ -491,21 +521,29 @@ export const initialData: FlowDocumentJSON = {
           properties: {
             modelId: {
               type: "string",
+              title: "模型",
+              description: "选择用于生成回复的大语言模型。",
               extra: {
                 formComponent: "llm-model-select",
               },
             },
             temperature: {
               type: "number",
+              title: "温度",
+              description: "控制生成结果的随机性，数值越高越发散。",
             },
             systemPrompt: {
               type: "string",
+              title: "系统提示词",
+              description: "用于设定模型角色和行为边界。",
               extra: {
                 formComponent: "prompt-editor",
               },
             },
             prompt: {
               type: "string",
+              title: "用户提示词",
+              description: "发送给模型的主要输入内容。",
               extra: {
                 formComponent: "prompt-editor",
               },
@@ -517,6 +555,7 @@ export const initialData: FlowDocumentJSON = {
           properties: {
             result: {
               type: "string",
+              title: "结果",
             },
           },
         },

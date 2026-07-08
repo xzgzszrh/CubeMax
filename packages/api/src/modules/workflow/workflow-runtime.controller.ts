@@ -11,6 +11,7 @@ import type {
 import { WebController } from "@common/decorators/controller.decorator";
 import { Body, Get, Post, Put, Query } from "@nestjs/common";
 
+import { WorkflowEmbeddedExecutorService } from "./workflow-embedded-executor.service";
 import { WorkflowRuntimeTaskDto, WorkflowRuntimeTaskIdDto } from "./workflow-runtime.dto";
 import { WorkflowMcpExecutorService } from "./workflow-mcp-executor.service";
 
@@ -28,7 +29,10 @@ function loadRuntimeJs(): Promise<WorkflowRuntimeJsModule> {
 @SkipTransform()
 @WebController("task")
 export class WorkflowRuntimeController {
-    constructor(private readonly workflowMcpExecutorService: WorkflowMcpExecutorService) {}
+    constructor(
+        private readonly workflowMcpExecutorService: WorkflowMcpExecutorService,
+        private readonly workflowEmbeddedExecutorService: WorkflowEmbeddedExecutorService,
+    ) {}
 
     private async loadConfiguredRuntime(): Promise<WorkflowRuntimeJsModule> {
         const runtime = await loadRuntimeJs();
@@ -42,8 +46,9 @@ export class WorkflowRuntimeController {
         @Playground() user: UserPlayground,
     ): Promise<TaskValidateOutput> {
         const { TaskValidateAPI } = await this.loadConfiguredRuntime();
+        const taskDto = this.workflowEmbeddedExecutorService.prepareTaskDto(dto);
         return TaskValidateAPI({
-            ...dto,
+            ...taskDto,
             context: {
                 userId: user.id,
             },
@@ -56,8 +61,9 @@ export class WorkflowRuntimeController {
         @Playground() user: UserPlayground,
     ): Promise<TaskRunOutput> {
         const { TaskRunAPI } = await this.loadConfiguredRuntime();
+        const taskDto = this.workflowEmbeddedExecutorService.prepareTaskDto(dto);
         return TaskRunAPI({
-            ...dto,
+            ...taskDto,
             context: {
                 userId: user.id,
             },

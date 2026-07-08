@@ -16,9 +16,10 @@ export const HTTPNodeRegistry: FlowNodeRegistry = {
   type: WorkflowNodeType.HTTP,
   info: {
     icon: iconHTTP,
-    description: "Call the HTTP API",
+    description: "调用 HTTP API 并获取响应结果。",
   },
   meta: {
+    nodePanelLabel: "HTTP 请求",
     size: {
       width: 360,
       height: 390,
@@ -29,7 +30,7 @@ export const HTTPNodeRegistry: FlowNodeRegistry = {
       id: `http_${nanoid(5)}`,
       type: "http",
       data: {
-        title: `HTTP_${++index}`,
+        title: `HTTP请求_${++index}`,
         api: {
           method: "GET",
         },
@@ -41,9 +42,9 @@ export const HTTPNodeRegistry: FlowNodeRegistry = {
         outputs: {
           type: "object",
           properties: {
-            body: { type: "string" },
-            headers: { type: "object" },
-            statusCode: { type: "integer" },
+            body: { type: "string", title: "响应体" },
+            headers: { type: "object", title: "响应头" },
+            statusCode: { type: "integer", title: "状态码" },
           },
         },
       },

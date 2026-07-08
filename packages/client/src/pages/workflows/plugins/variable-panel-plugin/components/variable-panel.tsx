@@ -19,7 +19,7 @@ export function VariablePanel() {
 
   return (
     <div className={styles["panel-wrapper"]}>
-      <Tooltip content="Toggle Variable Panel">
+      <Tooltip content="切换变量面板">
         <Button
           className={`${styles["variable-panel-button"]} ${isOpen ? styles.close : ""}`}
           theme={isOpen ? "borderless" : "light"}
@@ -31,10 +31,10 @@ export function VariablePanel() {
       <Collapsible isOpen={isOpen}>
         <div className={styles["panel-container"]}>
           <Tabs>
-            <Tabs.TabPane itemKey="variables" tab="Variable List">
+            <Tabs.TabPane itemKey="variables" tab="变量列表">
               <FullVariableList />
             </Tabs.TabPane>
-            <Tabs.TabPane itemKey="global" tab="Global Editor">
+            <Tabs.TabPane itemKey="global" tab="全局变量">
               <GlobalVariableEditor />
             </Tabs.TabPane>
           </Tabs>

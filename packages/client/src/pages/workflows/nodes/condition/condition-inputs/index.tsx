@@ -6,7 +6,7 @@
 import { useLayoutEffect } from "react";
 
 import { nanoid } from "nanoid";
-import { Field, FieldArray, I18n } from "@flowgram.ai/free-layout-editor";
+import { Field, FieldArray } from "@flowgram.ai/free-layout-editor";
 import { ConditionRow } from "@flowgram.ai/form-materials";
 import type { ConditionRowValueType } from "@flowgram.ai/form-materials";
 import { Button } from "@douyinfe/semi-ui";
@@ -38,7 +38,7 @@ export function ConditionInputs() {
           {field.map((child, index) => (
             <Field<ConditionValue> key={child.name} name={child.name}>
               {({ field: childField, fieldState: childState }) => (
-                <FormItem name="if" type="boolean" required={true} labelWidth={50}>
+                <FormItem name="如果" type="boolean" required={true} labelWidth={50}>
                   <div style={{ display: "flex", alignItems: "center" }}>
                     <ConditionRow
                       readonly={readonly}
@@ -63,7 +63,7 @@ export function ConditionInputs() {
               )}
             </Field>
           ))}
-          <FormItem name="else" type="boolean" required={true} labelWidth={100}>
+          <FormItem name="否则" type="boolean" required={true} labelWidth={100}>
             <ConditionPort data-port-id="else" data-port-type="output" />
           </FormItem>
           {!readonly && (
@@ -78,7 +78,7 @@ export function ConditionInputs() {
                   })
                 }
               >
-                {I18n.t("Add")}
+                添加条件
               </Button>
             </div>
           )}

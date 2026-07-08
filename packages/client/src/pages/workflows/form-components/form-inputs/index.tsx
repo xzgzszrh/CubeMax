@@ -30,12 +30,16 @@ export function FormInputs() {
           const formComponent = property.extra?.formComponent;
 
           const vertical = ["prompt-editor"].includes(formComponent || "");
+          const label = typeof property.title === "string" ? property.title : key;
+          const description =
+            typeof property.description === "string" ? property.description : undefined;
 
           return (
             <Field key={key} name={`inputsValues.${key}`} defaultValue={property.default}>
               {({ field, fieldState }) => (
                 <FormItem
-                  name={key}
+                  name={label}
+                  description={description}
                   vertical={vertical}
                   type={property.type as string}
                   required={required.includes(key)}

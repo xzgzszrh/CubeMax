@@ -33,7 +33,7 @@ export const LoopFormRender = ({ form }: FormRenderProps<LoopNodeJSON>) => {
   const loopFor = (
     <Field<IFlowRefValue> name={`loopFor`}>
       {({ field, fieldState }) => (
-        <FormItem name={"loopFor"} type={"array"} required>
+        <FormItem name={"循环数组"} type={"array"} required>
           <BatchVariableSelector
             style={{ width: "100%" }}
             value={field.value?.content}
@@ -50,7 +50,7 @@ export const LoopFormRender = ({ form }: FormRenderProps<LoopNodeJSON>) => {
   const loopOutputs = (
     <Field<Record<string, IFlowRefValue | undefined> | undefined> name={`loopOutputs`}>
       {({ field, fieldState }) => (
-        <FormItem name="loopOutputs" type="object" vertical>
+        <FormItem name="循环输出" type="object" vertical>
           <BatchOutputs
             style={{ width: "100%" }}
             value={field.value}

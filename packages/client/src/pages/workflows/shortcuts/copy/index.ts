@@ -95,7 +95,7 @@ export class CopyShortcut implements ShortcutsHandler {
     }
     await navigator.clipboard.writeText(window.getSelection()?.toString() ?? "");
     Toast.success({
-      content: "Text copied",
+      content: "文本已复制",
     });
     return true;
   }
@@ -115,7 +115,7 @@ export class CopyShortcut implements ShortcutsHandler {
   private isValid(nodes: WorkflowNodeEntity[]): boolean {
     if (nodes.length === 0) {
       Toast.warning({
-        content: "No nodes selected",
+        content: "未选择节点",
       });
       return false;
     }
@@ -262,13 +262,13 @@ export class CopyShortcut implements ShortcutsHandler {
     ) {
       Toast.warning({
         content:
-          "The Start/End node cannot be duplicated, other nodes have been copied to the clipboard",
+          "开始/结束节点不能复制，其他节点已复制到剪贴板",
         showClose: false,
       });
       return;
     }
     Toast.success({
-      content: "Nodes have been copied to the clipboard",
+      content: "节点已复制到剪贴板",
       showClose: false,
     });
     return;

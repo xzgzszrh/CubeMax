@@ -30,7 +30,7 @@ export const GroupTitle: FC = () => {
           />
         ) : (
           <p className="workflow-group-title" onDoubleClick={() => setInputting(true)}>
-            {field.value ?? "Group"}
+            {field.value ?? "分组"}
           </p>
         )
       }

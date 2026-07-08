@@ -17,10 +17,10 @@ export const LoopNodeRegistry: FlowNodeRegistry = {
   type: WorkflowNodeType.Loop,
   info: {
     icon: iconLoop,
-    description:
-      "Used to repeatedly execute a series of tasks by setting the number of iterations and logic.",
+    description: "根据数组数据重复执行一组任务，并汇总每次循环的输出。",
   },
   meta: {
+    nodePanelLabel: "循环",
     /**
      * Mark as subcanvas
      * 子画布标记
@@ -79,7 +79,7 @@ export const LoopNodeRegistry: FlowNodeRegistry = {
       id: `loop_${nanoid(5)}`,
       type: WorkflowNodeType.Loop,
       data: {
-        title: `Loop_${++index}`,
+        title: `循环_${++index}`,
       },
       blocks: [
         {

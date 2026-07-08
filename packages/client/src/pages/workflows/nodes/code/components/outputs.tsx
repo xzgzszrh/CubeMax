@@ -29,7 +29,7 @@ export function Outputs() {
   return (
     <>
       <Divider />
-      <FormItem name="outputs" type="object" vertical>
+      <FormItem name="输出" type="object" vertical>
         <Field<IJsonSchema> name="outputs">
           {({ field }) => (
             <JsonSchemaEditor

@@ -139,13 +139,14 @@ export function createMcpOutputsSchema(): NonNullable<FlowNodeJSON["data"]["outp
   return {
     type: "object",
     properties: {
-      text: { type: "string" },
-      result: { type: "object" },
+      text: { type: "string", title: "文本" },
+      result: { type: "object", title: "结果" },
       content: {
         type: "array",
+        title: "内容",
         items: { type: "object" },
       },
-      isError: { type: "boolean" },
+      isError: { type: "boolean", title: "是否错误" },
     },
   };
 }
