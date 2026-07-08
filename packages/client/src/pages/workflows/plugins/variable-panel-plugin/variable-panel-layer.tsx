@@ -10,15 +10,22 @@ import { VariablePanel } from "./components/variable-panel";
 @injectable()
 export class VariablePanelLayer extends Layer {
   onReady(): void {
-    // Fix variable panel in the right of canvas
-    this.config.onDataChange(() => {
+    this.node.classList.add("workflow-variable-panel-layer");
+
+    const updatePanelStyle = () => {
       const { scrollX, scrollY } = this.config.config;
       domUtils.setStyle(this.node, {
         position: "absolute",
         right: 25 - scrollX,
         top: scrollY + 25,
+        zIndex: 45,
+        pointerEvents: "auto",
       });
-    });
+    };
+
+    // Fix variable panel in the right of canvas
+    updatePanelStyle();
+    this.config.onDataChange(updatePanelStyle);
   }
 
   render(): JSX.Element {

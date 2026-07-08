@@ -7,15 +7,10 @@ import styled from "styled-components";
 
 import { IconMinimap } from "../../assets/icon-minimap";
 
-export const ToolContainer = styled.div`
+export const ToolsLayer = styled.div`
   position: absolute;
-  bottom: 16px;
-  display: flex;
-  justify-content: left;
-  min-width: 360px;
+  inset: 0;
   pointer-events: none;
-  gap: 8px;
-
   z-index: 20;
 `;
 
@@ -34,19 +29,84 @@ export const ToolSection = styled.div`
   pointer-events: auto;
 `;
 
-export const SelectZoom = styled.span`
+export const LeftToolSection = styled(ToolSection)`
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  flex-direction: column;
+  width: 50px;
+  height: auto;
+  padding: 7px;
+  row-gap: 5px;
+  border-radius: 15px;
+
+  .semi-button,
+  .ui-mouse-pad-selector {
+    width: 36px !important;
+    height: 36px !important;
+    min-width: 36px;
+    border-radius: 10px !important;
+    color: rgba(32, 41, 69, 0.75);
+  }
+
+  .semi-button:hover,
+  .ui-mouse-pad-selector:hover,
+  .ui-mouse-pad-selector-active {
+    color: #0064fa;
+    background: rgba(0, 100, 250, 0.08);
+  }
+`;
+
+export const BottomLeftToolSection = styled(ToolSection)`
+  position: absolute;
+  bottom: 16px;
+  left: 16px;
   padding: 4px;
-  border-radius: 8px;
+  border-radius: 14px;
+`;
+
+export const BottomRightToolSection = styled.div`
+  position: absolute;
+  right: 16px;
+  bottom: 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+  pointer-events: none;
+`;
+
+export const ViewportToolSection = styled(ToolSection)`
+  padding: 4px;
+  border-radius: 14px;
+`;
+
+export const ToolDivider = styled.div`
+  width: 24px;
+  height: 1px;
+  margin: 1px 0;
+  background: rgba(68, 83, 130, 0.16);
+`;
+
+export const SelectZoom = styled.span`
+  box-sizing: border-box;
+  padding: 4px 8px;
+  border-radius: 10px;
   border: 1px solid rgba(68, 83, 130, 0.25);
   font-size: 12px;
-  width: 50px;
+  width: 64px;
+  line-height: 22px;
+  text-align: center;
+  background: #fff;
   cursor: pointer;
+  pointer-events: auto;
 `;
 
 export const MinimapContainer = styled.div`
-  position: absolute;
-  bottom: 60px;
+  height: 118px;
   width: 198px;
+  pointer-events: auto;
 `;
 
 export const UIIconMinimap = styled(IconMinimap)<{ visible: boolean }>`

@@ -7,7 +7,7 @@ import { MinimapRender } from "@flowgram.ai/minimap-plugin";
 
 import { MinimapContainer } from "./styles";
 
-export const Minimap = ({ visible }: { visible?: boolean }) => {
+export const Minimap = ({ visible = true }: { visible?: boolean }) => {
   if (!visible) {
     return <></>;
   }
@@ -16,12 +16,14 @@ export const Minimap = ({ visible }: { visible?: boolean }) => {
       <MinimapRender
         panelStyles={{}}
         containerStyles={{
+          height: "100%",
           pointerEvents: "auto",
           position: "relative",
           top: "unset",
           right: "unset",
           bottom: "unset",
           left: "unset",
+          width: "100%",
         }}
         inactiveStyle={{
           opacity: 1,

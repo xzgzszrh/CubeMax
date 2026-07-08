@@ -48,6 +48,11 @@
   z-index: 10 !important;
 }
 
+.doc-free-feature-overview .workflow-variable-panel-layer {
+  z-index: 45 !important;
+  pointer-events: auto;
+}
+
 @keyframes blink {
   0% {
     opacity: 1;

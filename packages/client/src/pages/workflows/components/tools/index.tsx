@@ -4,7 +4,7 @@
  */
 
 import { IconRedo, IconUndo } from "@douyinfe/semi-icons";
-import { Divider, IconButton, Tooltip } from "@douyinfe/semi-ui";
+import { IconButton, Tooltip } from "@douyinfe/semi-ui";
 import { useRefresh } from "@flowgram.ai/free-layout-editor";
 import { useClientContext } from "@flowgram.ai/free-layout-editor";
 import { useEffect, useState } from "react";
@@ -13,23 +13,25 @@ import { AddNode } from "../add-node";
 import { ProblemButton } from "../problem-panel";
 import { TestRunButton } from "../testrun/testrun-button";
 import { AutoLayout } from "./auto-layout";
-import { Comment } from "./comment";
 import { DownloadTool } from "./download";
 import { FitView } from "./fit-view";
 import { Interactive } from "./interactive";
 import { Minimap } from "./minimap";
-import { MinimapSwitch } from "./minimap-switch";
-import { Readonly } from "./readonly";
 import { Save } from "./save";
-import { ToolContainer, ToolSection } from "./styles";
-import { SwitchLine } from "./switch-line";
+import {
+  BottomLeftToolSection,
+  BottomRightToolSection,
+  LeftToolSection,
+  ToolDivider,
+  ToolsLayer,
+  ViewportToolSection,
+} from "./styles";
 import { ZoomSelect } from "./zoom-select";
 
 export const DemoTools = () => {
   const { history, playground } = useClientContext();
   const [canUndo, setCanUndo] = useState(false);
   const [canRedo, setCanRedo] = useState(false);
-  const [minimapVisible, setMinimapVisible] = useState(true);
   useEffect(() => {
     const disposable = history.undoRedoService.onChange(() => {
       setCanUndo(history.canUndo());
@@ -45,17 +47,20 @@ export const DemoTools = () => {
   }, [playground]);
 
   return (
-    <ToolContainer className="demo-free-layout-tools">
-      <ToolSection>
-        <Interactive />
+    <ToolsLayer className="demo-free-layout-tools">
+      <LeftToolSection aria-label="工作流工具">
+        <AddNode compact disabled={playground.config.readonly} />
+        <Save compact disabled={playground.config.readonly} />
+        <Interactive compact />
         <AutoLayout />
-        <SwitchLine />
-        <ZoomSelect />
         <FitView />
-        <MinimapSwitch minimapVisible={minimapVisible} setMinimapVisible={setMinimapVisible} />
-        <Minimap visible={minimapVisible} />
-        <Readonly />
-        <Comment />
+        <ToolDivider />
+        <DownloadTool />
+        <ProblemButton />
+        <TestRunButton compact disabled={playground.config.readonly} />
+      </LeftToolSection>
+
+      <BottomLeftToolSection aria-label="历史操作">
         <Tooltip content="撤销">
           <IconButton
             type="tertiary"
@@ -74,14 +79,14 @@ export const DemoTools = () => {
             onClick={() => history.redo()}
           />
         </Tooltip>
-        <ProblemButton />
-        <Save disabled={playground.config.readonly} />
-        <DownloadTool />
-        <Divider layout="vertical" style={{ height: "16px" }} margin={3} />
-        <AddNode disabled={playground.config.readonly} />
-        <Divider layout="vertical" style={{ height: "16px" }} margin={3} />
-        <TestRunButton disabled={playground.config.readonly} />
-      </ToolSection>
-    </ToolContainer>
+      </BottomLeftToolSection>
+
+      <BottomRightToolSection aria-label="视图控制">
+        <Minimap />
+        <ViewportToolSection>
+          <ZoomSelect />
+        </ViewportToolSection>
+      </BottomRightToolSection>
+    </ToolsLayer>
   );
 };

@@ -3,14 +3,23 @@
  * SPDX-License-Identifier: MIT
  */
 
-import { WorkflowNodeType } from "../constants";
+import { nanoid } from "nanoid";
+
+import iconComment from "../../assets/icon-comment.svg";
 import type { FlowNodeRegistry } from "../../typings";
+import { WorkflowNodeType } from "../constants";
+
+let index = 0;
 
 export const CommentNodeRegistry: FlowNodeRegistry = {
   type: WorkflowNodeType.Comment,
+  info: {
+    icon: iconComment,
+    description: "在画布中添加说明文字，不参与工作流连线和运行。",
+  },
   meta: {
     sidebarDisabled: true,
-    nodePanelVisible: false,
+    nodePanelLabel: "注释",
     defaultPorts: [],
     renderKey: WorkflowNodeType.Comment,
     size: {
@@ -23,4 +32,18 @@ export const CommentNodeRegistry: FlowNodeRegistry = {
   },
   getInputPoints: () => [], // Comment 节点没有输入
   getOutputPoints: () => [], // Comment 节点没有输出
+  onAdd() {
+    return {
+      id: `comment_${nanoid(5)}`,
+      type: WorkflowNodeType.Comment,
+      data: {
+        title: `注释_${++index}`,
+        size: {
+          width: 240,
+          height: 150,
+        },
+        note: "",
+      },
+    };
+  },
 };

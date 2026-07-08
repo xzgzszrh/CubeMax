@@ -3,17 +3,16 @@
  * SPDX-License-Identifier: MIT
  */
 
-import React from "react";
-import type { FC } from "react";
-
-import styled from "styled-components";
-import type { NodePanelRenderProps } from "@flowgram.ai/free-node-panel-plugin";
-import { useClientContext } from "@flowgram.ai/free-layout-editor";
 import type { WorkflowNodeEntity, WorkflowPortEntity } from "@flowgram.ai/free-layout-editor";
+import { useClientContext } from "@flowgram.ai/free-layout-editor";
+import type { NodePanelRenderProps } from "@flowgram.ai/free-node-panel-plugin";
+import type { FC } from "react";
+import React from "react";
+import styled from "styled-components";
 
-import { canContainNode } from "../../utils";
+import { nodeRegistries, WorkflowNodeType } from "../../nodes";
 import type { FlowNodeRegistry } from "../../typings";
-import { nodeRegistries } from "../../nodes";
+import { canContainNode } from "../../utils";
 
 const DEFAULT_NODE_PANEL_GROUP = {
   id: "general",
@@ -97,10 +96,18 @@ interface NodeListProps {
   containerNode?: WorkflowNodeEntity;
 }
 
-function getVisibleRegistries(containerNode: WorkflowNodeEntity | undefined): FlowNodeRegistry[] {
+function getVisibleRegistries(params: {
+  containerNode: WorkflowNodeEntity | undefined;
+  fromPort?: WorkflowPortEntity;
+}): FlowNodeRegistry[] {
+  const { containerNode, fromPort } = params;
+
   return nodeRegistries
     .filter((register) => register.meta.nodePanelVisible !== false)
     .filter((register) => {
+      if (fromPort && register.type === WorkflowNodeType.Comment) {
+        return false;
+      }
       if (register.meta.onlyInContainer) {
         return register.meta.onlyInContainer === containerNode?.flowNodeType;
       }
@@ -143,7 +150,7 @@ function groupRegistries(registries: FlowNodeRegistry[]) {
 }
 
 export const NodeList: FC<NodeListProps> = (props) => {
-  const { onSelect, containerNode } = props;
+  const { onSelect, containerNode, fromPort } = props;
   const context = useClientContext();
   const handleClick = (e: React.MouseEvent, registry: FlowNodeRegistry) => {
     const json = registry.onAdd?.(context);
@@ -153,7 +160,7 @@ export const NodeList: FC<NodeListProps> = (props) => {
       nodeJSON: json,
     });
   };
-  const groups = groupRegistries(getVisibleRegistries(containerNode));
+  const groups = groupRegistries(getVisibleRegistries({ containerNode, fromPort }));
 
   return (
     <NodesWrap>
