@@ -42,6 +42,8 @@ test-mcp-server/
 out/
 build
 packages/**/dist
+!packages/@flowgram.ai/runtime-js/dist
+!packages/@flowgram.ai/runtime-js/dist/**
 mcp-server/dist/
 /public/package.json
 /public/*
