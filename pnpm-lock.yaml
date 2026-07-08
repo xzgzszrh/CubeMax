@@ -802,6 +802,9 @@ importers:
 
   packages/@buildingai/alipay-sdk:
     dependencies:
+      '@nestjs/common':
+        specifier: ^11.1.17
+        version: 11.1.17(class-transformer@0.5.1)(class-validator@0.14.4)(reflect-metadata@0.2.2)(rxjs@7.8.2)
       alipay-sdk:
         specifier: ^4.14.0
         version: 4.14.0
@@ -1786,6 +1789,9 @@ importers:
       '@buildingai/ai-toolkit':
         specifier: workspace:*
         version: link:../@buildingai/ai-toolkit
+      '@buildingai/alipay-sdk':
+        specifier: workspace:*
+        version: link:../@buildingai/alipay-sdk
       '@buildingai/base':
         specifier: workspace:*
         version: link:../@buildingai/base
@@ -1900,6 +1906,9 @@ importers:
       bcryptjs:
         specifier: ^3.0.2
         version: 3.0.3
+      body-parser:
+        specifier: 2.2.0
+        version: 2.2.0
       body-parser-xml:
         specifier: ^2.0.5
         version: 2.0.5
@@ -1970,9 +1979,6 @@ importers:
         specifier: ^0.18.5
         version: 0.18.5
     devDependencies:
-      '@buildingai/alipay-sdk':
-        specifier: workspace:*
-        version: link:../@buildingai/alipay-sdk
       '@buildingai/eslint-config':
         specifier: workspace:*
         version: link:../@buildingai/eslint-config

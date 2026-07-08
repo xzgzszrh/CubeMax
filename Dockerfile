@@ -34,6 +34,7 @@ RUN corepack enable
 COPY --from=builder /app ./
 
 RUN --mount=type=cache,id=pnpm-store,target=/pnpm/store CI=true pnpm install --prod --frozen-lockfile \
+    && node scripts/check-docker-runtime-deps.cjs \
     && mkdir -p logs/pm2 storage
 
 EXPOSE 4090

@@ -35,6 +35,7 @@
         "test:dev": "jest --watch"
     },
     "dependencies": {
+        "@nestjs/common": "catalog:api",
         "alipay-sdk": "^4.14.0"
     },
     "devDependencies": {
