@@ -6,6 +6,7 @@ import { AiMcpServerConsoleController } from "./controllers/console/ai-mcp-serve
 import { WebAiMcpServerWebController } from "./controllers/web/ai-mcp-server.controller";
 import { AiMcpServerService } from "./services/ai-mcp-server.service";
 import { AiMcpToolService } from "./services/ai-mcp-tool.service";
+import { BuiltinMcpSyncService } from "./services/builtin-mcp-sync.service";
 import { WebAiMcpServerWebService } from "./services/web/ai-mcp-server.service";
 import { UserMcpServerWebService } from "./services/web/user-mcp-server.service";
 
@@ -18,6 +19,7 @@ import { UserMcpServerWebService } from "./services/web/user-mcp-server.service"
     providers: [
         AiMcpServerService,
         AiMcpToolService,
+        BuiltinMcpSyncService,
         WebAiMcpServerWebService,
         UserMcpServerWebService,
     ],

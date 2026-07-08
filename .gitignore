@@ -42,6 +42,7 @@ test-mcp-server/
 out/
 build
 packages/**/dist
+mcp-server/dist/
 /public/package.json
 /public/*
 !/public/index.html
