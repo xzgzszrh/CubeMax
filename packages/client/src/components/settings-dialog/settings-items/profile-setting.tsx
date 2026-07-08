@@ -1,49 +1,32 @@
 import { uploadFileAuto, useUserInfoQuery } from "@buildingai/services/shared";
 import {
   type AllowedUserField,
-  getWechatQrcode,
-  getWechatQrcodeBindStatus,
-  useBindPhoneMutation,
   useChangePasswordMutation,
-  useSendBindPhoneCodeMutation,
   useUpdateUserFieldMutation,
 } from "@buildingai/services/web";
 import { useAuthStore } from "@buildingai/stores";
 import { RootOnly } from "@buildingai/ui/components/auth/root-only";
 import { CopyButton } from "@buildingai/ui/components/copy-button";
-import SvgIcons from "@buildingai/ui/components/svg-icons";
 import { Avatar, AvatarFallback, AvatarImage } from "@buildingai/ui/components/ui/avatar";
 import { Button } from "@buildingai/ui/components/ui/button";
 import {
   Dialog,
   DialogContent,
   DialogDescription,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from "@buildingai/ui/components/ui/dialog";
 import { Input, PasswordInput } from "@buildingai/ui/components/ui/input";
-import { Skeleton } from "@buildingai/ui/components/ui/skeleton";
 import { TimeText } from "@buildingai/ui/components/ui/time-text";
-import { useQueryClient } from "@tanstack/react-query";
-import { AlertCircle, Check, CheckCircle2, Link, Loader2, PenLine, User, X } from "lucide-react";
+import { Check, Loader2, PenLine, User, X } from "lucide-react";
 import { type ChangeEvent, useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
 import { SettingItem, SettingItemAction, SettingItemGroup } from "../setting-item";
 
-const MOBILE_REGEX = /^1[3-9]\d{9}$/;
-
-type PhoneBindingInfo = {
-  phone?: string;
-  phoneAreaCode?: string;
-};
-
 const ProfileSetting = () => {
-  const queryClient = useQueryClient();
   const { isLogin, logout } = useAuthStore((state) => state.authActions);
   const { data } = useUserInfoQuery();
-  const phoneBindingInfo = (data ?? {}) as PhoneBindingInfo;
 
   const [editingField, setEditingField] = useState<AllowedUserField | null>(null);
   const [editValue, setEditValue] = useState("");
@@ -51,20 +34,6 @@ const ProfileSetting = () => {
 
   const avatarInputRef = useRef<HTMLInputElement>(null);
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
-
-  const [wechatBindOpen, setWechatBindOpen] = useState(false);
-  const [wechatQrUrl, setWechatQrUrl] = useState("");
-  const [wechatQrKey, setWechatQrKey] = useState("");
-  const [wechatLoading, setWechatLoading] = useState(false);
-  const [wechatStatus, setWechatStatus] = useState<
-    "normal" | "success" | "invalid" | "error" | "code_error"
-  >("normal");
-  const wechatPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const wechatPollStartRef = useRef<number>(0);
-  const [phoneDialogOpen, setPhoneDialogOpen] = useState(false);
-  const [bindMobile, setBindMobile] = useState("");
-  const [bindCode, setBindCode] = useState("");
-  const [smsCountdown, setSmsCountdown] = useState(0);
 
   const { mutate: updateField, isPending } = useUpdateUserFieldMutation();
 
@@ -115,79 +84,6 @@ const ProfileSetting = () => {
       confirmPassword: confirmPassword.trim(),
     });
   }, [oldPassword, newPassword, confirmPassword, changePassword]);
-
-  const fetchWechatQrCode = useCallback(async () => {
-    setWechatLoading(true);
-    setWechatStatus("normal");
-    setWechatQrUrl("");
-    setWechatQrKey("");
-    try {
-      const res = await getWechatQrcode(300);
-      setWechatQrUrl(res.url);
-      setWechatQrKey(res.key ?? "");
-    } catch {
-      setWechatStatus("code_error");
-    } finally {
-      setWechatLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    if (!wechatBindOpen) return;
-    fetchWechatQrCode();
-  }, [wechatBindOpen, fetchWechatQrCode]);
-
-  useEffect(() => {
-    if (!wechatQrKey || wechatStatus === "success" || wechatStatus === "invalid") return;
-    const POLL_INTERVAL = 2000;
-    const MAX_POLL_MS = 60 * 1000;
-    wechatPollStartRef.current = Date.now();
-    wechatPollRef.current = setInterval(async () => {
-      if (Date.now() - wechatPollStartRef.current > MAX_POLL_MS) {
-        if (wechatPollRef.current) clearInterval(wechatPollRef.current);
-        wechatPollRef.current = null;
-        setWechatStatus("invalid");
-        return;
-      }
-      try {
-        const res = await getWechatQrcodeBindStatus(wechatQrKey);
-        if (res.is_scan && res.success) {
-          if (wechatPollRef.current) clearInterval(wechatPollRef.current);
-          wechatPollRef.current = null;
-          setWechatStatus("success");
-          void queryClient.invalidateQueries({ queryKey: ["user", "info"] });
-          toast.success("微信绑定成功");
-          setWechatBindOpen(false);
-        } else if (res.error) {
-          if (wechatPollRef.current) clearInterval(wechatPollRef.current);
-          wechatPollRef.current = null;
-          setWechatStatus("error");
-          toast.error(res.error);
-        }
-      } catch {
-        if (wechatPollRef.current) clearInterval(wechatPollRef.current);
-        wechatPollRef.current = null;
-        setWechatStatus("invalid");
-      }
-    }, POLL_INTERVAL);
-    return () => {
-      if (wechatPollRef.current) clearInterval(wechatPollRef.current);
-      wechatPollRef.current = null;
-    };
-  }, [wechatQrKey, wechatStatus, queryClient]);
-
-  useEffect(() => {
-    if (!wechatBindOpen) {
-      if (wechatPollRef.current) clearInterval(wechatPollRef.current);
-      wechatPollRef.current = null;
-      setWechatQrUrl("");
-      setWechatQrKey("");
-      setWechatStatus("normal");
-    }
-  }, [wechatBindOpen]);
-  const { mutateAsync: sendBindCode, isPending: isSendBindCodePending } =
-    useSendBindPhoneCodeMutation();
-  const { mutateAsync: bindPhone, isPending: isBindPhonePending } = useBindPhoneMutation();
 
   const handleAvatarClick = useCallback(() => {
     avatarInputRef.current?.click();
@@ -256,74 +152,6 @@ const ProfileSetting = () => {
       inputRef.current.select();
     }
   }, [editingField]);
-
-  useEffect(() => {
-    if (smsCountdown <= 0) {
-      return;
-    }
-
-    const timer = window.setInterval(() => {
-      setSmsCountdown((prev) => (prev > 0 ? prev - 1 : 0));
-    }, 1000);
-
-    return () => window.clearInterval(timer);
-  }, [smsCountdown]);
-
-  /**
-   * 打开手机号绑定弹窗。
-   */
-  const handleOpenPhoneDialog = useCallback(() => {
-    setBindMobile(phoneBindingInfo.phone || "");
-    setBindCode("");
-    setSmsCountdown(0);
-    setPhoneDialogOpen(true);
-  }, [phoneBindingInfo.phone]);
-
-  /**
-   * 发送绑定验证码。
-   */
-  const handleSendBindCode = useCallback(async () => {
-    const mobile = bindMobile.trim();
-    if (!MOBILE_REGEX.test(mobile)) {
-      toast.error("请输入有效手机号");
-      return;
-    }
-
-    if (smsCountdown > 0) {
-      return;
-    }
-
-    await sendBindCode({ mobile, areaCode: "86" });
-    toast.success("验证码已发送");
-    setSmsCountdown(60);
-  }, [bindMobile, sendBindCode, smsCountdown]);
-
-  /**
-   * 提交手机号绑定。
-   */
-  const handleSubmitBindPhone = useCallback(async () => {
-    const mobile = bindMobile.trim();
-    const code = bindCode.trim();
-
-    if (!MOBILE_REGEX.test(mobile)) {
-      toast.error("请输入有效手机号");
-      return;
-    }
-
-    if (code.length !== 6) {
-      toast.error("请输入6位验证码");
-      return;
-    }
-
-    await bindPhone({
-      mobile,
-      code,
-      areaCode: "86",
-    });
-    toast.success("手机号绑定成功");
-    setPhoneDialogOpen(false);
-    setBindCode("");
-  }, [bindCode, bindMobile, bindPhone]);
 
   return (
     <div className="flex flex-col gap-4">
@@ -492,95 +320,6 @@ const ProfileSetting = () => {
             </div>
           </DialogContent>
         </Dialog>
-        <SettingItem
-          title={
-            phoneBindingInfo.phone
-              ? `${phoneBindingInfo.phoneAreaCode ? `+${phoneBindingInfo.phoneAreaCode} ` : ""}${phoneBindingInfo.phone}`
-              : "未绑定"
-          }
-          description="手机号"
-        >
-          <SettingItemAction onClick={handleOpenPhoneDialog}>
-            <PenLine />
-          </SettingItemAction>
-        </SettingItem>
-        <SettingItem
-          title={data?.bindWechatOa ? "已绑定" : "未绑定"}
-          description={
-            <div className="flex items-center gap-0.5">
-              <SvgIcons.wechat className="size-3" />
-              关联微信
-            </div>
-          }
-        >
-          {!data?.bindWechatOa && (
-            <SettingItemAction variant="ghost" size="sm" onClick={() => setWechatBindOpen(true)}>
-              <span className="flex items-center gap-0.5">
-                <Link />
-                去绑定
-              </span>
-            </SettingItemAction>
-          )}
-        </SettingItem>
-        <Dialog open={wechatBindOpen} onOpenChange={setWechatBindOpen}>
-          <DialogContent className="sm:max-w-xs">
-            <DialogHeader>
-              <DialogTitle>关联微信</DialogTitle>
-              <DialogDescription>请使用微信扫描二维码完成绑定</DialogDescription>
-            </DialogHeader>
-            <div className="flex w-full flex-col items-center justify-center gap-4 py-2">
-              <div className="relative flex size-52 items-center justify-center overflow-hidden rounded-lg border p-1">
-                {wechatLoading && <Skeleton className="size-full" />}
-                {!wechatLoading && wechatQrUrl && (
-                  <>
-                    <img
-                      src={wechatQrUrl}
-                      alt="微信绑定二维码"
-                      className="pointer-events-none size-full object-contain select-none"
-                    />
-                    {(wechatStatus === "success" ||
-                      wechatStatus === "invalid" ||
-                      wechatStatus === "error" ||
-                      wechatStatus === "code_error") && (
-                      <div className="bg-background/80 absolute inset-0 z-10 flex flex-col items-center justify-center backdrop-blur-sm">
-                        {wechatStatus === "success" && (
-                          <>
-                            <CheckCircle2 className="text-primary mb-2 size-12" />
-                            <p className="text-muted-foreground text-sm">绑定成功</p>
-                          </>
-                        )}
-                        {(wechatStatus === "invalid" || wechatStatus === "error") && (
-                          <>
-                            <AlertCircle className="text-destructive mb-2 size-12" />
-                            <p className="text-muted-foreground mb-3 text-center text-sm">
-                              {wechatStatus === "invalid"
-                                ? "二维码已过期，请刷新"
-                                : "绑定失败，请重试"}
-                            </p>
-                            <Button size="sm" variant="secondary" onClick={fetchWechatQrCode}>
-                              刷新二维码
-                            </Button>
-                          </>
-                        )}
-                        {wechatStatus === "code_error" && (
-                          <>
-                            <AlertCircle className="text-destructive mb-2 size-12" />
-                            <p className="text-muted-foreground mb-3 text-center text-sm">
-                              获取二维码失败，请重试
-                            </p>
-                            <Button size="sm" variant="secondary" onClick={fetchWechatQrCode}>
-                              刷新二维码
-                            </Button>
-                          </>
-                        )}
-                      </div>
-                    )}
-                  </>
-                )}
-              </div>
-            </div>
-          </DialogContent>
-        </Dialog>
         <RootOnly reverse>
           <SettingItem title="注销账号" description="您的账号数据将会被永久删除，此操作不可逆">
             <SettingItemAction variant="destructive" size="sm">
@@ -600,68 +339,6 @@ const ProfileSetting = () => {
           description="注册时间"
         />
       </SettingItemGroup>
-
-      <Dialog open={phoneDialogOpen} onOpenChange={setPhoneDialogOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>绑定手机号</DialogTitle>
-            <DialogDescription>请输入手机号并完成短信验证码验证</DialogDescription>
-          </DialogHeader>
-
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <label className="text-sm font-medium">手机号</label>
-              <Input
-                value={bindMobile}
-                onChange={(e) => setBindMobile(e.target.value.replace(/\D/g, "").slice(0, 11))}
-                placeholder="请输入手机号"
-                disabled={isSendBindCodePending || isBindPhonePending}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-sm font-medium">验证码</label>
-              <div className="flex items-center gap-2">
-                <Input
-                  value={bindCode}
-                  onChange={(e) => setBindCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
-                  placeholder="请输入验证码"
-                  disabled={isBindPhonePending}
-                />
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={handleSendBindCode}
-                  disabled={smsCountdown > 0 || isSendBindCodePending || isBindPhonePending}
-                >
-                  {isSendBindCodePending ? (
-                    <Loader2 className="size-4 animate-spin" />
-                  ) : smsCountdown > 0 ? (
-                    `${smsCountdown}s`
-                  ) : (
-                    "发送验证码"
-                  )}
-                </Button>
-              </div>
-            </div>
-          </div>
-
-          <DialogFooter>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setPhoneDialogOpen(false)}
-              disabled={isBindPhonePending}
-            >
-              取消
-            </Button>
-            <Button type="button" onClick={handleSubmitBindPhone} disabled={isBindPhonePending}>
-              {isBindPhonePending && <Loader2 className="mr-2 size-4 animate-spin" />}
-              确认绑定
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 };
