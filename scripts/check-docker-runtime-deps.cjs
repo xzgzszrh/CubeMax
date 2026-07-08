@@ -2,7 +2,7 @@ const fs = require("fs");
 const path = require("path");
 const Module = require("module");
 
-const appRoot = process.cwd();
+const appRoot = path.resolve(__dirname, "..");
 const builtins = new Set(Module.builtinModules.flatMap((name) => [name, name.replace(/^node:/, "")]));
 const importPattern = /(?:require\(|import\()\s*['"]([^'"]+)['"]\s*\)/g;
 
