@@ -43,7 +43,7 @@ services:
       - cubemax-network
 
   cubemax:
-    image: xzgzszrh/cubemax:sha-8b84a82
+    image: xzgzszrh/cubemax:latest
     container_name: cubemax-app
     restart: unless-stopped
     depends_on:
