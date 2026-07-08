@@ -1,8 +1,15 @@
 import { calculatorService } from "./services/calculator.js";
+import { embeddedService } from "./services/embedded.js";
+import { tavilyService } from "./services/tavily.js";
 import { textService } from "./services/text.js";
 import type { BuildingAiMcpService, McpServiceCatalogItem } from "./types.js";
 
-const services: BuildingAiMcpService[] = [calculatorService, textService];
+const services: BuildingAiMcpService[] = [
+    calculatorService,
+    textService,
+    embeddedService,
+    ...(process.env.TAVILY_API_KEY ? [tavilyService] : []),
+];
 const servicesByKey = new Map(services.map((service) => [service.key, service] as const));
 
 export function listMcpServices(): BuildingAiMcpService[] {

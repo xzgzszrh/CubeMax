@@ -22,6 +22,7 @@ import {
 } from "../../dto/ai-mcp-server.dto";
 import { AiMcpServerService } from "../../services/ai-mcp-server.service";
 import { AiMcpToolService } from "../../services/ai-mcp-tool.service";
+import { BuiltinMcpRegistryService } from "../../services/builtin-mcp-registry.service";
 
 /**
  * MCP服务配置后台管理控制器
@@ -34,6 +35,7 @@ export class AiMcpServerConsoleController extends BaseController {
         private readonly aiMcpServerService: AiMcpServerService,
         private readonly aiMcpToolService: AiMcpToolService,
         private readonly dictService: DictService,
+        private readonly builtinMcpRegistryService: BuiltinMcpRegistryService,
     ) {
         super();
     }
@@ -82,6 +84,19 @@ export class AiMcpServerConsoleController extends BaseController {
         name: "查询MCP服务详情",
     })
     async findOne(@Param("id") id: string) {
+        // 内置（动态）MCP服务：从内存注册表返回，工具也在内存态
+        if (this.builtinMcpRegistryService.isBuiltinId(id)) {
+            const builtin = this.builtinMcpRegistryService.getServer(id);
+            if (!builtin) {
+                throw HttpErrorFactory.notFound(`ID为 ${id} 的MCP服务不存在`);
+            }
+            return {
+                ...builtin,
+                isQuickMenu: false,
+                tools: builtin.tools,
+            };
+        }
+
         const mcpServer = (await this.aiMcpServerService.findOneById(id)) as AiMcpServer & {
             isQuickMenu: boolean;
         };
@@ -175,6 +190,9 @@ export class AiMcpServerConsoleController extends BaseController {
         hidden: true,
     })
     async batchRemove(@Body() batchDeleteDto: BatchDeleteAiMcpServerDto) {
+        if (batchDeleteDto.ids.some((id) => this.builtinMcpRegistryService.isBuiltinId(id))) {
+            throw HttpErrorFactory.badRequest("内置MCP服务由系统自动管理，不能删除");
+        }
         await this.aiMcpServerService.deleteMany(batchDeleteDto.ids);
         const defaultModelId = await this.dictService.get(AI_MCP_IS_QUICK_MENU);
 
@@ -193,6 +211,9 @@ export class AiMcpServerConsoleController extends BaseController {
         name: "切换MCP服务启用状态",
     })
     async toggleActive(@Param("id") id: string, @Body() body: { isDisabled: boolean }) {
+        if (this.builtinMcpRegistryService.isBuiltinId(id)) {
+            throw HttpErrorFactory.badRequest("内置MCP服务由系统自动管理，不能修改状态");
+        }
         const server = await this.aiMcpServerService.updateById(id, {
             isDisabled: body.isDisabled,
         });
@@ -211,6 +232,9 @@ export class AiMcpServerConsoleController extends BaseController {
         name: "设置默认快捷菜单",
     })
     async setDefault(@Param("id") id: string) {
+        if (this.builtinMcpRegistryService.isBuiltinId(id)) {
+            throw HttpErrorFactory.badRequest("内置MCP服务由系统自动管理，不能设为快捷菜单");
+        }
         await this.dictService.set(AI_MCP_IS_QUICK_MENU, id);
         return { message: "quick menu set successfully" };
     }

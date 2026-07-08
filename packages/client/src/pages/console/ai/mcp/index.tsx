@@ -287,15 +287,17 @@ const AiMcpIndexPage = () => {
                     <AvatarFallback className="size-12 rounded-lg">
                       <SvgIcons.mcp className="size-8" />
                     </AvatarFallback>
-                    <div className="center absolute inset-0 z-1 rounded-lg bg-black/5 opacity-0 backdrop-blur-xl transition-opacity group-hover/mcp-item:opacity-100 dark:bg-black/15">
-                      <PermissionGuard permissions="ai-mcp-servers:toggle-active">
-                        <Switch
-                          checked={!server.isDisabled}
-                          onCheckedChange={() => handleToggleStatus(server)}
-                          disabled={toggleActiveMutation.isPending}
-                        />
-                      </PermissionGuard>
-                    </div>
+                    {!server.isBuiltin && (
+                      <div className="center absolute inset-0 z-1 rounded-lg bg-black/5 opacity-0 backdrop-blur-xl transition-opacity group-hover/mcp-item:opacity-100 dark:bg-black/15">
+                        <PermissionGuard permissions="ai-mcp-servers:toggle-active">
+                          <Switch
+                            checked={!server.isDisabled}
+                            onCheckedChange={() => handleToggleStatus(server)}
+                            disabled={toggleActiveMutation.isPending}
+                          />
+                        </PermissionGuard>
+                      </div>
+                    )}
                   </Avatar>
                   <div className="flex flex-col overflow-hidden">
                     <span className="line-clamp-1">{server.name}</span>
@@ -314,12 +316,16 @@ const AiMcpIndexPage = () => {
                   </div>
 
                   <PermissionGuard
-                    permissions={[
-                      "ai-mcp-servers:check-connection",
-                      "ai-mcp-servers:quick-menu-set",
-                      "ai-mcp-servers:update",
-                      "ai-mcp-servers:delete",
-                    ]}
+                    permissions={
+                      server.isBuiltin
+                        ? "ai-mcp-servers:check-connection"
+                        : [
+                            "ai-mcp-servers:check-connection",
+                            "ai-mcp-servers:quick-menu-set",
+                            "ai-mcp-servers:update",
+                            "ai-mcp-servers:delete",
+                          ]
+                    }
                     any
                   >
                     <DropdownMenu>
@@ -335,40 +341,44 @@ const AiMcpIndexPage = () => {
                             连通测试
                           </DropdownMenuItem>
                         </PermissionGuard>
-                        <PermissionGuard permissions="ai-mcp-servers:quick-menu-set">
-                          <DropdownMenuItem
-                            onClick={() =>
-                              server.isQuickMenu
-                                ? handleClearQuickMenu()
-                                : handleSetQuickMenu(server)
-                            }
-                            disabled={
-                              (server.isQuickMenu
-                                ? clearQuickMenuMutation.isPending
-                                : setQuickMenuMutation.isPending) || false
-                            }
-                          >
-                            <Star />
-                            {server.isQuickMenu ? "取消快捷菜单" : "设为快捷菜单"}
-                          </DropdownMenuItem>
-                        </PermissionGuard>
-                        <PermissionGuard permissions="ai-mcp-servers:update">
-                          <DropdownMenuItem onClick={() => handleEdit(server)}>
-                            <Edit />
-                            编辑
-                          </DropdownMenuItem>
-                        </PermissionGuard>
-                        <DropdownMenuSeparator />
-                        <PermissionGuard permissions="ai-mcp-servers:delete">
-                          <DropdownMenuItem
-                            variant="destructive"
-                            onClick={() => handleDelete(server)}
-                            disabled={deleteMutation.isPending}
-                          >
-                            <Trash2 />
-                            删除
-                          </DropdownMenuItem>
-                        </PermissionGuard>
+                        {!server.isBuiltin && (
+                          <>
+                            <PermissionGuard permissions="ai-mcp-servers:quick-menu-set">
+                              <DropdownMenuItem
+                                onClick={() =>
+                                  server.isQuickMenu
+                                    ? handleClearQuickMenu()
+                                    : handleSetQuickMenu(server)
+                                }
+                                disabled={
+                                  (server.isQuickMenu
+                                    ? clearQuickMenuMutation.isPending
+                                    : setQuickMenuMutation.isPending) || false
+                                }
+                              >
+                                <Star />
+                                {server.isQuickMenu ? "取消快捷菜单" : "设为快捷菜单"}
+                              </DropdownMenuItem>
+                            </PermissionGuard>
+                            <PermissionGuard permissions="ai-mcp-servers:update">
+                              <DropdownMenuItem onClick={() => handleEdit(server)}>
+                                <Edit />
+                                编辑
+                              </DropdownMenuItem>
+                            </PermissionGuard>
+                            <DropdownMenuSeparator />
+                            <PermissionGuard permissions="ai-mcp-servers:delete">
+                              <DropdownMenuItem
+                                variant="destructive"
+                                onClick={() => handleDelete(server)}
+                                disabled={deleteMutation.isPending}
+                              >
+                                <Trash2 />
+                                删除
+                              </DropdownMenuItem>
+                            </PermissionGuard>
+                          </>
+                        )}
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </PermissionGuard>
@@ -381,6 +391,7 @@ const AiMcpIndexPage = () => {
                       server={server}
                       isChecking={checkingServerId === server.id}
                     />
+                    {server.isBuiltin && <Badge variant="secondary">内置</Badge>}
                     {server.isQuickMenu && <Badge variant="outline">快捷菜单</Badge>}
                     <Badge variant="secondary">{server.communicationType}</Badge>
                   </div>

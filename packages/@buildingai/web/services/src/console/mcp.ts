@@ -35,6 +35,7 @@ export type McpServer = {
     providerName?: string;
     providerUrl?: string;
     isDisabled: boolean;
+    isBuiltin?: boolean;
     isQuickMenu: boolean;
     sortOrder: number;
     connectable: boolean;

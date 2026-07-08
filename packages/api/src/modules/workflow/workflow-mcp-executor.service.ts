@@ -8,8 +8,17 @@ import {
     McpServerType,
 } from "@buildingai/db/entities";
 import { Repository } from "@buildingai/db/typeorm";
+import { BuiltinMcpRegistryService } from "@modules/ai/mcp/services/builtin-mcp-registry.service";
 import { Injectable } from "@nestjs/common";
 import Ajv from "ajv";
+
+type ResolvedMcpTarget = {
+    url: string;
+    communicationType: McpCommunicationType;
+    headers?: Record<string, string>;
+    name: string;
+    inputSchema?: Record<string, unknown>;
+};
 
 type WorkflowMcpNodeData = {
     mcpServerId?: string;
@@ -46,6 +55,7 @@ export class WorkflowMcpExecutorService {
         private readonly mcpToolRepository: Repository<AiMcpTool>,
         @InjectRepository(AiUserMcpServer)
         private readonly userMcpServerRepository: Repository<AiUserMcpServer>,
+        private readonly builtinMcpRegistryService: BuiltinMcpRegistryService,
     ) {}
 
     async execute(input: WorkflowMcpExecutorInput) {
@@ -67,20 +77,19 @@ export class WorkflowMcpExecutorService {
             throw new Error("MCP tool is required");
         }
 
-        const server = await this.getAccessibleServer(mcpServerId, userId);
-        const toolRecord = await this.getToolRecord(mcpServerId, toolName);
+        const target = await this.resolveTarget(mcpServerId, toolName, userId);
 
-        this.validateInputs(toolRecord.inputSchema, inputs);
+        this.validateInputs(target.inputSchema, inputs);
 
         let client: McpClient | null = null;
         try {
             client = await createMcpClient({
                 transport: {
-                    type: server.communicationType === McpCommunicationType.SSE ? "sse" : "http",
-                    url: server.url,
-                    ...(server.headers ? { headers: server.headers } : {}),
+                    type: target.communicationType === McpCommunicationType.SSE ? "sse" : "http",
+                    url: target.url,
+                    ...(target.headers ? { headers: target.headers } : {}),
                 },
-                name: server.name,
+                name: target.name,
             });
 
             const tools = await client.tools();
@@ -102,6 +111,55 @@ export class WorkflowMcpExecutorService {
                 await client.close().catch(() => undefined);
             }
         }
+    }
+
+    /**
+     * 解析 MCP 目标（连接信息 + 工具参数 schema）
+     *
+     * 内置（动态嗅探）MCP 走内存注册表，其余走数据库。
+     */
+    private async resolveTarget(
+        mcpServerId: string,
+        toolName: string,
+        userId: string,
+    ): Promise<ResolvedMcpTarget> {
+        if (this.builtinMcpRegistryService.isBuiltinId(mcpServerId)) {
+            return this.resolveBuiltinTarget(mcpServerId, toolName);
+        }
+
+        const server = await this.getAccessibleServer(mcpServerId, userId);
+        const toolRecord = await this.getToolRecord(mcpServerId, toolName);
+
+        return {
+            url: server.url,
+            communicationType: server.communicationType,
+            headers: server.headers,
+            name: server.name,
+            inputSchema: toolRecord.inputSchema,
+        };
+    }
+
+    private resolveBuiltinTarget(mcpServerId: string, toolName: string): ResolvedMcpTarget {
+        const server = this.builtinMcpRegistryService.getServer(mcpServerId);
+        if (!server) {
+            throw new Error("MCP server does not exist");
+        }
+        if (!server.connectable) {
+            throw new Error("MCP server is disabled or not connectable");
+        }
+
+        const tool = this.builtinMcpRegistryService.getTool(mcpServerId, toolName);
+        if (!tool) {
+            throw new Error(`MCP tool "${toolName}" does not exist`);
+        }
+
+        return {
+            url: server.url,
+            communicationType: server.communicationType,
+            headers: server.headers,
+            name: server.name,
+            inputSchema: tool.inputSchema,
+        };
     }
 
     private async getAccessibleServer(mcpServerId: string, userId: string): Promise<AiMcpServer> {

@@ -61,6 +61,7 @@ export type McpServer = {
     connectable: boolean;
     connectError: string;
     isDisabled: boolean;
+    isBuiltin?: boolean;
     creatorId?: string;
     creator?: User;
     tools?: McpTool[];

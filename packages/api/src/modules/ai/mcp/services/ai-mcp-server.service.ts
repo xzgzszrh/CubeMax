@@ -18,6 +18,7 @@ import {
     UpdateAiMcpServerDto,
 } from "../dto/ai-mcp-server.dto";
 import { AiMcpToolService } from "./ai-mcp-tool.service";
+import { BuiltinMcpRegistryService } from "./builtin-mcp-registry.service";
 
 /**
  * MCP服务配置服务
@@ -33,6 +34,7 @@ export class AiMcpServerService extends BaseService<AiMcpServer> {
         private readonly aiUserMcpServerRepository: Repository<AiUserMcpServer>,
         private readonly aiMcpToolService: AiMcpToolService,
         private readonly dictService: DictService,
+        private readonly builtinMcpRegistryService: BuiltinMcpRegistryService,
     ) {
         super(aiMcpServerRepository);
     }
@@ -73,6 +75,8 @@ export class AiMcpServerService extends BaseService<AiMcpServer> {
      * @returns 更新后的MCP服务实体
      */
     async updateMcpServer(id: string, updateDto: UpdateAiMcpServerDto): Promise<AiMcpServer> {
+        this.assertNotBuiltin(id);
+
         // 检查服务是否存在
         const mcpServer = await this.findOneById(id);
 
@@ -140,7 +144,44 @@ export class AiMcpServerService extends BaseService<AiMcpServer> {
             item.toolsCount = item.tools?.length || 0;
         });
 
+        // 合并内存态的内置（动态嗅探）MCP服务，仅在第一页展示，且不落库、只读
+        const builtinItems = this.getBuiltinListItems(queryDto);
+        if (builtinItems.length > 0) {
+            const isFirstPage = !queryDto.page || queryDto.page <= 1;
+            if (isFirstPage) {
+                result.items = [...builtinItems, ...result.items];
+            }
+            result.total += builtinItems.length;
+        }
+
         return result;
+    }
+
+    /**
+     * 获取符合查询条件的内置MCP服务列表项（内存态）
+     */
+    private getBuiltinListItems(
+        queryDto: QueryAiMcpServerDto,
+    ): Array<AiMcpServer & { isQuickMenu: boolean; toolsCount: number; isBuiltin: true }> {
+        const { name, isDisabled } = queryDto;
+
+        return this.builtinMcpRegistryService
+            .listServers()
+            .filter((server) => {
+                if (name && !`${server.name} ${server.alias ?? ""}`.includes(name)) {
+                    return false;
+                }
+                if (isDisabled !== undefined && isEnabled(isDisabled) !== server.isDisabled) {
+                    return false;
+                }
+                return true;
+            })
+            .map((server) => ({
+                ...(server as unknown as AiMcpServer),
+                isQuickMenu: false,
+                toolsCount: server.tools.length,
+                isBuiltin: true as const,
+            }));
     }
 
     /**
@@ -225,6 +266,8 @@ export class AiMcpServerService extends BaseService<AiMcpServer> {
      * @returns 删除结果
      */
     async deleteMcpServer(id: string): Promise<void> {
+        this.assertNotBuiltin(id);
+
         // 检查服务是否存在
         const mcpServer = await this.findOneById(id);
         if (!mcpServer) {
@@ -256,6 +299,31 @@ export class AiMcpServerService extends BaseService<AiMcpServer> {
         };
         error?: string;
     }> {
+        // 内置（动态）MCP服务：只刷新内存注册表，不落库
+        if (this.builtinMcpRegistryService.isBuiltinId(id)) {
+            await this.builtinMcpRegistryService.refresh();
+            const server = this.builtinMcpRegistryService.getServer(id);
+            if (!server) {
+                throw HttpErrorFactory.notFound(`ID为 ${id} 的MCP服务不存在`);
+            }
+            return {
+                success: true,
+                connectable: server.connectable,
+                message: server.connectable
+                    ? `MCP服务连接成功，共 ${server.tools.length} 个工具`
+                    : `MCP服务连接失败: ${server.connectError}`,
+                toolsInfo: server.connectable
+                    ? {
+                          created: 0,
+                          updated: server.tools.length,
+                          deleted: 0,
+                          total: server.tools.length,
+                      }
+                    : undefined,
+                error: server.connectable ? undefined : server.connectError,
+            };
+        }
+
         // 检查服务是否存在
         const mcpServer = await this.findOneById(id);
         if (!mcpServer) {
@@ -322,5 +390,14 @@ export class AiMcpServerService extends BaseService<AiMcpServer> {
             toolsInfo,
             error: connectable ? undefined : errorMessage,
         };
+    }
+
+    /**
+     * 内置（动态嗅探）MCP服务为只读，禁止编辑/删除等写操作
+     */
+    private assertNotBuiltin(id: string): void {
+        if (this.builtinMcpRegistryService.isBuiltinId(id)) {
+            throw HttpErrorFactory.badRequest("内置MCP服务由系统自动同步，不支持修改或删除");
+        }
     }
 }

@@ -254,6 +254,7 @@ const ToolsSetting = () => {
                     server={server}
                     isChecking={checkingServerId === server.id}
                   />
+                  {server.isBuiltin && <Badge variant="secondary">内置</Badge>}
                   <Badge
                     variant="outline"
                     className="text-muted-foreground group/tool-badge hover:bg-accent cursor-pointer px-1.5"
@@ -266,11 +267,13 @@ const ToolsSetting = () => {
                 </div>
               }
             >
-              <Switch
-                checked={!server.isDisabled}
-                onCheckedChange={() => handleToggleStatus(server)}
-                disabled={toggleStatusMutation.isPending}
-              />
+              {!server.isBuiltin && (
+                <Switch
+                  checked={!server.isDisabled}
+                  onCheckedChange={() => handleToggleStatus(server)}
+                  disabled={toggleStatusMutation.isPending}
+                />
+              )}
             </SettingItem>
           ))
         ) : (

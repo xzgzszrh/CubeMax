@@ -27,3 +27,51 @@ export function getOptionalString(args: Record<string, unknown>, key: string): s
 
     return value;
 }
+
+export function getOptionalNumber(args: Record<string, unknown>, key: string): number | undefined {
+    const value = args[key];
+    if (value === undefined || value === null) {
+        return undefined;
+    }
+    if (typeof value !== "number" || !Number.isFinite(value)) {
+        throw new Error(`"${key}" must be a finite number`);
+    }
+
+    return value;
+}
+
+export function getOptionalBoolean(
+    args: Record<string, unknown>,
+    key: string,
+): boolean | undefined {
+    const value = args[key];
+    if (value === undefined || value === null) {
+        return undefined;
+    }
+    if (typeof value === "boolean") {
+        return value;
+    }
+    if (value === "true") return true;
+    if (value === "false") return false;
+    throw new Error(`"${key}" must be a boolean`);
+}
+
+export function getOptionalStringArray(
+    args: Record<string, unknown>,
+    key: string,
+): string[] | undefined {
+    const value = args[key];
+    if (value === undefined || value === null || value === "") {
+        return undefined;
+    }
+    if (typeof value === "string") {
+        return value
+            .split(",")
+            .map((s) => s.trim())
+            .filter(Boolean);
+    }
+    if (Array.isArray(value)) {
+        return value.map(String);
+    }
+    throw new Error(`"${key}" must be an array of strings or a comma-separated string`);
+}

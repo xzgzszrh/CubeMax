@@ -19,6 +19,7 @@ import {
     ToggleAiMcpServerStatusDto,
     UpdateWebAiMcpServerDto,
 } from "@modules/ai/mcp/dto/web/ai-mcp-server.dto";
+import { BuiltinMcpRegistryService } from "@modules/ai/mcp/services/builtin-mcp-registry.service";
 import { WebAiMcpServerWebService } from "@modules/ai/mcp/services/web/ai-mcp-server.service";
 import { Body, Delete, Get, Param, Post, Put, Query, Req } from "@nestjs/common";
 import Ajv from "ajv";
@@ -34,6 +35,7 @@ export class WebAiMcpServerWebController {
     constructor(
         private readonly webAiMcpServerService: WebAiMcpServerWebService,
         private readonly dictService: DictService,
+        private readonly builtinMcpRegistryService: BuiltinMcpRegistryService,
     ) {}
 
     /**
@@ -91,9 +93,56 @@ export class WebAiMcpServerWebController {
                 return item;
             });
 
+        // 合并内置（动态嗅探）MCP服务：仅在系统类型列表、可连通时展示
+        if (type === McpServerType.SYSTEM) {
+            const builtin = this.builtinMcpRegistryService
+                .listServers()
+                .filter((server) => server.connectable)
+                .filter((server) => (name ? this.matchName(server, name) : true))
+                .map((server) => this.toWebBuiltinServer(server)) as unknown as AiMcpServer[];
+
+            result.items = [...builtin, ...result.items];
+        }
+
         result.total = result.items.length;
 
         return result;
+    }
+
+    /**
+     * 内置MCP服务名称模糊匹配
+     */
+    private matchName(server: { name: string; alias?: string }, name: string): boolean {
+        return `${server.name} ${server.alias ?? ""}`.toLowerCase().includes(name.toLowerCase());
+    }
+
+    /**
+     * 将内存态内置MCP服务转换为前台返回结构（隐藏url/headers）
+     */
+    private toWebBuiltinServer(server: {
+        id: string;
+        name: string;
+        alias?: string;
+        description?: string;
+        icon: string;
+        type: McpServerType;
+        communicationType: McpCommunicationType;
+        providerName: string;
+        providerUrl: string;
+        sortOrder: number;
+        connectable: boolean;
+        connectError: string;
+        tools: unknown[];
+        createdAt: string;
+        updatedAt: string;
+    }) {
+        return {
+            ...server,
+            url: null,
+            headers: null,
+            isDisabled: false,
+            isBuiltin: true as const,
+        };
     }
 
     /**
@@ -150,7 +199,13 @@ export class WebAiMcpServerWebController {
             .filter((item) => item !== null)
             .filter((item) => !isEnabled(item.isDisabled));
 
-        return filtered;
+        // 合并内置（动态嗅探）MCP服务：始终启用，仅返回可连通的，且不暴露url/headers
+        const builtin = this.builtinMcpRegistryService
+            .listServers()
+            .filter((server) => server.connectable)
+            .map((server) => this.toWebBuiltinServer(server));
+
+        return [...builtin, ...filtered];
     }
 
     /**
@@ -182,6 +237,15 @@ export class WebAiMcpServerWebController {
     @Get(":id")
     @BuildFileUrl(["**.icon"])
     async findOne(@Param("id") id: string, @Playground() user: UserPlayground) {
+        // 内置（动态）MCP服务：从内存注册表读取
+        if (this.builtinMcpRegistryService.isBuiltinId(id)) {
+            const builtin = this.builtinMcpRegistryService.getServer(id);
+            if (!builtin) {
+                throw HttpErrorFactory.notFound("MCP服务不存在");
+            }
+            return this.toWebBuiltinServer(builtin);
+        }
+
         const result = await this.webAiMcpServerService.findOneById(id, {
             relations: ["tools"],
         });
@@ -226,6 +290,9 @@ export class WebAiMcpServerWebController {
         @Body() updateDto: UpdateWebAiMcpServerDto,
         @Playground() user: UserPlayground,
     ) {
+        if (this.builtinMcpRegistryService.isBuiltinId(id)) {
+            throw HttpErrorFactory.badRequest("内置MCP服务由系统自动管理，不能修改");
+        }
         const result = await this.webAiMcpServerService.updateMcpServer(id, updateDto, user.id);
 
         // 只有用户类型的服务才返回真实的url，系统类型的服务url设置为null
@@ -241,6 +308,9 @@ export class WebAiMcpServerWebController {
      */
     @Delete(":id")
     async remove(@Param("id") id: string) {
+        if (this.builtinMcpRegistryService.isBuiltinId(id)) {
+            throw HttpErrorFactory.badRequest("内置MCP服务由系统自动管理，不能删除");
+        }
         await this.webAiMcpServerService.delete(id);
         return null;
     }
@@ -254,6 +324,9 @@ export class WebAiMcpServerWebController {
         @Body() toggleDto: ToggleAiMcpServerStatusDto,
         @Playground() user: UserPlayground,
     ) {
+        if (this.builtinMcpRegistryService.isBuiltinId(id)) {
+            throw HttpErrorFactory.badRequest("内置MCP服务由系统自动管理，不能修改状态");
+        }
         const updated = await this.webAiMcpServerService.toggleMcpServerStatus(
             id,
             toggleDto.status,

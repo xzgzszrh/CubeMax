@@ -19,8 +19,7 @@ import {
 } from "@buildingai/db/entities";
 import { agentPublicAccessRegistry } from "@common/decorators/agent-public-access.registry";
 import { AiDatasetsModule } from "@modules/ai/datasets/datasets.module";
-import { AiMcpServerService } from "@modules/ai/mcp/services/ai-mcp-server.service";
-import { AiMcpToolService } from "@modules/ai/mcp/services/ai-mcp-tool.service";
+import { AiMcpModule } from "@modules/ai/mcp/ai-mcp.module";
 import { AiModelService } from "@modules/ai/model/services/ai-model.service";
 import { AiProviderService } from "@modules/ai/provider/services/ai-provider.service";
 import { ConfigModule } from "@modules/config/config.module";
@@ -77,6 +76,7 @@ import { AgentsService } from "./services/agents.service";
         ]),
         forwardRef(() => AiDatasetsModule),
         AiMemoryModule,
+        AiMcpModule,
         ConfigModule,
         UserModule,
     ],
@@ -119,8 +119,6 @@ import { AgentsService } from "./services/agents.service";
         AiProviderService,
         SecretService,
         SecretTemplateService,
-        AiMcpServerService,
-        AiMcpToolService,
     ],
     exports: [AgentsService],
 })
