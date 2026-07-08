@@ -2374,6 +2374,9 @@ importers:
       cos-nodejs-sdk-v5:
         specifier: 'catalog:'
         version: 2.15.4
+      mime-types:
+        specifier: 3.0.1
+        version: 3.0.1
       tencentcloud-sdk-nodejs-sts:
         specifier: 'catalog:'
         version: 4.1.100
