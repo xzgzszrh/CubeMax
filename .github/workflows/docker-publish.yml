@@ -73,6 +73,10 @@ jobs:
           file: ./Dockerfile
           platforms: linux/amd64
           push: true
+          build-args: |
+            VITE_PRODUCTION_APP_BASE_URL=${{ vars.VITE_PRODUCTION_APP_BASE_URL || '' }}
+            VITE_APP_WEB_API_PREFIX=${{ vars.VITE_APP_WEB_API_PREFIX || '/api' }}
+            VITE_APP_CONSOLE_API_PREFIX=${{ vars.VITE_APP_CONSOLE_API_PREFIX || '/consoleapi' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha

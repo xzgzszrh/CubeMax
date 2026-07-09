@@ -54,6 +54,16 @@ import { TagModule } from "./tag/tag.module";
 import { UploadModule } from "./upload/upload.module";
 import { UserModule } from "./user/user.module";
 import { WorkflowModule } from "./workflow/workflow.module";
+
+function buildStaticExcludePaths(...paths: Array<string | undefined>): string[] {
+    return paths
+        .filter((path): path is string => Boolean(path))
+        .flatMap((path) => {
+            const normalized = `/${path.replace(/^\/+|\/+$/g, "")}`;
+            return [normalized, `${normalized}/(.*)`];
+        });
+}
+
 @Module({})
 export class AppModule {
     static async register(): Promise<DynamicModule> {
@@ -82,8 +92,10 @@ export class AppModule {
                     exclude: [
                         ...extensionsList.map((extension) => `/extension/${extension.identifier}`),
                         ...extensionsList.map((extension) => `/${extension.name}`),
-                        process.env.VITE_APP_WEB_API_PREFIX,
-                        process.env.VITE_APP_CONSOLE_API_PREFIX,
+                        ...buildStaticExcludePaths(
+                            process.env.VITE_APP_WEB_API_PREFIX || "/api",
+                            process.env.VITE_APP_CONSOLE_API_PREFIX || "/consoleapi",
+                        ),
                     ],
                 }),
                 ConfigModule.forRoot({
