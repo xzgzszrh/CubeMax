@@ -1,101 +1,133 @@
-<p align="center">
-  <a href="https://www.buildingai.cc/" target="_blank"><img src="./assets/banner.png" width="100%" alt="BuildingAI Banner" /></a>
-</p>
+# CubeMax
 
-<p align="center">
-<a href="http://demo.buildingai.cc/" target="_blank">Live Demo</a>｜
-<a href="https://www.buildingai.cc/">Official Website</a>｜
-<a href="./README.zh-CN.md">中文文档</a>
-</p>
+## 基于 ESP32-小智 的人工智能教育平台
 
-<p align="center">
-  <a href="https://nestjs.com/"><img src="https://img.shields.io/badge/NestJS-11.x-ea2845" alt="NestJS" /></a>
-  <a href="https://typeorm.io/"><img src="https://img.shields.io/badge/Typeorm-0.3.x-ef4100" alt="TypeORM" /></a>
-  <a href="https://www.postgresql.org/"><img src="https://img.shields.io/badge/PostgreSQL-17.x-29527d" alt="PostgreSQL" /></a>
-  <a href="https://www.typescriptlang.org/"><img src="https://img.shields.io/badge/TypeScript-5.x-3178c6" alt="TypeScript" /></a>
-  <a href="https://turbo.build/"><img src="https://img.shields.io/badge/Turbo-2.x-6d5cb3" alt="Turbo" /></a>
-  <a href="https://vuejs.org/"><img src="https://img.shields.io/badge/Vue.js-3.x-3aaf78" alt="Vue.js" /></a>
-  <a href="https://vitejs.dev/"><img src="https://img.shields.io/badge/Vite-7.x-646cff" alt="Vite" /></a>
-  <a href="https://ui.nuxt.com/"><img src="https://img.shields.io/badge/NuxtUI-3.x-00b95f" alt="NuxtUI" /></a>
-  <a href="https://nuxt.com/"><img src="https://img.shields.io/badge/NuxtJS-4.x-00b95f" alt="NuxtJS" /></a>
-</p>
+CubeMax 是面向中学人工智能普及教育建设需求打造的低成本、可复制、可推广的人工智能教育平台。平台以 ESP32-小智 智能硬件为核心载体，融合语音交互、边缘感知、物联网控制、大模型能力接入、场景化课程任务与项目式学习机制，面向基础教育阶段人工智能启蒙、实践教学、科技竞赛与校本课程建设，形成“硬件可触摸、算法可理解、应用可落地、成果可展示”的一体化教育解决方案。
 
-BuildingAI is an enterprise-grade open-source intelligent agent platform designed for AI developers,
-AI entrepreneurs, and forward-thinking organizations. Through a visual configuration interface (Do
-It Yourself), you can build native enterprise AI applications without code. The platform offers
-native capabilities such as intelligent agents, MCP, RAG pipelines, knowledge bases, large-model
-aggregation, and context engineering, along with user registration, membership subscriptions,
-compute billing, and other business operations.
+本项目坚持教育公平、技术普惠、国产化可控与可持续运维的建设导向，以较低建设成本支撑中学阶段人工智能教育的规模化开展，助力学校构建从认知启蒙、动手实践到创新应用的完整培养链条，为区域人工智能教育普及、拔尖创新人才早期发现和新质生产力后备人才培养提供基础平台支撑。
 
-## Quick Start
+## 一、项目定位
 
-> Before installing `BuildingAI`, make sure your device meets the minimum requirements:
->
-> - **CPU**: ≥ 2 cores
-> - **Memory**: ≥ 4 GB RAM
-> - **Storage**: ≥ 5 GB free space
+CubeMax 定位于“中学人工智能普及教育基础设施平台”，面向新时代基础教育数字化转型，提供覆盖硬件实践、智能交互、课程任务、项目展示与区域推广的综合性教学支撑系统。
 
-Deploying BuildingAI with [Docker](https://www.docker.com/) is the simplest and most stable option.
-Ensure that [Docker](https://www.docker.com/) and [Docker Compose](https://docs.docker.com/compose/)
-are already installed on your device.
+平台围绕“低门槛进入、低成本建设、高质量教学、高水平展示”的总体目标，构建适合中学生认知特点的人工智能学习环境，使学生能够在真实设备、真实数据、真实场景中理解人工智能技术原理，掌握智能系统的基本构成，形成面向未来社会的计算思维、工程思维、数据意识和创新能力。
 
-```bash
-# Enter the project directory (replace with your directory name)
-cd buildingai
-# Copy and customize the environment variables
-# In production, update the APP_DOMAIN value in the .env file to your own domain.
-cp .env.example .env
-# Start the application with Docker
-docker compose up -d
-```
+## 二、建设背景
 
-Wait for images to be pulled and the project to build. Depending on your device performance and
-network conditions, this usually takes about 5–10 minutes. You can check the build progress in the
-Node.js container logs; once an accessible URL appears, the project has started successfully.
+人工智能已成为推动产业升级、社会治理现代化和教育高质量发展的关键技术。中学阶段是学生科学兴趣、工程意识和创新能力形成的重要时期，推动人工智能教育从少数示范走向普遍覆盖，已成为基础教育改革的重要方向。
 
-After the project has fully started, open your browser and visit
-[http://localhost:4090/install](http://localhost:4090/install) to complete the initial setup wizard.
+在现实推进过程中，学校需要投入可控、体系完整、上手便捷、场景真实、成果清晰的人工智能教育平台。CubeMax 以 ESP32-小智 低成本智能硬件为基础，以模块化教学资源和平台化能力为支撑，降低学校开展人工智能教育的综合门槛，推动人工智能课程从“看得见”走向“摸得着、做得出、讲得清、用得上”。
 
-For other deployment methods, see our
-[Deployment Guide](https://www.buildingai.cc/docs/introduction/install).
+## 三、总体目标
 
-## Key Features
+CubeMax 面向比赛展示与教育落地双重需求，重点实现以下目标：
 
-- **AI Conversations**: Conversational AI and text generation powered by large language models, with
-  support for multimodal models.
-- **AI Agents**: Create agents with memory, goals, and tool usage for autonomous task execution.
-- **Knowledge Base**: Build knowledge bases from documents with vector search and RAG-enhanced
-  generation.
-- **MCP Integration**: Call MCP tools via SSE and Streamable HTTP protocols.
-- **Model Management**: Integrate mainstream large models under a unified API specification.
-- **Extension Mechanism**: Expand system capabilities and AI skills by installing extensions.
-- **Billing & Payments**: Built-in membership management, billing, and payment features ready to
-  use.
+1. 建设低成本人工智能教育实验平台，支持学校以可控投入开展常态化教学。
+2. 构建适配中学阶段的人工智能课程任务体系，覆盖感知、交互、推理、控制与应用创新。
+3. 打通硬件、软件、模型与教学活动链路，提升课堂实践密度和学生参与深度。
+4. 支撑学校科技节、社团活动、项目式学习、创客竞赛和人工智能主题赛事。
+5. 形成可复制、可评估、可推广的中学人工智能普及教育建设样板。
 
-## Screenshots
+## 四、技术路线
 
-![image](./assets/screenshots/1.png) ![image](./assets/screenshots/2.png)
-![image](./assets/screenshots/3.png) ![image](./assets/screenshots/4.png)
-![image](./assets/screenshots/5.png)
+CubeMax 以“端侧智能硬件 + 云端智能能力 + 教学任务系统 + 场景化应用”为技术路线，形成轻量化、开放式、可扩展的教育平台架构。
 
-## Contribution
+- 端侧硬件层：依托 ESP32-小智，提供语音交互、联网通信、传感接入、外设控制和边缘执行能力。
+- 智能能力层：支持大模型对话、自然语言理解、知识问答、任务规划和多模态应用拓展。
+- 教学资源层：围绕中学认知水平设计项目任务、实验流程、成果模板与评价维度。
+- 应用场景层：面向智慧教室、校园助手、科学探究、智能控制、创意交互等场景开展实践。
+- 管理展示层：服务教学组织、成果汇报、比赛路演和区域推广评估。
 
-If you would like to contribute, please
-[open an issue](https://github.com/BidingCC/BuildingAI/issues/new/choose) or
-[submit a pull request](https://github.com/BidingCC/BuildingAI/pulls) on GitHub.
+该路线兼顾工程可行性、教学适配性与成本可控性，支撑课堂普及、社团实践、项目展示和竞赛创新。
 
-You can also reach us through the [community](https://buildingai.cc/docs/introduction/community) or
-the [Q&A forum](https://www.buildingai.cc/question).
+## 五、核心能力
 
-## Star History
+### 1. 低成本普惠建设能力
 
-[![Star History Chart](https://api.star-history.com/svg?repos=BidingCC/BuildingAI&type=Date)](https://www.star-history.com/#BidingCC/BuildingAI&Date)
+CubeMax 基于 ESP32-小智 构建智能硬件底座，具备成本低、功耗低、体积小、扩展灵活、维护便利等特点，适合在普通中学、县域学校、社团课堂和区域普及项目中推广应用。
 
-## Privacy Policy
+平台强调“用有限投入形成有效教学产出”，让更多学校能够建设人工智能体验空间，让更多学生能够平等接触人工智能实践。
 
-This project **only collects anonymized usage statistics with your consent**. For details, see
-[PRIVACY_NOTICE.md](./PRIVACY_NOTICE.md).
+### 2. 面向中学生的人工智能认知转化能力
 
-## License
+CubeMax 将抽象的人工智能概念转化为可观察、可操作、可验证的学习任务。学生可以通过语音唤醒、传感器采集、智能问答、自动控制、任务联动等实践活动，理解数据、模型、算法、推理与反馈控制之间的关系。
 
-[Apache License 2.0](./LICENSE)
+平台通过真实任务建立学生对智能系统的结构化理解，推动人工智能教育形成可操作、可验证、可展示的课堂实践过程。
+
+### 3. 项目式学习与竞赛成果生成能力
+
+CubeMax 支持围绕校园生活、公共服务、绿色低碳、科学探究、安全提醒、无障碍交互等主题开展项目式学习。学生可基于平台快速完成从问题提出、方案设计、硬件搭建、智能交互、功能验证到成果展示的完整创新流程。
+
+该机制形成可展示、可答辩、可迭代的比赛成果，提升项目在教育价值、技术含量、社会意义和推广前景方面的综合表现。
+
+### 4. 软硬件协同创新能力
+
+平台以小型智能终端为入口，将语音、网络、传感、控制和大模型能力统一组织，支持学生理解人工智能系统中感知、认知、决策、执行等环节的协同关系。
+
+通过软硬件协同，CubeMax 能够有效连接信息科技、通用技术、物理、劳动教育、综合实践活动等课程内容，促进跨学科融合育人。
+
+### 5. 可复制推广与持续运营能力
+
+CubeMax 采用模块化建设思路，硬件配置可按学校条件分级投入，课程任务可按学段与教学目标灵活组合，应用场景可根据校园需求持续扩展。平台适用于单校试点、集团化办学和区域统一推进。
+
+该模式降低后期维护压力，提升教师使用意愿，形成稳定、持续、可演进的人工智能教育生态。
+
+## 六、典型应用场景
+
+### 智慧校园服务
+
+学生可构建校园语音助手、班级事务提醒、学习问答终端、校园导览设备等应用，在熟悉的校园环境中理解人工智能服务真实需求。
+
+### 科学探究实验
+
+平台可接入温湿度、光照、声音、距离等传感数据，支持开展环境监测、数据分析、智能预警和自动调节等实验任务，促进科学课程与人工智能实践融合。
+
+### 创客与社团活动
+
+CubeMax 适合科技社团、创客空间和课后服务场景，支持学生以低成本硬件快速验证创意，形成“人人能参与、人人有作品”的活动氛围。
+
+### 人工智能主题竞赛
+
+平台支持从原型制作、功能演示到现场答辩的完整比赛流程，集中呈现技术创新性、教育普惠性、应用现实性和社会价值表达。
+
+### 区域普及教育
+
+依托低成本、轻量化、易维护的特点，CubeMax 可作为区域人工智能教育普及项目的基础载体，服务城乡学校共同发展和教育资源均衡配置。
+
+## 七、教育价值
+
+CubeMax 以可承担的成本建立中学人工智能教育的真实实践环境。平台通过“问题驱动、任务牵引、实践验证、成果表达”的学习路径，帮助学生从使用人工智能走向理解人工智能，再走向创造人工智能应用。
+
+项目有助于提升学生以下核心素养：
+
+- 计算思维与算法意识
+- 数据采集、分析与应用能力
+- 智能系统结构化理解能力
+- 工程实践与问题解决能力
+- 跨学科创新与团队协作能力
+- 科技向善、服务社会的责任意识
+
+## 八、成本效益与推广优势
+
+CubeMax 面向基础教育普及场景，坚持“轻资产建设、重教学产出”的原则。平台通过低成本硬件、模块化扩展和场景化课程设计，有效降低学校在设备采购、师资培训、课程开发和后期维护方面的综合压力。
+
+在推广层面，CubeMax 具备以下优势：
+
+- 投入门槛低，适合普通中学规模化配置。
+- 实施周期短，便于快速形成课堂与竞赛成果。
+- 设备小型化，适配普通教室、实验室、社团空间等多种环境。
+- 教学可分层，兼顾入门普及、兴趣培养和竞赛提升。
+- 成果可视化，便于展示学校人工智能教育建设成效。
+- 模式可复制，适合区县级、集团校、城乡共同体推广。
+
+## 九、社会效益
+
+CubeMax 立足中学人工智能普及教育，服务国家教育数字化战略和创新人才培养需求。项目通过降低技术门槛、压缩建设成本、提升教学可操作性，推动人工智能教育从资源优势学校向更多普通学校延伸，促进教育机会更加公平、教育资源更加均衡、学生发展更加充分。
+
+平台服务于技术学习与未来能力建设。通过真实场景中的智能应用实践，学生能够理解科技与生活、产业、治理和公共服务之间的关系，形成以技术解决真实问题的意识，为未来参与智能社会建设奠定基础。
+
+## 十、项目愿景
+
+CubeMax 将持续围绕“让每一所中学都能开展人工智能实践教学，让每一名学生都能拥有接触智能技术的机会”这一愿景，打造低成本、高质量、可持续的人工智能教育平台。
+
+面向未来，CubeMax 将进一步完善课程体系、拓展硬件生态、增强模型能力、优化教学评价，形成覆盖课堂教学、社团实践、比赛展示和区域推广的综合解决方案，为中学人工智能教育普及提供可落地、可持续、可示范的建设路径。
