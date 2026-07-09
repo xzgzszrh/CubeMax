@@ -6,6 +6,7 @@ import {
 } from "@buildingai/hooks";
 import { useCheckInitializeStatus } from "@buildingai/services/shared";
 import { useConfigStore, useUserConfigStore } from "@buildingai/stores";
+import { getDisplayAppName, replaceLegacyDisplayAppName } from "@buildingai/ui/lib/brand";
 import { useQueryClient } from "@tanstack/react-query";
 import { useEffect } from "react";
 import { Navigate, Outlet, useLocation, useSearchParams } from "react-router-dom";
@@ -30,6 +31,7 @@ const MainLayout = () => {
   const { websiteConfig } = useRefreshWebsiteConfig();
   const { initAppearance } = useUserConfigStore((s) => s.userConfigActions);
   const { setIsInitialized } = useConfigStore((s) => s.configActions);
+  const appName = getDisplayAppName(websiteConfig?.webinfo.name);
 
   useEffect(() => {
     if (data?.isInitialized !== undefined) {
@@ -38,9 +40,9 @@ const MainLayout = () => {
   }, [data?.isInitialized, setIsInitialized]);
 
   useHeadRenderer({
-    title: websiteConfig?.webinfo.name || "BuildingAI",
-    titleTemplate: `%s - ${websiteConfig?.webinfo.name || "BuildingAI"}`,
-    description: websiteConfig?.webinfo.description,
+    title: appName,
+    titleTemplate: `%s - ${appName}`,
+    description: replaceLegacyDisplayAppName(websiteConfig?.webinfo.description),
     icon: websiteConfig?.webinfo.icon || `/buildingai-favicon.ico?t=${new Date().getTime()}`,
   });
   useRefreshUser();

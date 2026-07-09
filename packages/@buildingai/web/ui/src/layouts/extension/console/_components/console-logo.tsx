@@ -7,6 +7,7 @@ import {
   SidebarMenuItem,
 } from "@buildingai/ui/components/ui/sidebar";
 import { Skeleton } from "@buildingai/ui/components/ui/skeleton";
+import { getDisplayAppName } from "@buildingai/ui/lib/brand";
 import { Puzzle } from "lucide-react";
 import { Link } from "react-router-dom";
 
@@ -19,6 +20,7 @@ export function ConsoleLogo({ identifier }: ConsoleLogoProps) {
   const { data: extension, isLoading } = useWebExtensionDetailQuery(identifier || "", {
     enabled: !!identifier,
   });
+  const appName = getDisplayAppName(websiteConfig?.webinfo.name);
 
   if (isLoading && identifier) {
     return (
@@ -50,9 +52,7 @@ export function ConsoleLogo({ identifier }: ConsoleLogoProps) {
               </Avatar>
 
               <div className="flex flex-1 flex-col justify-center text-left text-sm">
-                <span className="truncate font-medium">
-                  {extension?.name || websiteConfig?.webinfo.name}
-                </span>
+                <span className="truncate font-medium">{extension?.name || appName}</span>
                 <span className="text-muted-foreground line-clamp-1 text-xs">
                   {extension?.description || "插件管理 · 工作台"}
                 </span>

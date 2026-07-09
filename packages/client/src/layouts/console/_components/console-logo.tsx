@@ -7,10 +7,12 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@buildingai/ui/components/ui/sidebar";
+import { getDisplayAppInitial, getDisplayAppName } from "@buildingai/ui/lib/brand";
 import { Link } from "react-router-dom";
 
 export function ConsoleLogo() {
   const { websiteConfig } = useConfigStore((state) => state.config);
+  const appName = getDisplayAppName(websiteConfig?.webinfo.name);
 
   return (
     <SidebarMenu>
@@ -23,17 +25,17 @@ export function ConsoleLogo() {
                   <AvatarImage
                     className="rounded-md"
                     src={websiteConfig?.webinfo.logo}
-                    alt={websiteConfig?.webinfo.name}
+                    alt={appName}
                   />
                   <AvatarFallback className="rounded-md">
-                    {websiteConfig?.webinfo.name?.slice(0, 1).toUpperCase()}
+                    {getDisplayAppInitial(websiteConfig?.webinfo.name)}
                   </AvatarFallback>
                 </Avatar>
               ) : (
                 <SvgIcons.buildingai className="size-8!" />
               )}
               <div className="flex flex-1 flex-col justify-center text-left text-sm">
-                <span className="truncate font-medium">{websiteConfig?.webinfo.name}</span>
+                <span className="truncate font-medium">{appName}</span>
                 <span className="flex items-center gap-1 truncate text-xs">
                   工作台 ·{" "}
                   <span className="text-muted-foreground">

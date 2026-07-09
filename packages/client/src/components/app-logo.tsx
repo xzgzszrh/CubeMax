@@ -1,5 +1,6 @@
 import { useConfigStore } from "@buildingai/stores";
 import SvgIcons from "@buildingai/ui/components/svg-icons";
+import { getDisplayAppName } from "@buildingai/ui/lib/brand";
 import { cn } from "@buildingai/ui/lib/utils";
 
 const AppLogo = ({
@@ -12,25 +13,20 @@ const AppLogo = ({
   className?: string;
 }) => {
   const { websiteConfig } = useConfigStore((state) => state.config);
+  const appName = getDisplayAppName(websiteConfig?.webinfo.name);
 
   return (
     <div className={cn("flex shrink-0 items-center gap-2", className)}>
       <>
         {websiteConfig?.webinfo.logo ? (
-          <img
-            className="h-10 shrink-0"
-            src={websiteConfig?.webinfo.logo}
-            alt={websiteConfig?.webinfo.name}
-          />
+          <img className="h-10 shrink-0" src={websiteConfig?.webinfo.logo} alt={appName} />
         ) : (
           <SvgIcons.buildingai className="h-10 shrink-0" />
         )}
       </>
       {showAppName && (
         <div className="flex flex-col justify-center gap-0.5">
-          <span className="line-clamp-1 text-lg leading-[1.2] font-bold">
-            {websiteConfig?.webinfo.name}
-          </span>
+          <span className="line-clamp-1 text-lg leading-[1.2] font-bold">{appName}</span>
           {desc && typeof desc === "string" ? (
             <span className="text-muted-foreground text-xs">{desc}</span>
           ) : (

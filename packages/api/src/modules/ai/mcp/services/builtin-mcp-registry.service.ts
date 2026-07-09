@@ -11,7 +11,7 @@ import {
 import { IsNull, Repository } from "@buildingai/db/typeorm";
 import { Injectable, Logger, OnApplicationBootstrap } from "@nestjs/common";
 
-export const BUILTIN_MCP_PROVIDER_NAME = "BuildingAI MCP Server";
+export const BUILTIN_MCP_PROVIDER_NAME = "CubeMax MCP Server";
 export const BUILTIN_MCP_ID_PREFIX = "builtin_";
 
 const DEFAULT_DISCOVERY_TIMEOUT_MS = 10000;

@@ -30,6 +30,7 @@ import {
   InputGroupInput,
 } from "@buildingai/ui/components/ui/input-group";
 import { Textarea } from "@buildingai/ui/components/ui/textarea";
+import { getDisplayAppName, replaceLegacyDisplayAppName } from "@buildingai/ui/lib/brand";
 import { useQueryClient } from "@tanstack/react-query";
 import { ChevronsUpDown, GlobeIcon, Loader2 } from "lucide-react";
 import { useEffect } from "react";
@@ -80,8 +81,8 @@ export default function Information() {
     if (!data?.webinfo) return;
     const w = data.webinfo;
     form.reset({
-      websiteName: w.name ?? "",
-      websiteDescription: w.description ?? "",
+      websiteName: getDisplayAppName(w.name),
+      websiteDescription: replaceLegacyDisplayAppName(w.description),
       websiteLogo: w.logo ?? "",
       websiteIcon: w.icon ?? "",
       customerServiceQrcode: w.customerServiceQrcode ?? "",
@@ -255,8 +256,8 @@ export default function Information() {
               onClick={() =>
                 data?.webinfo &&
                 form.reset({
-                  websiteName: data.webinfo.name ?? "",
-                  websiteDescription: data.webinfo.description ?? "",
+                  websiteName: getDisplayAppName(data.webinfo.name),
+                  websiteDescription: replaceLegacyDisplayAppName(data.webinfo.description),
                   websiteLogo: data.webinfo.logo ?? "",
                   websiteIcon: data.webinfo.icon ?? "",
                   customerServiceQrcode: data.webinfo.customerServiceQrcode ?? "",
