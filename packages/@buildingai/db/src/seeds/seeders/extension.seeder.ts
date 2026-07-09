@@ -126,14 +126,17 @@ export class ExtensionSeeder extends BaseSeeder {
     private async loadExtensionsConfig(): Promise<{
         applications: Record<string, ExtensionConfig>;
         functionals: Record<string, ExtensionConfig>;
-    }> {
+    } | null> {
         const possiblePath = path.join(process.cwd(), "../../extensions/extensions.json");
 
         if (fse.pathExistsSync(possiblePath)) {
             return await fse.readJson(possiblePath);
         }
 
-        throw new Error("Unable to find extensions.json in project root extensions folder");
+        this.logInfo(
+            `extensions.json not found, skipping application extension seed: ${possiblePath}`,
+        );
+        return null;
     }
 
     /**
@@ -145,6 +148,11 @@ export class ExtensionSeeder extends BaseSeeder {
         try {
             // Load extensions configuration file from project root extensions folder
             const extensionsData = await this.loadExtensionsConfig();
+
+            if (!extensionsData) {
+                this.logSuccess("Application extension initialization skipped: no extensions.json");
+                return;
+            }
 
             let createdCount = 0;
             let updatedCount = 0;
