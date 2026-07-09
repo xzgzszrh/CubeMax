@@ -5,6 +5,7 @@ import {
 } from "@buildingai/services/shared";
 import { useAuthStore, useConfigStore } from "@buildingai/stores";
 import SvgIcons from "@buildingai/ui/components/svg-icons";
+import { getDisplayAppName } from "@buildingai/ui/lib/brand";
 import { Navigate, useSearchParams } from "react-router-dom";
 
 import { LoginForm } from "./_components/login-form";
@@ -25,6 +26,7 @@ const LoginPage = () => {
   const { isLogin } = useAuthStore((state) => state.authActions);
   const { websiteConfig } = useConfigStore((state) => state.config);
   const redirect = searchParams.get("redirect") ?? "";
+  const appName = getDisplayAppName(websiteConfig?.webinfo.name);
 
   if (isLogin()) {
     if (!userInfo) return null;
@@ -55,10 +57,13 @@ const LoginPage = () => {
           {websiteConfig?.webinfo.logo ? (
             <div className="flex items-center gap-2">
               <img className="h-8" src={websiteConfig?.webinfo.logo} alt="logo" />
-              <span className="text-xl font-bold">{websiteConfig?.webinfo.name}</span>
+              <span className="text-xl font-bold">{appName}</span>
             </div>
           ) : (
-            <SvgIcons.buildingaiFull className="h-8" />
+            <div className="flex items-center gap-2">
+              <SvgIcons.buildingai className="h-8" />
+              <span className="text-xl font-bold">{appName}</span>
+            </div>
           )}
         </a>
         <LoginForm />

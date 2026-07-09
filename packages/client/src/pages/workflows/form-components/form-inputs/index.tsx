@@ -12,7 +12,7 @@ import type { JsonSchema } from "../../typings";
 import { Feedback } from "../feedback";
 import { FormItem } from "../form-item";
 import { ReadonlyValue } from "../readonly-value";
-import { LLMModelSelect } from "./model-select";
+import { LLMModelReadonlyValue, LLMModelSelect } from "./model-select";
 
 export function FormInputs() {
   const { readonly } = useNodeRenderContext();
@@ -47,7 +47,11 @@ export function FormInputs() {
                   required={required.includes(key)}
                 >
                   {!isSidebar ? (
-                    <ReadonlyValue value={field.value} multiline={vertical} />
+                    formComponent === "llm-model-select" ? (
+                      <LLMModelReadonlyValue value={field.value} />
+                    ) : (
+                      <ReadonlyValue value={field.value} multiline={vertical} />
+                    )
                   ) : (
                     <>
                       {formComponent === "prompt-editor" && (

@@ -3,12 +3,13 @@
  * SPDX-License-Identifier: MIT
  */
 
-import { useAiProvidersQuery } from "@buildingai/services/web";
+import { type AiProvider, useAiProvidersQuery } from "@buildingai/services/web";
 import { Select } from "@douyinfe/semi-ui";
 import type { IFlowConstantValue, IFlowValue } from "@flowgram.ai/form-materials";
 import { useMemo } from "react";
 
 import { useNodeRenderContext } from "../../hooks";
+import { ReadonlyValue } from "../readonly-value";
 
 interface LLMModelSelectProps {
   value?: IFlowValue;
@@ -20,6 +21,32 @@ function getSelectedModelId(value?: IFlowValue): string | undefined {
     return undefined;
   }
   return value.content;
+}
+
+function getModelDisplayValue(value: IFlowValue | undefined, providers: AiProvider[]) {
+  const selectedModelId = getSelectedModelId(value);
+  if (!selectedModelId) {
+    return undefined;
+  }
+
+  const selectedModel = providers
+    ?.flatMap((provider) => provider.models ?? [])
+    .find((model) => model.id === selectedModelId);
+
+  return selectedModel?.model || selectedModel?.name || selectedModelId;
+}
+
+export function LLMModelReadonlyValue({ value }: { value?: IFlowValue }) {
+  const { data: providers = [], isLoading } = useAiProvidersQuery({
+    supportedModelTypes: "llm",
+  });
+  const displayValue = useMemo(() => getModelDisplayValue(value, providers), [providers, value]);
+
+  if (isLoading && getSelectedModelId(value)) {
+    return <ReadonlyValue value="模型加载中..." />;
+  }
+
+  return <ReadonlyValue value={displayValue ?? value} />;
 }
 
 export function LLMModelSelect({ value, onChange }: LLMModelSelectProps) {

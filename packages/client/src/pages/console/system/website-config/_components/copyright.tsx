@@ -15,6 +15,7 @@ import {
 } from "@buildingai/ui/components/ui/form";
 import { ImageUpload } from "@buildingai/ui/components/ui/image-upload";
 import { Input } from "@buildingai/ui/components/ui/input";
+import { getDisplayAppName, replaceLegacyDisplayAppName } from "@buildingai/ui/lib/brand";
 import { Loader2 } from "lucide-react";
 import { useEffect } from "react";
 import { useForm } from "react-hook-form";
@@ -54,11 +55,11 @@ export default function Copyright() {
     if (!data?.copyright) return;
     const c = data.copyright;
     form.reset({
-      displayName: c.displayName ?? "",
+      displayName: replaceLegacyDisplayAppName(c.displayName),
       iconUrl: c.iconUrl ?? "",
       url: c.url ?? "",
       copyrightText: c.copyrightText ?? "",
-      copyrightBrand: c.copyrightBrand ?? "",
+      copyrightBrand: getDisplayAppName(c.copyrightBrand),
       copyrightUrl: c.copyrightUrl ?? "",
     });
   }, [data?.copyright, form]);
@@ -175,11 +176,11 @@ export default function Copyright() {
               onClick={() =>
                 loadedCopyright &&
                 form.reset({
-                  displayName: loadedCopyright.displayName ?? "",
+                  displayName: replaceLegacyDisplayAppName(loadedCopyright.displayName),
                   iconUrl: loadedCopyright.iconUrl ?? "",
                   url: loadedCopyright.url ?? "",
                   copyrightText: loadedCopyright.copyrightText ?? "",
-                  copyrightBrand: loadedCopyright.copyrightBrand ?? "",
+                  copyrightBrand: getDisplayAppName(loadedCopyright.copyrightBrand),
                   copyrightUrl: loadedCopyright.copyrightUrl ?? "",
                 })
               }

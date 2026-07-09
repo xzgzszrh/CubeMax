@@ -8,12 +8,14 @@ import {
   SidebarTrigger,
   useSidebar,
 } from "@buildingai/ui/components/ui/sidebar";
+import { getDisplayAppInitial, getDisplayAppName } from "@buildingai/ui/lib/brand";
 import { cn } from "@buildingai/ui/lib/utils";
 import { Link } from "react-router-dom";
 
 export function DefaultLogo() {
   const { websiteConfig } = useConfigStore((state) => state.config);
   const { state } = useSidebar();
+  const appName = getDisplayAppName(websiteConfig?.webinfo.name);
 
   return (
     <SidebarMenu>
@@ -40,10 +42,10 @@ export function DefaultLogo() {
                       <AvatarImage
                         className="rounded-md"
                         src={websiteConfig?.webinfo.logo}
-                        alt={websiteConfig?.webinfo.name}
+                        alt={appName}
                       />
                       <AvatarFallback className="rounded-md">
-                        {websiteConfig?.webinfo.name?.slice(0, 1).toUpperCase()}
+                        {getDisplayAppInitial(websiteConfig?.webinfo.name)}
                       </AvatarFallback>
                     </Avatar>
                   ) : (

@@ -51,6 +51,7 @@ import { SidebarMenuButton } from "@buildingai/ui/components/ui/sidebar";
 import { Skeleton } from "@buildingai/ui/components/ui/skeleton";
 import { useAlertDialog } from "@buildingai/ui/hooks/use-alert-dialog";
 import { UserButton } from "@buildingai/ui/layouts/styles/default/_components/default-nav-user";
+import { getDisplayAppInitial, getDisplayAppName } from "@buildingai/ui/lib/brand";
 import {
   closestCenter,
   DndContext,
@@ -736,6 +737,7 @@ const GroupFormDialog = ({
 
 export const DecorateLayoutSidebar = () => {
   const { websiteConfig } = useConfigStore((state) => state.config);
+  const appName = getDisplayAppName(websiteConfig?.webinfo.name);
   const [menuDialogOpen, setMenuDialogOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<NavItem | null>(null);
   const [groupDialogOpen, setGroupDialogOpen] = useState(false);
@@ -1015,10 +1017,10 @@ export const DecorateLayoutSidebar = () => {
                     <AvatarImage
                       className="rounded-md"
                       src={websiteConfig?.webinfo.logo}
-                      alt={websiteConfig?.webinfo.name}
+                      alt={appName}
                     />
                     <AvatarFallback className="rounded-md">
-                      {websiteConfig?.webinfo.name?.slice(0, 1).toUpperCase()}
+                      {getDisplayAppInitial(websiteConfig?.webinfo.name)}
                     </AvatarFallback>
                   </Avatar>
                 ) : (

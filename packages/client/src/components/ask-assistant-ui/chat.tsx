@@ -9,6 +9,7 @@ import {
 import { Avatar, AvatarImage } from "@buildingai/ui/components/ui/avatar";
 import { Button } from "@buildingai/ui/components/ui/button";
 import { SidebarTrigger } from "@buildingai/ui/components/ui/sidebar";
+import { getDisplayAppName, replaceLegacyDisplayAppName } from "@buildingai/ui/lib/brand";
 import { cn } from "@buildingai/ui/lib/utils";
 import { ShareIcon } from "lucide-react";
 import type { FormEvent } from "react";
@@ -181,6 +182,10 @@ const InputArea = memo(function InputArea({
   footerText?: string;
 }) {
   const { websiteConfig } = useConfigStore((state) => state.config);
+  const copyrightDisplayName = replaceLegacyDisplayAppName(websiteConfig?.copyright.displayName);
+  const copyrightBrand = getDisplayAppName(
+    websiteConfig?.copyright.copyrightBrand || websiteConfig?.webinfo.name,
+  );
   const { suggestions, status, textareaRef, isLoading, onSend, onStop, selectedModelId } =
     useAssistantContext();
   const { id } = useParams<{ id: string }>();
@@ -255,18 +260,13 @@ const InputArea = memo(function InputArea({
           >
             {websiteConfig?.copyright.iconUrl && (
               <Avatar className="size-4">
-                <AvatarImage
-                  src={websiteConfig?.copyright.iconUrl}
-                  alt={websiteConfig?.copyright.displayName}
-                />
+                <AvatarImage src={websiteConfig?.copyright.iconUrl} alt={copyrightDisplayName} />
               </Avatar>
             )}
-            <span>{websiteConfig?.copyright.displayName}</span>
+            <span>{copyrightDisplayName}</span>
           </a>
-          {(websiteConfig?.copyright.displayName || websiteConfig?.copyright.iconUrl) &&
-            (websiteConfig?.copyright.copyrightText || websiteConfig?.copyright.copyrightBrand) && (
-              <span>|</span>
-            )}
+          {(copyrightDisplayName || websiteConfig?.copyright.iconUrl) &&
+            (websiteConfig?.copyright.copyrightText || copyrightBrand) && <span>|</span>}
           <span className="space-x-1">
             <span>{websiteConfig?.copyright.copyrightText}</span>
             <a
@@ -274,7 +274,7 @@ const InputArea = memo(function InputArea({
               href={websiteConfig?.copyright.copyrightUrl}
               target="_blank"
             >
-              {websiteConfig?.copyright.copyrightBrand}
+              {copyrightBrand}
             </a>
           </span>
         </div>
