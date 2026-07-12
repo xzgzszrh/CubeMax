@@ -5,40 +5,80 @@
 
 .panel-wrapper {
   position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
 }
 
 .variable-panel-button {
-  position: absolute;
-  top: 0;
-  right: 0;
-  border-radius: 50%;
-  width: 50px;
-  height: 50px;
-  z-index: 1;
+  width: 40px !important;
+  height: 40px !important;
+  min-width: 40px !important;
+  padding: 0 !important;
+  color: rgba(32, 41, 69, 0.75) !important;
+  background: var(--semi-color-bg-2, #fff) !important;
+  border: 1px solid rgba(68, 83, 130, 0.25) !important;
+  border-radius: 8px !important;
+  box-shadow:
+    rgba(0, 0, 0, 0.04) 0 2px 6px,
+    rgba(0, 0, 0, 0.02) 0 4px 12px !important;
+  transition:
+    color 0.15s ease,
+    background-color 0.15s ease,
+    border-color 0.15s ease,
+    box-shadow 0.15s ease !important;
 
-  &.close {
-    width: 30px;
-    height: 30px;
-    top: 10px;
-    right: 10px;
+  :global(.semi-icon) {
+    display: flex;
+  }
+
+  svg {
+    width: 18px;
+    height: 18px;
+  }
+
+  &:hover,
+  &.active {
+    color: #0064fa !important;
+    background: rgba(0, 100, 250, 0.08) !important;
+    border-color: rgba(0, 100, 250, 0.28) !important;
+  }
+
+  &:focus-visible {
+    border-color: rgba(0, 100, 250, 0.5) !important;
+    box-shadow:
+      0 0 0 3px rgba(0, 100, 250, 0.14),
+      rgba(0, 0, 0, 0.04) 0 2px 6px !important;
   }
 }
 
 .panel-container {
-  width: 500px;
-  border-radius: 5px;
-  background-color: #fff;
+  width: min(420px, calc(100vw - 32px));
+  background: var(--semi-color-bg-2, #fff);
+  border: 1px solid rgba(68, 83, 130, 0.2);
+  border-radius: 8px;
   overflow: hidden;
-  box-shadow: 4px 4px 4px rgba(0, 0, 0, 0.1);
+  box-shadow:
+    rgba(0, 0, 0, 0.08) 0 8px 24px,
+    rgba(0, 0, 0, 0.04) 0 2px 8px;
   z-index: 30;
 
   :global(.semi-tabs-bar) {
-    padding-left: 20px;
+    min-height: 44px;
+    padding: 0 16px;
+    border-bottom-color: rgba(68, 83, 130, 0.14);
+  }
+
+  :global(.semi-tabs-tab) {
+    height: 44px;
+    padding: 0 4px;
+    font-size: 13px;
   }
 
   :global(.semi-tabs-content) {
-    padding: 20px;
-    height: 500px;
+    height: min(480px, calc(100vh - 116px));
+    padding: 16px;
     overflow: auto;
   }
 }

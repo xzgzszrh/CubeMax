@@ -162,6 +162,8 @@ export const tavilyService: BuildingAiMcpService = {
                     query: { type: "string", description: "The search query to execute." },
                     search_depth: {
                         type: "string",
+                        enum: ["basic", "advanced", "fast", "ultra-fast"],
+                        default: "basic",
                         description:
                             "Controls latency vs relevance. 'basic' (default), 'advanced' (more relevant, 2 credits), 'fast', 'ultra-fast'.",
                     },
@@ -171,10 +173,13 @@ export const tavilyService: BuildingAiMcpService = {
                     },
                     topic: {
                         type: "string",
+                        enum: ["general", "news", "finance"],
+                        default: "general",
                         description: "Search category: 'general' (default), 'news', 'finance'.",
                     },
                     time_range: {
                         type: "string",
+                        enum: ["day", "week", "month", "year"],
                         description: "Filter by time: 'day', 'week', 'month', 'year'.",
                     },
                     include_answer: {
@@ -241,6 +246,8 @@ export const tavilyService: BuildingAiMcpService = {
                     },
                     extract_depth: {
                         type: "string",
+                        enum: ["basic", "advanced"],
+                        default: "basic",
                         description:
                             "Extraction depth: 'basic' (default) or 'advanced' (more content, higher latency).",
                     },
@@ -250,6 +257,8 @@ export const tavilyService: BuildingAiMcpService = {
                     },
                     format: {
                         type: "string",
+                        enum: ["markdown", "text"],
+                        default: "markdown",
                         description: "Output format: 'markdown' (default) or 'text'.",
                     },
                 },

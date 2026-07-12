@@ -167,11 +167,11 @@ export function useCreateWorkflowMutation(
 
     return useMutation<WorkflowItem, Error, CreateWorkflowDto>({
         mutationFn: createWorkflow,
+        ...options,
         onSuccess: async (...args) => {
             await queryClient.invalidateQueries({ queryKey: workflowQueryKeys.listRoot() });
             options?.onSuccess?.(...args);
         },
-        ...options,
     });
 }
 
@@ -196,6 +196,7 @@ export function useUpdateWorkflowMutation(
 
     return useMutation<WorkflowItem, Error, { id: string; dto: UpdateWorkflowDto }>({
         mutationFn: ({ id, dto }) => updateWorkflow(id, dto),
+        ...options,
         onSuccess: async (...args) => {
             const [workflow, variables] = args;
             await Promise.all([
@@ -205,7 +206,6 @@ export function useUpdateWorkflowMutation(
             queryClient.setQueryData(workflowQueryKeys.detail(workflow.id), workflow);
             options?.onSuccess?.(...args);
         },
-        ...options,
     });
 }
 
@@ -222,11 +222,11 @@ export function useDeleteWorkflowMutation(options?: MutationOptionsUtil<null, st
 
     return useMutation<null, Error, string>({
         mutationFn: deleteWorkflow,
+        ...options,
         onSuccess: async (...args) => {
             await queryClient.invalidateQueries({ queryKey: workflowQueryKeys.listRoot() });
             options?.onSuccess?.(...args);
         },
-        ...options,
     });
 }
 

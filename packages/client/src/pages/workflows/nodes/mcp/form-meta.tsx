@@ -12,7 +12,13 @@ import type { FormMeta } from "@flowgram.ai/free-layout-editor";
 import { Field } from "@flowgram.ai/free-layout-editor";
 import { useMemo } from "react";
 
-import { FormContent, FormHeader, FormInputs, FormItem, ReadonlyValue } from "../../form-components";
+import {
+  FormContent,
+  FormHeader,
+  FormInputs,
+  FormItem,
+  ReadonlyValue,
+} from "../../form-components";
 import { useIsSidebar, useNodeRenderContext } from "../../hooks";
 import type { JsonSchema } from "../../typings";
 import {
@@ -21,6 +27,8 @@ import {
   createMcpToolInputsSchema,
 } from "../../utils/mcp-schema";
 import { defaultFormMeta } from "../default-form-meta";
+import { resolveMcpToolInputUi } from "./tool-input-ui/registry";
+import { McpToolValueInput } from "./tool-input-ui/tool-value-input";
 
 function getServerLabel(server: McpServer): string {
   return server.alias || server.name;
@@ -129,7 +137,10 @@ function McpConfig() {
                                       toolInputSchemaField.onChange(inputSchema);
                                       inputsField.onChange(inputsSchema);
                                       inputsValuesField.onChange(
-                                        createMcpInputsValues(inputsSchema, inputsValuesField.value),
+                                        createMcpInputsValues(
+                                          inputsSchema,
+                                          inputsValuesField.value,
+                                        ),
                                       );
                                     }}
                                     disabled={readonly || !serverField.value}
@@ -204,13 +215,55 @@ function McpOptions() {
   );
 }
 
+function McpInputs() {
+  const { data: servers = [] } = useMcpServersAllQuery({ isDisabled: false });
+
+  return (
+    <Field<string | undefined> name="mcpServerId">
+      {({ field: serverField }) => (
+        <Field<string | undefined> name="toolName">
+          {({ field: toolField }) => {
+            const serverKey = servers.find((server) => server.id === serverField.value)?.key;
+
+            return (
+              <FormInputs
+                renderInput={({ inputName, schema, value, onChange, readonly, hasError }) => {
+                  const inputUi = resolveMcpToolInputUi({
+                    serverKey,
+                    toolName: toolField.value,
+                    inputName,
+                    schema,
+                  });
+
+                  if (!inputUi) return undefined;
+
+                  return (
+                    <McpToolValueInput
+                      inputUi={inputUi}
+                      value={value}
+                      onChange={onChange}
+                      schema={schema}
+                      readonly={readonly}
+                      hasError={hasError}
+                    />
+                  );
+                }}
+              />
+            );
+          }}
+        </Field>
+      )}
+    </Field>
+  );
+}
+
 export const renderForm = () => (
   <>
     <FormHeader />
     <FormContent>
       <McpConfig />
       <Divider />
-      <FormInputs />
+      <McpInputs />
       <Divider />
       <McpOptions />
       <Divider />

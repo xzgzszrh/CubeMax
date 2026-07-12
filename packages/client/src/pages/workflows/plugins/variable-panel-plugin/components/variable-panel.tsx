@@ -5,10 +5,9 @@
 
 import { useState } from "react";
 
-import { Button, Collapsible, Tabs, Tooltip } from "@douyinfe/semi-ui";
-import { IconMinus } from "@douyinfe/semi-icons";
+import { Collapsible, IconButton, Tabs, Tooltip } from "@douyinfe/semi-ui";
+import { Braces } from "lucide-react";
 
-import iconVariable from "../../../assets/icon-variable.png";
 import { GlobalVariableEditor } from "./global-variable-editor";
 import { FullVariableList } from "./full-variable-list";
 
@@ -18,18 +17,21 @@ export function VariablePanel() {
   const [isOpen, setOpen] = useState<boolean>(false);
 
   return (
-    <div className={styles["panel-wrapper"]}>
-      <Tooltip content="切换变量面板">
-        <Button
-          className={`${styles["variable-panel-button"]} ${isOpen ? styles.close : ""}`}
-          theme={isOpen ? "borderless" : "light"}
+    <div className={styles["panel-wrapper"]} data-open={isOpen || undefined}>
+      <Tooltip content={isOpen ? "关闭变量面板" : "打开变量面板"}>
+        <IconButton
+          className={`${styles["variable-panel-button"]} ${isOpen ? styles.active : ""}`}
+          type="tertiary"
+          theme="borderless"
+          icon={<Braces aria-hidden="true" />}
           onClick={() => setOpen((_open) => !_open)}
-        >
-          {isOpen ? <IconMinus /> : <img src={iconVariable} width={20} height={20} />}
-        </Button>
+          aria-label={isOpen ? "关闭变量面板" : "打开变量面板"}
+          aria-expanded={isOpen}
+          data-testid="workflow.variable-panel.toggle"
+        />
       </Tooltip>
       <Collapsible isOpen={isOpen}>
-        <div className={styles["panel-container"]}>
+        <div className={styles["panel-container"]} data-testid="workflow.variable-panel.content">
           <Tabs>
             <Tabs.TabPane itemKey="variables" tab="变量列表">
               <FullVariableList />

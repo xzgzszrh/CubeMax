@@ -16,8 +16,8 @@ export class VariablePanelLayer extends Layer {
       const { scrollX, scrollY } = this.config.config;
       domUtils.setStyle(this.node, {
         position: "absolute",
-        right: 25 - scrollX,
-        top: scrollY + 25,
+        right: 16 - scrollX,
+        top: scrollY + 16,
         zIndex: 45,
         pointerEvents: "auto",
       });

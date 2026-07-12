@@ -1,5 +1,6 @@
 import {
   useCreateWorkflowMutation,
+  useUpdateWorkflowMutation,
   useWorkflowListQuery,
   type WorkflowItem,
 } from "@buildingai/services/web";
@@ -25,8 +26,10 @@ import {
   ItemTitle,
 } from "@buildingai/ui/components/ui/item";
 import { Skeleton } from "@buildingai/ui/components/ui/skeleton";
-import { ArrowRight, FileText, Plus, RefreshCw, Workflow } from "lucide-react";
+import { ArrowRight, FileText, Pencil, Plus, RefreshCw, Workflow } from "lucide-react";
+import { useState } from "react";
 
+import { WorkflowNameDialog } from "./components/workflow-name-dialog";
 import { initialData } from "./initial-data";
 
 const PAGE_SIZE = 50;
@@ -47,22 +50,39 @@ function getNodeCount(workflow: WorkflowItem) {
 
 export default function WorkflowsIndexPage() {
   const navigate = useNavigate();
+  const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const [renamingWorkflow, setRenamingWorkflow] = useState<WorkflowItem | null>(null);
   const workflowsQuery = useWorkflowListQuery({ page: 1, pageSize: PAGE_SIZE });
   const workflows = workflowsQuery.data?.items ?? [];
 
   const createWorkflowMutation = useCreateWorkflowMutation({
     onSuccess: (workflow) => {
+      setCreateDialogOpen(false);
       toast.success("工作流已创建");
       navigate(`/workflows/${workflow.id}`);
     },
+    onError: (error) => toast.error(error.message || "工作流创建失败"),
   });
 
-  const handleCreate = () => {
+  const updateWorkflowMutation = useUpdateWorkflowMutation({
+    onSuccess: () => {
+      setRenamingWorkflow(null);
+      toast.success("工作流名称已更新");
+    },
+    onError: (error) => toast.error(error.message || "工作流重命名失败"),
+  });
+
+  const handleCreate = (name: string) => {
     createWorkflowMutation.mutate({
-      name: "未命名工作流",
+      name,
       description: "",
       schema: initialData as unknown as Record<string, unknown>,
     });
+  };
+
+  const handleRename = (name: string) => {
+    if (!renamingWorkflow) return;
+    updateWorkflowMutation.mutate({ id: renamingWorkflow.id, dto: { name } });
   };
 
   return (
@@ -85,11 +105,7 @@ export default function WorkflowsIndexPage() {
           >
             <RefreshCw className={workflowsQuery.isFetching ? "animate-spin" : undefined} />
           </Button>
-          <Button
-            type="button"
-            onClick={handleCreate}
-            loading={createWorkflowMutation.isPending}
-          >
+          <Button type="button" onClick={() => setCreateDialogOpen(true)}>
             <Plus />
             新建工作流
           </Button>
@@ -128,11 +144,7 @@ export default function WorkflowsIndexPage() {
             <EmptyDescription>创建一个工作流后，它会显示在这里。</EmptyDescription>
           </EmptyHeader>
           <EmptyContent>
-            <Button
-              type="button"
-              onClick={handleCreate}
-              loading={createWorkflowMutation.isPending}
-            >
+            <Button type="button" onClick={() => setCreateDialogOpen(true)}>
               <Plus />
               新建工作流
             </Button>
@@ -141,26 +153,62 @@ export default function WorkflowsIndexPage() {
       ) : (
         <ItemGroup>
           {workflows.map((workflow) => (
-            <Item key={workflow.id} asChild variant="outline" className="bg-background">
-              <button type="button" onClick={() => navigate(`/workflows/${workflow.id}`)}>
+            <Item
+              key={workflow.id}
+              variant="outline"
+              className="bg-background hover:bg-muted/50 flex-nowrap p-0"
+            >
+              <button
+                type="button"
+                className="focus-visible:ring-ring/50 flex min-w-0 flex-1 items-center gap-3.5 rounded-md px-4 py-3.5 text-left outline-none focus-visible:ring-[3px]"
+                onClick={() => navigate(`/workflows/${workflow.id}`)}
+              >
                 <ItemMedia variant="icon" className="text-primary">
                   <FileText />
                 </ItemMedia>
                 <ItemContent>
                   <ItemTitle>{workflow.name}</ItemTitle>
                   <ItemDescription>
-                    {workflow.description?.trim() || "无描述"} · {getNodeCount(workflow)} 个节点
-                    · 更新于 {formatWorkflowTime(workflow.updatedAt)}
+                    {workflow.description?.trim() || "无描述"} · {getNodeCount(workflow)} 个节点 ·
+                    更新于 {formatWorkflowTime(workflow.updatedAt)}
                   </ItemDescription>
                 </ItemContent>
-                <ItemActions>
-                  <ArrowRight className="text-muted-foreground size-4" />
-                </ItemActions>
+                <ArrowRight className="text-muted-foreground size-4 shrink-0" />
               </button>
+              <ItemActions className="pr-2">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon-sm"
+                  onClick={() => setRenamingWorkflow(workflow)}
+                  aria-label={`重命名${workflow.name}`}
+                  title="重命名"
+                >
+                  <Pencil />
+                </Button>
+              </ItemActions>
             </Item>
           ))}
         </ItemGroup>
       )}
+
+      <WorkflowNameDialog
+        mode="create"
+        open={createDialogOpen}
+        isPending={createWorkflowMutation.isPending}
+        onOpenChange={setCreateDialogOpen}
+        onSubmit={handleCreate}
+      />
+      <WorkflowNameDialog
+        mode="rename"
+        open={renamingWorkflow !== null}
+        initialName={renamingWorkflow?.name}
+        isPending={updateWorkflowMutation.isPending}
+        onOpenChange={(open) => {
+          if (!open) setRenamingWorkflow(null);
+        }}
+        onSubmit={handleRename}
+      />
     </div>
   );
 }

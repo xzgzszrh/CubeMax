@@ -1,5 +1,14 @@
-import { Type } from "class-transformer";
-import { IsInt, IsObject, IsOptional, IsString, Max, Min } from "class-validator";
+import { Transform, Type } from "class-transformer";
+import {
+    IsInt,
+    IsNotEmpty,
+    IsObject,
+    IsOptional,
+    IsString,
+    Max,
+    MaxLength,
+    Min,
+} from "class-validator";
 
 export class QueryWorkflowDto {
     @IsOptional()
@@ -21,7 +30,10 @@ export class QueryWorkflowDto {
 }
 
 export class CreateWorkflowDto {
+    @Transform(({ value }) => (typeof value === "string" ? value.trim() : value))
     @IsString()
+    @IsNotEmpty({ message: "工作流名称不能为空" })
+    @MaxLength(100, { message: "工作流名称不能超过100个字符" })
     name: string;
 
     @IsString()
@@ -34,7 +46,10 @@ export class CreateWorkflowDto {
 }
 
 export class UpdateWorkflowDto {
+    @Transform(({ value }) => (typeof value === "string" ? value.trim() : value))
     @IsString()
+    @IsNotEmpty({ message: "工作流名称不能为空" })
+    @MaxLength(100, { message: "工作流名称不能超过100个字符" })
     @IsOptional()
     name?: string;
 
