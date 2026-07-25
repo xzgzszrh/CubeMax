@@ -1,7 +1,7 @@
 export function getRequiredNumber(args: Record<string, unknown>, key: string): number {
     const value = args[key];
     if (typeof value !== "number" || !Number.isFinite(value)) {
-        throw new Error(`"${key}" must be a finite number`);
+        throw new Error(`“${key}”必须是有效数字`);
     }
 
     return value;
@@ -10,7 +10,7 @@ export function getRequiredNumber(args: Record<string, unknown>, key: string): n
 export function getRequiredString(args: Record<string, unknown>, key: string): string {
     const value = args[key];
     if (typeof value !== "string") {
-        throw new Error(`"${key}" must be a string`);
+        throw new Error(`“${key}”必须是字符串`);
     }
 
     return value;
@@ -22,7 +22,7 @@ export function getOptionalString(args: Record<string, unknown>, key: string): s
         return undefined;
     }
     if (typeof value !== "string") {
-        throw new Error(`"${key}" must be a string`);
+        throw new Error(`“${key}”必须是字符串`);
     }
 
     return value;
@@ -34,7 +34,7 @@ export function getOptionalNumber(args: Record<string, unknown>, key: string): n
         return undefined;
     }
     if (typeof value !== "number" || !Number.isFinite(value)) {
-        throw new Error(`"${key}" must be a finite number`);
+        throw new Error(`“${key}”必须是有效数字`);
     }
 
     return value;
@@ -53,7 +53,7 @@ export function getOptionalBoolean(
     }
     if (value === "true") return true;
     if (value === "false") return false;
-    throw new Error(`"${key}" must be a boolean`);
+    throw new Error(`“${key}”必须是布尔值`);
 }
 
 export function getOptionalStringArray(
@@ -73,5 +73,5 @@ export function getOptionalStringArray(
     if (Array.isArray(value)) {
         return value.map(String);
     }
-    throw new Error(`"${key}" must be an array of strings or a comma-separated string`);
+    throw new Error(`“${key}”必须是字符串数组或以英文逗号分隔的字符串`);
 }

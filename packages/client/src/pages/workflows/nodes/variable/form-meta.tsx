@@ -3,22 +3,26 @@
  * SPDX-License-Identifier: MIT
  */
 
-import type { FormMeta, FormRenderProps } from "@flowgram.ai/free-layout-editor";
-import { AssignRows, createInferAssignPlugin, DisplayOutputs } from "@flowgram.ai/form-materials";
+import { createInferAssignPlugin, DisplayOutputs } from "@flowgram.ai/form-materials";
+import type { FormMeta } from "@flowgram.ai/free-layout-editor";
 
-import { FormHeader, FormContent } from "../../form-components";
-import type { VariableNodeJSON } from "./types";
+import { FlowAssignRows, FormContent, FormHeader } from "../../form-components";
+import { useIsSidebar, useNodeRenderContext } from "../../hooks";
 import { defaultFormMeta } from "../default-form-meta";
-import { useIsSidebar } from "../../hooks";
 
-export const FormRender = ({ form }: FormRenderProps<VariableNodeJSON>) => {
+export const FormRender = () => {
   const isSidebar = useIsSidebar();
+  const { readonly } = useNodeRenderContext();
 
   return (
     <>
       <FormHeader />
       <FormContent>
-        {isSidebar ? <AssignRows name="assign" /> : <DisplayOutputs displayFromScope />}
+        {isSidebar ? (
+          <FlowAssignRows name="assign" readonly={readonly} />
+        ) : (
+          <DisplayOutputs displayFromScope />
+        )}
       </FormContent>
     </>
   );

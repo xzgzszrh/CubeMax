@@ -14,6 +14,7 @@ import AgentPublishPage from "@/pages/agents/detail/publish";
 import PublishChatPage from "@/pages/agents/site-chat";
 import AgentsWorkspacePage from "@/pages/agents/workspace";
 import AppsIndexPage from "@/pages/apps";
+import WorkflowApplicationPage from "@/pages/apps/workflow";
 import DatasetsIndexPage from "@/pages/datasets";
 import DatasetsLayout from "@/pages/datasets/_layouts";
 import DatasetsDetailPage from "@/pages/datasets/detail";
@@ -114,6 +115,14 @@ export const router = createBrowserRouter([
           {
             path: "/apps",
             element: <AppsIndexPage />,
+          },
+          {
+            path: "/apps/workflows/:workflowId",
+            element: (
+              <AuthGuard>
+                <WorkflowApplicationPage />
+              </AuthGuard>
+            ),
           },
           {
             path: "/apps/:identifier/*",

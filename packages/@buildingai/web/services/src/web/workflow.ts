@@ -81,9 +81,19 @@ export interface WorkflowItem {
     name: string;
     description?: string | null;
     schema?: Record<string, unknown> | null;
+    isPublished: boolean;
+    publishedAt?: string | null;
     createBy: string;
     createdAt: string;
     updatedAt: string;
+}
+
+export interface PublishedWorkflowItem {
+    id: string;
+    name: string;
+    description?: string | null;
+    schema: Record<string, unknown>;
+    publishedAt: string;
 }
 
 // ─────────────────────────────────────────────
@@ -94,6 +104,7 @@ export interface ListWorkflowsParams {
     page?: number;
     pageSize?: number;
     keyword?: string;
+    isPublished?: boolean;
 }
 
 export interface ListWorkflowsResult {
@@ -109,6 +120,7 @@ export const workflowQueryKeys = {
     listRoot: () => [...WORKFLOWS_QUERY_KEY, "list"] as const,
     list: (params?: ListWorkflowsParams) => [...WORKFLOWS_QUERY_KEY, "list", params] as const,
     detail: (id: string | undefined) => [...WORKFLOWS_QUERY_KEY, "detail", id] as const,
+    published: (id: string | undefined) => [...WORKFLOWS_QUERY_KEY, "published", id] as const,
 };
 
 export function listWorkflows(params?: ListWorkflowsParams): Promise<ListWorkflowsResult> {
@@ -207,6 +219,103 @@ export function useUpdateWorkflowMutation(
             options?.onSuccess?.(...args);
         },
     });
+}
+
+// ─────────────────────────────────────────────
+// Publish workflow
+// ─────────────────────────────────────────────
+
+export function publishWorkflow(id: string): Promise<WorkflowItem> {
+    return apiHttpClient.post<WorkflowItem>(`${WORKFLOWS_PATH}/${id}/publish`);
+}
+
+export function unpublishWorkflow(id: string): Promise<WorkflowItem> {
+    return apiHttpClient.post<WorkflowItem>(`${WORKFLOWS_PATH}/${id}/unpublish`);
+}
+
+export function getPublishedWorkflow(id: string): Promise<PublishedWorkflowItem> {
+    return apiHttpClient.get<PublishedWorkflowItem>(`${WORKFLOWS_PATH}/${id}/published`);
+}
+
+export function usePublishedWorkflowQuery(
+    id: string | undefined,
+    options?: QueryOptionsUtil<PublishedWorkflowItem>,
+) {
+    return useQuery<PublishedWorkflowItem>({
+        queryKey: workflowQueryKeys.published(id),
+        queryFn: () => getPublishedWorkflow(id!),
+        enabled: !!id,
+        ...options,
+    });
+}
+
+function useWorkflowPublishStateMutation(
+    mutationFn: (id: string) => Promise<WorkflowItem>,
+    options?: MutationOptionsUtil<WorkflowItem, string>,
+) {
+    const queryClient = useQueryClient();
+
+    return useMutation<WorkflowItem, Error, string>({
+        mutationFn,
+        ...options,
+        onSuccess: async (...args) => {
+            const [workflow] = args;
+            queryClient.setQueryData(workflowQueryKeys.detail(workflow.id), workflow);
+            await Promise.all([
+                queryClient.invalidateQueries({ queryKey: workflowQueryKeys.listRoot() }),
+                queryClient.invalidateQueries({
+                    queryKey: workflowQueryKeys.published(workflow.id),
+                }),
+            ]);
+            options?.onSuccess?.(...args);
+        },
+    });
+}
+
+export function usePublishWorkflowMutation(options?: MutationOptionsUtil<WorkflowItem, string>) {
+    return useWorkflowPublishStateMutation(publishWorkflow, options);
+}
+
+export function useUnpublishWorkflowMutation(options?: MutationOptionsUtil<WorkflowItem, string>) {
+    return useWorkflowPublishStateMutation(unpublishWorkflow, options);
+}
+
+export interface PublishedWorkflowTaskReport {
+    id: string;
+    inputs: Record<string, unknown>;
+    outputs: Record<string, unknown>;
+    workflowStatus: {
+        status: "pending" | "processing" | "succeeded" | "failed" | "canceled";
+        terminated: boolean;
+        startTime: number;
+        endTime?: number;
+        timeCost: number;
+    };
+    messages?: {
+        error?: Array<{ message: string; nodeID?: string }>;
+    };
+}
+
+export function runPublishedWorkflow(
+    workflowId: string,
+    inputs: Record<string, unknown>,
+): Promise<{ taskID: string }> {
+    return apiHttpClient.post<{ taskID: string }>("/task/run-published", {
+        workflowId,
+        inputs,
+    });
+}
+
+export function getPublishedWorkflowTaskReport(
+    taskID: string,
+): Promise<PublishedWorkflowTaskReport | undefined> {
+    return apiHttpClient.get<PublishedWorkflowTaskReport | undefined>("/task/report", {
+        params: { taskID },
+    });
+}
+
+export function cancelPublishedWorkflowTask(taskID: string): Promise<{ success: boolean }> {
+    return apiHttpClient.put<{ success: boolean }>("/task/cancel", { taskID });
 }
 
 // ─────────────────────────────────────────────

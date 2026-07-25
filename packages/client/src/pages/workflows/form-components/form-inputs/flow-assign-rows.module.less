@@ -1,0 +1,47 @@
+.container,
+.rows {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+
+.rows {
+  gap: 12px;
+}
+
+.row {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--semi-color-border);
+}
+
+.row-header {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 32px;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+
+  :global(.semi-tree-select),
+  :global(.semi-input-wrapper) {
+    width: 100%;
+  }
+}
+
+.delete-button {
+  color: var(--semi-color-text-2) !important;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 8px;
+
+  :global(.semi-button) {
+    color: var(--semi-color-primary);
+  }
+}

@@ -13,6 +13,12 @@ export class AiWorkflow extends BaseEntity {
     @Column({ type: "jsonb", nullable: true, comment: "流程图JSON" })
     schema?: object;
 
+    @Column({ type: "boolean", default: false, comment: "是否处于发布状态" })
+    isPublished: boolean;
+
+    @Column({ type: "timestamptz", nullable: true, comment: "最近发布时间" })
+    publishedAt?: Date | null;
+
     @Column({ length: 255, comment: "创建者ID" })
     createBy: string;
 }

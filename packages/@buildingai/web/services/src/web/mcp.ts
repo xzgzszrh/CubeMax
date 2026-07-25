@@ -15,6 +15,7 @@ export type McpCommunicationType = "sse" | "streamable-http";
 export type McpTool = {
     id: string;
     name: string;
+    title?: string;
     description?: string;
     inputSchema?: Record<string, unknown>;
     mcpServerId: string;

@@ -26,6 +26,7 @@ interface SaveSchemaOptions {
 }
 
 interface WorkflowSaveContextValue {
+  workflowId: string;
   saving: boolean;
   queueSave: (schema: FlowDocumentJSON) => void;
   saveSchema: (schema: FlowDocumentJSON, options?: SaveSchemaOptions) => Promise<void>;
@@ -128,7 +129,9 @@ export function WorkflowSaveProvider({
         showSuccessToastRef.current = true;
       }
 
-      await runSaveQueue();
+      while (pendingSchemaRef.current || saveTaskRef.current) {
+        await runSaveQueue();
+      }
     },
     [runSaveQueue],
   );
@@ -138,8 +141,9 @@ export function WorkflowSaveProvider({
       queueSave,
       saveSchema,
       saving,
+      workflowId,
     }),
-    [queueSave, saveSchema, saving],
+    [queueSave, saveSchema, saving, workflowId],
   );
 
   return <WorkflowSaveContext.Provider value={value}>{children}</WorkflowSaveContext.Provider>;

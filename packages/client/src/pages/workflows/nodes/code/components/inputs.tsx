@@ -3,12 +3,12 @@
  * SPDX-License-Identifier: MIT
  */
 
-import { Field } from "@flowgram.ai/free-layout-editor";
-import { DisplayInputsValues, InputsValues } from "@flowgram.ai/form-materials";
 import type { IFlowValue } from "@flowgram.ai/form-materials";
+import { DisplayInputsValues } from "@flowgram.ai/form-materials";
+import { Field } from "@flowgram.ai/free-layout-editor";
 
+import { FlowInputsValues, FormItem } from "../../../form-components";
 import { useIsSidebar, useNodeRenderContext } from "../../../hooks";
-import { FormItem } from "../../../form-components";
 
 export function Inputs() {
   const isSidebar = useIsSidebar();
@@ -27,10 +27,12 @@ export function Inputs() {
     <FormItem name="输入" type="object" vertical>
       <Field<Record<string, IFlowValue | undefined> | undefined> name="inputsValues">
         {({ field }) => (
-          <InputsValues
+          <FlowInputsValues
             value={field.value}
             onChange={(value) => field.onChange(value)}
             readonly={readonly}
+            addLabel="添加代码输入"
+            keyPlaceholder="输入名称"
           />
         )}
       </Field>

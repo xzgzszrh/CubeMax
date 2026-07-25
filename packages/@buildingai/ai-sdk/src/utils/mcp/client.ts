@@ -63,6 +63,7 @@ export async function createMcpClient(options: CreateMcpClientOptions): Promise<
             const result = await client.listTools();
             return result.tools.map((tool) => ({
                 name: tool.name,
+                title: tool.title,
                 description: tool.description,
                 inputSchema: tool.inputSchema as Record<string, unknown> | undefined,
             }));

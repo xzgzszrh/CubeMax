@@ -5,11 +5,11 @@ import type { BuildingAiMcpService, JsonSchemaObject, McpToolDescriptor } from "
 const stubOutputSchema: JsonSchemaObject = {
     type: "object",
     properties: {
-        ok: { type: "boolean", description: "Always false while this tool is a stub." },
-        notImplemented: { type: "boolean", description: "Whether the tool is only a placeholder." },
-        tool: { type: "string", description: "The MCP tool name." },
-        message: { type: "string", description: "Human-readable placeholder message." },
-        receivedArgs: { type: "object", description: "Arguments received by the stub." },
+        ok: { type: "boolean", title: "执行成功", description: "占位工具固定返回 false。" },
+        notImplemented: { type: "boolean", title: "尚未实现", description: "工具是否仅为占位实现。" },
+        tool: { type: "string", title: "工具名称", description: "MCP 工具的协议名称。" },
+        message: { type: "string", title: "提示信息", description: "供用户阅读的占位提示。" },
+        receivedArgs: { type: "object", title: "接收参数", description: "占位工具接收到的参数。" },
     },
     required: ["ok", "notImplemented", "tool", "message", "receivedArgs"],
     additionalProperties: false,
@@ -20,7 +20,7 @@ function createStubResult(
     title: string,
     args: Record<string, unknown>,
 ): CallToolResult {
-    const message = `Stub only: ${title} is not implemented. No hardware operation was performed.`;
+    const message = `“${title}”目前仅为占位工具，尚未执行任何硬件操作。`;
 
     return {
         content: [{ type: "text", text: message }],
@@ -46,31 +46,32 @@ function tool(config: Omit<McpToolDescriptor, "outputSchema" | "execute">): McpT
 
 const sessionProperty = {
     type: "string",
-    description: "Device session ID returned by open_serial.",
+    title: "会话 ID",
+    description: "打开串口后返回的设备会话 ID。",
 };
 
 const timeoutProperty = {
     type: "number",
-    description: "Operation timeout in milliseconds.",
+    title: "超时（毫秒）",
+    description: "操作超时时间，单位为毫秒。",
 };
 
 export const embeddedService: BuildingAiMcpService = {
     key: "embedded",
-    name: "Embedded Device Blocks",
-    description:
-        "Placeholder block-style tools for embedded development: serial, board control, GPIO, ADC, PWM, I2C, and logging.",
+    name: "嵌入式设备工具",
+    description: "面向嵌入式开发的积木式工具，涵盖串口、开发板控制、GPIO、ADC、PWM、I2C 和日志。",
     tools: [
         tool({
             name: "scan_serial_ports",
-            title: "Scan Serial Ports",
-            description:
-                "List available serial ports for selecting a development board connection.",
+            title: "扫描串口",
+            description: "列出可用串口，用于选择开发板连接。",
             inputSchema: {
                 type: "object",
                 properties: {
                     includeBusy: {
                         type: "boolean",
-                        description: "Whether to include ports that appear to be busy.",
+                        title: "包含占用端口",
+                        description: "是否包含看起来正在被占用的串口。",
                     },
                 },
                 additionalProperties: false,
@@ -78,18 +79,20 @@ export const embeddedService: BuildingAiMcpService = {
         }),
         tool({
             name: "open_serial",
-            title: "Open Serial",
-            description: "Open a serial device session for later blocks.",
+            title: "打开串口",
+            description: "打开串口设备会话，供后续工具使用。",
             inputSchema: {
                 type: "object",
                 properties: {
-                    port: { type: "string", description: "Serial port path or name." },
-                    baudRate: { type: "number", description: "Serial baud rate." },
-                    dataBits: { type: "number", description: "Data bits, usually 8." },
-                    stopBits: { type: "number", description: "Stop bits, usually 1." },
+                    port: { type: "string", title: "端口", description: "串口路径或名称。" },
+                    baudRate: { type: "number", title: "波特率", description: "串口通信波特率。" },
+                    dataBits: { type: "number", title: "数据位", description: "串口数据位，通常为 8。" },
+                    stopBits: { type: "number", title: "停止位", description: "串口停止位，通常为 1。" },
                     parity: {
                         type: "string",
-                        description: "Parity mode: none, even, odd, mark, or space.",
+                        title: "校验位",
+                        description: "串口校验模式。",
+                        enum: ["none", "even", "odd", "mark", "space"],
                     },
                     timeoutMs: timeoutProperty,
                 },
@@ -99,8 +102,8 @@ export const embeddedService: BuildingAiMcpService = {
         }),
         tool({
             name: "close_device",
-            title: "Close Device",
-            description: "Close an opened device session and release its resources.",
+            title: "关闭设备",
+            description: "关闭已打开的设备会话并释放资源。",
             inputSchema: {
                 type: "object",
                 properties: {
@@ -112,15 +115,17 @@ export const embeddedService: BuildingAiMcpService = {
         }),
         tool({
             name: "reset_device",
-            title: "Reset Device",
-            description: "Reset the connected board using the selected reset strategy.",
+            title: "复位设备",
+            description: "按选择的复位策略重置已连接的开发板。",
             inputSchema: {
                 type: "object",
                 properties: {
                     sessionId: sessionProperty,
                     strategy: {
                         type: "string",
-                        description: "Reset strategy: dtr, rts, bootloader, command, or probe.",
+                        title: "复位策略",
+                        description: "设备复位方式。",
+                        enum: ["dtr", "rts", "bootloader", "command", "probe"],
                     },
                     timeoutMs: timeoutProperty,
                 },
@@ -130,8 +135,8 @@ export const embeddedService: BuildingAiMcpService = {
         }),
         tool({
             name: "get_device_info",
-            title: "Get Device Info",
-            description: "Read board identity, firmware version, and declared capabilities.",
+            title: "读取设备信息",
+            description: "读取开发板标识、固件版本和能力信息。",
             inputSchema: {
                 type: "object",
                 properties: {
@@ -144,15 +149,15 @@ export const embeddedService: BuildingAiMcpService = {
         }),
         tool({
             name: "flash_firmware",
-            title: "Flash Firmware",
-            description: "Placeholder for flashing firmware to a board.",
+            title: "烧录固件",
+            description: "向开发板烧录固件的占位工具。",
             inputSchema: {
                 type: "object",
                 properties: {
                     sessionId: sessionProperty,
-                    firmwarePath: { type: "string", description: "Path to the firmware artifact." },
-                    target: { type: "string", description: "Target board or chip identifier." },
-                    verify: { type: "boolean", description: "Whether to verify after flashing." },
+                    firmwarePath: { type: "string", title: "固件路径", description: "固件产物的文件路径。" },
+                    target: { type: "string", title: "目标", description: "目标开发板或芯片标识。" },
+                    verify: { type: "boolean", title: "烧录后校验", description: "是否在烧录后进行校验。" },
                     timeoutMs: timeoutProperty,
                 },
                 required: ["sessionId", "firmwarePath"],
@@ -161,16 +166,18 @@ export const embeddedService: BuildingAiMcpService = {
         }),
         tool({
             name: "serial_write_text",
-            title: "Serial Write Text",
-            description: "Send text to the serial device.",
+            title: "串口写文本",
+            description: "向串口设备发送文本。",
             inputSchema: {
                 type: "object",
                 properties: {
                     sessionId: sessionProperty,
-                    text: { type: "string", description: "Text to send." },
+                    text: { type: "string", title: "文本", description: "要发送的文本。" },
                     lineEnding: {
                         type: "string",
-                        description: "Line ending to append: none, lf, crlf, or cr.",
+                        title: "行尾",
+                        description: "发送时追加的行尾字符。",
+                        enum: ["none", "lf", "crlf", "cr"],
                     },
                     timeoutMs: timeoutProperty,
                 },
@@ -180,16 +187,17 @@ export const embeddedService: BuildingAiMcpService = {
         }),
         tool({
             name: "serial_write_bytes",
-            title: "Serial Write Bytes",
-            description: "Send raw bytes to the serial device.",
+            title: "串口写字节",
+            description: "向串口设备发送原始字节。",
             inputSchema: {
                 type: "object",
                 properties: {
                     sessionId: sessionProperty,
                     bytes: {
                         type: "array",
+                        title: "字节",
                         items: { type: "number" },
-                        description: "Byte values from 0 to 255.",
+                        description: "0 到 255 之间的字节值。",
                     },
                     timeoutMs: timeoutProperty,
                 },
@@ -199,8 +207,8 @@ export const embeddedService: BuildingAiMcpService = {
         }),
         tool({
             name: "serial_read_line",
-            title: "Serial Read Line",
-            description: "Read a single line from the serial device.",
+            title: "串口读一行",
+            description: "从串口设备读取一行数据。",
             inputSchema: {
                 type: "object",
                 properties: {
@@ -213,13 +221,13 @@ export const embeddedService: BuildingAiMcpService = {
         }),
         tool({
             name: "serial_expect_text",
-            title: "Serial Expect Text",
-            description: "Wait until serial output contains expected text.",
+            title: "等待串口文本",
+            description: "等待串口输出中出现指定文本。",
             inputSchema: {
                 type: "object",
                 properties: {
                     sessionId: sessionProperty,
-                    text: { type: "string", description: "Expected text fragment." },
+                    text: { type: "string", title: "文本", description: "期望出现的文本片段。" },
                     timeoutMs: timeoutProperty,
                 },
                 required: ["sessionId", "text"],
@@ -228,16 +236,17 @@ export const embeddedService: BuildingAiMcpService = {
         }),
         tool({
             name: "serial_request_response",
-            title: "Serial Request Response",
-            description: "Send a serial command and wait for a response.",
+            title: "串口请求响应",
+            description: "发送串口命令并等待响应。",
             inputSchema: {
                 type: "object",
                 properties: {
                     sessionId: sessionProperty,
-                    command: { type: "string", description: "Command to send." },
+                    command: { type: "string", title: "命令", description: "要发送的命令。" },
                     expect: {
                         type: "string",
-                        description: "Optional expected response fragment.",
+                        title: "期望响应",
+                        description: "可选的期望响应片段。",
                     },
                     timeoutMs: timeoutProperty,
                 },
@@ -247,17 +256,18 @@ export const embeddedService: BuildingAiMcpService = {
         }),
         tool({
             name: "gpio_set_mode",
-            title: "GPIO Set Mode",
-            description: "Configure a GPIO pin mode.",
+            title: "GPIO 设置模式",
+            description: "配置 GPIO 引脚模式。",
             inputSchema: {
                 type: "object",
                 properties: {
                     sessionId: sessionProperty,
-                    pin: { type: "string", description: "Board pin name or number." },
+                    pin: { type: "string", title: "引脚", description: "开发板引脚名称或编号。" },
                     mode: {
                         type: "string",
-                        description:
-                            "Pin mode: input, output, input_pullup, input_pulldown, analog, or pwm.",
+                        title: "模式",
+                        description: "引脚工作模式。",
+                        enum: ["input", "output", "input_pullup", "input_pulldown", "analog", "pwm"],
                     },
                 },
                 required: ["sessionId", "pin", "mode"],
@@ -266,14 +276,14 @@ export const embeddedService: BuildingAiMcpService = {
         }),
         tool({
             name: "gpio_write",
-            title: "GPIO Write",
-            description: "Set a digital output pin high or low.",
+            title: "GPIO 写入",
+            description: "设置数字输出引脚为高电平或低电平。",
             inputSchema: {
                 type: "object",
                 properties: {
                     sessionId: sessionProperty,
-                    pin: { type: "string", description: "Board pin name or number." },
-                    value: { type: "boolean", description: "High when true, low when false." },
+                    pin: { type: "string", title: "引脚", description: "开发板引脚名称或编号。" },
+                    value: { type: "boolean", title: "电平", description: "是表示高电平，否表示低电平。" },
                 },
                 required: ["sessionId", "pin", "value"],
                 additionalProperties: false,
@@ -281,13 +291,13 @@ export const embeddedService: BuildingAiMcpService = {
         }),
         tool({
             name: "gpio_read",
-            title: "GPIO Read",
-            description: "Read a digital input pin.",
+            title: "GPIO 读取",
+            description: "读取数字输入引脚状态。",
             inputSchema: {
                 type: "object",
                 properties: {
                     sessionId: sessionProperty,
-                    pin: { type: "string", description: "Board pin name or number." },
+                    pin: { type: "string", title: "引脚", description: "开发板引脚名称或编号。" },
                 },
                 required: ["sessionId", "pin"],
                 additionalProperties: false,
@@ -295,16 +305,17 @@ export const embeddedService: BuildingAiMcpService = {
         }),
         tool({
             name: "analog_read",
-            title: "Analog Read",
-            description: "Read an analog input or ADC channel.",
+            title: "模拟量读取",
+            description: "读取模拟输入或 ADC 通道。",
             inputSchema: {
                 type: "object",
                 properties: {
                     sessionId: sessionProperty,
-                    pin: { type: "string", description: "Analog pin name or ADC channel." },
+                    pin: { type: "string", title: "引脚", description: "模拟引脚名称或 ADC 通道。" },
                     referenceVoltage: {
                         type: "number",
-                        description: "Reference voltage used for conversion.",
+                        title: "参考电压",
+                        description: "用于换算的参考电压。",
                     },
                 },
                 required: ["sessionId", "pin"],
@@ -313,20 +324,22 @@ export const embeddedService: BuildingAiMcpService = {
         }),
         tool({
             name: "pwm_write",
-            title: "PWM Write",
-            description: "Set PWM frequency and duty cycle for a pin.",
+            title: "PWM 输出",
+            description: "设置引脚的 PWM 频率和占空比。",
             inputSchema: {
                 type: "object",
                 properties: {
                     sessionId: sessionProperty,
-                    pin: { type: "string", description: "PWM-capable pin." },
+                    pin: { type: "string", title: "引脚", description: "支持 PWM 的引脚。" },
                     dutyCycle: {
                         type: "number",
-                        description: "Duty cycle from 0 to 1.",
+                        title: "占空比",
+                        description: "0 到 1 之间的占空比。",
                     },
                     frequencyHz: {
                         type: "number",
-                        description: "PWM frequency in hertz.",
+                        title: "频率（Hz）",
+                        description: "PWM 频率，单位为赫兹。",
                     },
                 },
                 required: ["sessionId", "pin", "dutyCycle"],
@@ -335,14 +348,14 @@ export const embeddedService: BuildingAiMcpService = {
         }),
         tool({
             name: "servo_write_angle",
-            title: "Servo Write Angle",
-            description: "Set a hobby servo angle.",
+            title: "设置舵机角度",
+            description: "设置舵机的目标角度。",
             inputSchema: {
                 type: "object",
                 properties: {
                     sessionId: sessionProperty,
-                    pin: { type: "string", description: "Servo signal pin." },
-                    angle: { type: "number", description: "Target angle in degrees." },
+                    pin: { type: "string", title: "引脚", description: "舵机信号引脚。" },
+                    angle: { type: "number", title: "角度", description: "目标角度，单位为度。" },
                 },
                 required: ["sessionId", "pin", "angle"],
                 additionalProperties: false,
@@ -350,13 +363,13 @@ export const embeddedService: BuildingAiMcpService = {
         }),
         tool({
             name: "i2c_scan",
-            title: "I2C Scan",
-            description: "Scan the I2C bus for connected device addresses.",
+            title: "I2C 扫描",
+            description: "扫描 I2C 总线上已连接设备的地址。",
             inputSchema: {
                 type: "object",
                 properties: {
                     sessionId: sessionProperty,
-                    bus: { type: "string", description: "I2C bus identifier." },
+                    bus: { type: "string", title: "总线", description: "I2C 总线标识。" },
                     timeoutMs: timeoutProperty,
                 },
                 required: ["sessionId"],
@@ -365,18 +378,19 @@ export const embeddedService: BuildingAiMcpService = {
         }),
         tool({
             name: "i2c_write_register",
-            title: "I2C Write Register",
-            description: "Write bytes to an I2C device register.",
+            title: "I2C 写寄存器",
+            description: "向 I2C 设备寄存器写入字节。",
             inputSchema: {
                 type: "object",
                 properties: {
                     sessionId: sessionProperty,
-                    address: { type: "number", description: "7-bit I2C device address." },
-                    register: { type: "number", description: "Register address." },
+                    address: { type: "number", title: "地址", description: "7 位 I2C 设备地址。" },
+                    register: { type: "number", title: "寄存器", description: "寄存器地址。" },
                     data: {
                         type: "array",
+                        title: "数据",
                         items: { type: "number" },
-                        description: "Byte values to write.",
+                        description: "要写入的字节值。",
                     },
                     timeoutMs: timeoutProperty,
                 },
@@ -386,15 +400,15 @@ export const embeddedService: BuildingAiMcpService = {
         }),
         tool({
             name: "i2c_read_register",
-            title: "I2C Read Register",
-            description: "Read bytes from an I2C device register.",
+            title: "I2C 读寄存器",
+            description: "从 I2C 设备寄存器读取字节。",
             inputSchema: {
                 type: "object",
                 properties: {
                     sessionId: sessionProperty,
-                    address: { type: "number", description: "7-bit I2C device address." },
-                    register: { type: "number", description: "Register address." },
-                    length: { type: "number", description: "Number of bytes to read." },
+                    address: { type: "number", title: "地址", description: "7 位 I2C 设备地址。" },
+                    register: { type: "number", title: "寄存器", description: "寄存器地址。" },
+                    length: { type: "number", title: "读取长度", description: "要读取的字节数。" },
                     timeoutMs: timeoutProperty,
                 },
                 required: ["sessionId", "address", "register", "length"],
@@ -403,12 +417,12 @@ export const embeddedService: BuildingAiMcpService = {
         }),
         tool({
             name: "delay_ms",
-            title: "Delay Milliseconds",
-            description: "Placeholder for a block-level delay.",
+            title: "延时",
+            description: "用于流程级延时的占位工具。",
             inputSchema: {
                 type: "object",
                 properties: {
-                    durationMs: { type: "number", description: "Delay duration in milliseconds." },
+                    durationMs: { type: "number", title: "时长（毫秒）", description: "延时时长，单位为毫秒。" },
                 },
                 required: ["durationMs"],
                 additionalProperties: false,
@@ -416,14 +430,19 @@ export const embeddedService: BuildingAiMcpService = {
         }),
         tool({
             name: "save_serial_log",
-            title: "Save Serial Log",
-            description: "Save collected serial logs to a file or artifact.",
+            title: "保存串口日志",
+            description: "将收集到的串口日志保存到文件或产物。",
             inputSchema: {
                 type: "object",
                 properties: {
                     sessionId: sessionProperty,
-                    path: { type: "string", description: "Destination log path." },
-                    format: { type: "string", description: "Log format: text, jsonl, or csv." },
+                    path: { type: "string", title: "路径", description: "日志保存目标路径。" },
+                    format: {
+                        type: "string",
+                        title: "格式",
+                        description: "日志保存格式。",
+                        enum: ["text", "jsonl", "csv"],
+                    },
                 },
                 required: ["sessionId", "path"],
                 additionalProperties: false,

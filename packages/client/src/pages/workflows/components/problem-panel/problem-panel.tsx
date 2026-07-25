@@ -3,12 +3,22 @@
  * SPDX-License-Identifier: MIT
  */
 
+import { Badge, IconButton, Spin, Tooltip } from "@douyinfe/semi-ui";
 import { useService, WorkflowSelectService } from "@flowgram.ai/free-layout-editor";
-import { IconButton, Spin, Typography, Avatar, Tooltip } from "@douyinfe/semi-ui";
-import { IconUploadError, IconClose } from "@douyinfe/semi-icons";
+import { CheckCircle2, ListChecks, X } from "lucide-react";
 
 import { useProblemPanel, useNodeFormPanel } from "../../plugins/panel-manager-plugin/hooks";
+import type { ValidateResult } from "../../services/validate-service";
 import { useWatchValidate } from "./use-watch-validate";
+
+import styles from "./problem-panel.module.less";
+
+function getNodeTitle(result: ValidateResult): string {
+  const title = result.node.form?.values.title;
+  if (typeof title === "string" && title.trim()) return title;
+
+  return result.node.getNodeMeta().nodePanelLabel || String(result.node.flowNodeType);
+}
 
 export const ProblemPanel = () => {
   const { results, loading } = useWatchValidate();
@@ -19,82 +29,89 @@ export const ProblemPanel = () => {
   const { open: openNodeFormPanel } = useNodeFormPanel();
 
   return (
-    <div
-      style={{
-        width: "100%",
-        height: "100%",
-        borderRadius: "8px",
-        background: "rgb(251, 251, 251)",
-        border: "1px solid rgba(82,100,154, 0.13)",
-      }}
-    >
-      <div
-        style={{
-          display: "flex",
-          height: "50px",
-          alignItems: "center",
-          justifyContent: "space-between",
-          padding: "0 12px",
-        }}
-      >
-        <div style={{ display: "flex", alignItems: "center", columnGap: "4px", height: "100%" }}>
-          <Typography.Text strong>问题</Typography.Text>
-          {loading && <Spin size="small" style={{ lineHeight: "0" }} />}
+    <section className={styles.panel} aria-label="工作流检查清单">
+      <header className={styles.header}>
+        <div className={styles["header-copy"]}>
+          <div className={styles["title-row"]}>
+            <h2 className={styles.title}>检查清单（{results.length}）</h2>
+            {loading && <Spin size="small" />}
+          </div>
+          <p className={styles.subtitle}>发布前请解决以下问题</p>
         </div>
         <IconButton
+          aria-label="关闭检查清单"
+          className={styles.close}
           type="tertiary"
           theme="borderless"
-          icon={<IconClose />}
+          icon={<X aria-hidden="true" size={17} />}
           onClick={() => closePanel()}
         />
-      </div>
-      <div style={{ padding: "12px", display: "flex", flexDirection: "column", rowGap: "4px" }}>
-        {results.map((i) => (
-          <div
-            key={i.node.id}
-            style={{
-              display: "flex",
-              alignItems: "center",
-              border: "1px solid #999",
-              borderRadius: "4px",
-              padding: "0 4px",
-              cursor: "pointer",
-            }}
-            onClick={() => {
-              selectService.selectNodeAndScrollToView(i.node);
-              openNodeFormPanel({ nodeId: i.node.id });
-            }}
-          >
-            <Avatar
-              style={{ flexShrink: "0" }}
-              src={i.node.getNodeRegistry().info.icon}
-              size="24px"
-              shape="square"
-            />
-            <div style={{ marginLeft: "8px" }}>
-              <Typography.Text>{i.node.form?.values.title}</Typography.Text>
-              <br />
-              <Typography.Text type="danger">
-                {i.feedbacks.map((i) => i.feedbackText).join(", ")}
-              </Typography.Text>
-            </div>
+      </header>
+
+      <div className={styles.content}>
+        {!loading && results.length === 0 ? (
+          <div className={styles.empty}>
+            <CheckCircle2 aria-hidden="true" size={30} />
+            <strong>未发现问题</strong>
+            <span>当前工作流已通过检查</span>
           </div>
-        ))}
+        ) : (
+          results.map((result) => (
+            <button
+              type="button"
+              key={result.node.id}
+              className={styles["node-item"]}
+              aria-label={`定位到节点：${getNodeTitle(result)}`}
+              onClick={() => {
+                selectService.selectNodeAndScrollToView(result.node);
+                openNodeFormPanel({ nodeId: result.node.id });
+              }}
+            >
+              <div className={styles["node-header"]}>
+                <img
+                  className={styles["node-icon"]}
+                  src={result.node.getNodeRegistry().info?.icon}
+                  alt=""
+                />
+                <span className={styles["node-title"]}>{getNodeTitle(result)}</span>
+              </div>
+              <ul className={styles.issues}>
+                {result.feedbacks.map((feedback) => (
+                  <li key={feedback.id}>{feedback.feedbackText}</li>
+                ))}
+              </ul>
+            </button>
+          ))
+        )}
       </div>
-    </div>
+    </section>
   );
 };
 
 export const ProblemButton = () => {
   const { open } = useProblemPanel();
+  const { results, loading } = useWatchValidate();
+
+  const button = (
+    <IconButton
+      aria-label={results.length ? `检查清单，${results.length} 个节点存在问题` : "检查清单"}
+      type="tertiary"
+      theme="borderless"
+      icon={<ListChecks aria-hidden="true" size={18} />}
+      loading={loading && results.length === 0}
+      onClick={() => open()}
+    />
+  );
+
   return (
-    <Tooltip content="问题">
-      <IconButton
-        type="tertiary"
-        theme="borderless"
-        icon={<IconUploadError />}
-        onClick={() => open()}
-      />
+    <Tooltip content="检查清单">
+      {results.length ? (
+        <Badge count={results.length} overflowCount={99} position="rightTop" type="danger">
+          {button}
+        </Badge>
+      ) : (
+        button
+      )}
     </Tooltip>
   );
 };

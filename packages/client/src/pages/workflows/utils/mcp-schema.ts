@@ -56,6 +56,9 @@ function normalizePropertySchema(input: unknown): JsonSchema {
       (item): item is string | number => typeof item === "string" || typeof item === "number",
     );
   }
+  if (isRecord(input.extra)) {
+    schema.extra = { ...input.extra };
+  }
   if ("default" in input) {
     schema.default = {
       type: "constant",

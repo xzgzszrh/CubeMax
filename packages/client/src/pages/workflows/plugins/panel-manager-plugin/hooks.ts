@@ -36,7 +36,7 @@ export const useProblemPanel = () => {
   const panelManager = usePanelManager();
 
   const open = () => {
-    panelManager.open(PanelType.ProblemPanel, "bottom");
+    panelManager.open(PanelType.ProblemPanel, "right");
   };
   const close = () => panelManager.close(PanelType.ProblemPanel);
 

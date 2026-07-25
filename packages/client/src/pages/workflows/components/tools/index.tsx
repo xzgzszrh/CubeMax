@@ -17,13 +17,15 @@ import { DownloadTool } from "./download";
 import { FitView } from "./fit-view";
 import { Interactive } from "./interactive";
 import { Minimap } from "./minimap";
+import { PublishTool } from "./publish";
 import { Save } from "./save";
 import {
+  BottomCenterToolSection,
   BottomLeftToolSection,
   BottomRightToolSection,
   LeftToolSection,
-  ToolDivider,
   ToolsLayer,
+  TopRightToolSection,
   ViewportToolSection,
 } from "./styles";
 import { ZoomSelect } from "./zoom-select";
@@ -51,14 +53,20 @@ export const DemoTools = () => {
       <LeftToolSection aria-label="工作流工具">
         <AddNode compact disabled={playground.config.readonly} />
         <Save compact disabled={playground.config.readonly} />
+        <DownloadTool />
         <Interactive compact />
         <AutoLayout />
         <FitView />
-        <ToolDivider />
-        <DownloadTool />
+      </LeftToolSection>
+
+      <BottomCenterToolSection aria-label="检查与运行">
         <ProblemButton />
         <TestRunButton compact disabled={playground.config.readonly} />
-      </LeftToolSection>
+      </BottomCenterToolSection>
+
+      <TopRightToolSection aria-label="发布工作流">
+        <PublishTool disabled={playground.config.readonly} />
+      </TopRightToolSection>
 
       <BottomLeftToolSection aria-label="历史操作">
         <Tooltip content="撤销">

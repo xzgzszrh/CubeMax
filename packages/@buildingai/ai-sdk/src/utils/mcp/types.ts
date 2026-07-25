@@ -68,6 +68,7 @@ export type McpTransportConfig =
  */
 export interface McpToolInfo {
     name: string;
+    title?: string;
     description?: string;
     inputSchema?: Record<string, unknown>;
 }

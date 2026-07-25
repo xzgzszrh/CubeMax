@@ -1,6 +1,7 @@
 import type { UserPlayground } from "@buildingai/db";
 import { SkipTransform } from "@buildingai/decorators";
 import { Playground } from "@buildingai/decorators/playground.decorator";
+import { HttpErrorFactory } from "@buildingai/errors";
 import { WebController } from "@common/decorators/controller.decorator";
 import type {
     TaskCancelOutput,
@@ -11,10 +12,15 @@ import type {
 } from "@flowgram.ai/runtime-interface";
 import { Body, Get, Post, Put, Query } from "@nestjs/common";
 
+import { WorkflowService } from "./workflow.service";
 import { WorkflowEmbeddedExecutorService } from "./workflow-embedded-executor.service";
 import { WorkflowLlmExecutorService } from "./workflow-llm-executor.service";
 import { WorkflowMcpExecutorService } from "./workflow-mcp-executor.service";
-import { WorkflowRuntimeTaskDto, WorkflowRuntimeTaskIdDto } from "./workflow-runtime.dto";
+import {
+    PublishedWorkflowRuntimeTaskDto,
+    WorkflowRuntimeTaskDto,
+    WorkflowRuntimeTaskIdDto,
+} from "./workflow-runtime.dto";
 
 type WorkflowRuntimeJsModule = typeof import("@flowgram.ai/runtime-js");
 
@@ -34,6 +40,7 @@ export class WorkflowRuntimeController {
         private readonly workflowMcpExecutorService: WorkflowMcpExecutorService,
         private readonly workflowEmbeddedExecutorService: WorkflowEmbeddedExecutorService,
         private readonly workflowLlmExecutorService: WorkflowLlmExecutorService,
+        private readonly workflowService: WorkflowService,
     ) {}
 
     private async loadConfiguredRuntime(): Promise<WorkflowRuntimeJsModule> {
@@ -71,6 +78,28 @@ export class WorkflowRuntimeController {
                 userId: user.id,
             },
         });
+    }
+
+    @Post("run-published")
+    async runPublished(
+        @Body() dto: PublishedWorkflowRuntimeTaskDto,
+        @Playground() user: UserPlayground,
+    ): Promise<TaskRunOutput> {
+        const publishedWorkflow = await this.workflowService.findPublished(dto.workflowId, user.id);
+        const runtime = await this.loadConfiguredRuntime();
+        const taskDto = this.workflowEmbeddedExecutorService.prepareTaskDto({
+            schema: JSON.stringify(publishedWorkflow.schema),
+            inputs: dto.inputs,
+        });
+        const context = { userId: user.id };
+        const validation = await runtime.TaskValidateAPI({ ...taskDto, context });
+        if (!validation.valid) {
+            throw HttpErrorFactory.badRequest(
+                validation.errors?.join("；") || "工作流输入校验失败",
+            );
+        }
+
+        return runtime.TaskRunAPI({ ...taskDto, context });
     }
 
     @Get("report")

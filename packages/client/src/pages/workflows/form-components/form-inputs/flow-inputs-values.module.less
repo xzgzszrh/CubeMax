@@ -1,0 +1,40 @@
+.container {
+  width: 100%;
+}
+
+.rows {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.row {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--semi-color-border);
+}
+
+.row-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.key-input {
+  min-width: 0;
+  flex: 1;
+}
+
+.delete-button {
+  flex: 0 0 auto;
+  color: var(--semi-color-text-2) !important;
+}
+
+.add-button {
+  margin-top: 8px;
+  color: var(--semi-color-primary) !important;
+}

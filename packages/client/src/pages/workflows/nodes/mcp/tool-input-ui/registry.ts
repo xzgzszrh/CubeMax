@@ -1,24 +1,15 @@
+import type {
+  FlowValueBooleanUi,
+  FlowValueInputUi,
+  FlowValueSelectOption,
+  FlowValueSelectUi,
+} from "../../../form-components/form-inputs/flow-value-input";
 import type { JsonSchema } from "../../../typings";
 
-export interface McpSelectOption {
-  label: string;
-  value: string | number;
-}
-
-export interface McpSelectInputUi {
-  control: "select";
-  options: McpSelectOption[];
-  placeholder?: string;
-  showClear?: boolean;
-}
-
-export interface McpBooleanInputUi {
-  control: "boolean";
-  trueLabel?: string;
-  falseLabel?: string;
-}
-
-export type McpToolInputUi = McpSelectInputUi | McpBooleanInputUi;
+export type McpSelectOption = FlowValueSelectOption;
+export type McpSelectInputUi = FlowValueSelectUi;
+export type McpBooleanInputUi = FlowValueBooleanUi;
+export type McpToolInputUi = FlowValueInputUi;
 
 type McpToolUiDefinition = Record<string, McpToolInputUi>;
 
@@ -73,6 +64,69 @@ const TOOL_UI_REGISTRY: Record<string, McpToolUiDefinition> = {
       placeholder: "请选择输出格式",
     },
   },
+  "embedded:open_serial": {
+    parity: {
+      control: "select",
+      options: [
+        { label: "无校验", value: "none" },
+        { label: "偶校验", value: "even" },
+        { label: "奇校验", value: "odd" },
+        { label: "标记校验", value: "mark" },
+        { label: "空格校验", value: "space" },
+      ],
+      placeholder: "请选择校验位",
+    },
+  },
+  "embedded:reset_device": {
+    strategy: {
+      control: "select",
+      options: [
+        { label: "DTR 信号", value: "dtr" },
+        { label: "RTS 信号", value: "rts" },
+        { label: "进入引导程序", value: "bootloader" },
+        { label: "发送复位命令", value: "command" },
+        { label: "调试探针", value: "probe" },
+      ],
+      placeholder: "请选择复位策略",
+    },
+  },
+  "embedded:serial_write_text": {
+    lineEnding: {
+      control: "select",
+      options: [
+        { label: "不追加", value: "none" },
+        { label: "换行符（LF）", value: "lf" },
+        { label: "回车换行（CRLF）", value: "crlf" },
+        { label: "回车符（CR）", value: "cr" },
+      ],
+      placeholder: "请选择行尾",
+    },
+  },
+  "embedded:gpio_set_mode": {
+    mode: {
+      control: "select",
+      options: [
+        { label: "输入", value: "input" },
+        { label: "输出", value: "output" },
+        { label: "上拉输入", value: "input_pullup" },
+        { label: "下拉输入", value: "input_pulldown" },
+        { label: "模拟输入", value: "analog" },
+        { label: "PWM 输出", value: "pwm" },
+      ],
+      placeholder: "请选择引脚模式",
+    },
+  },
+  "embedded:save_serial_log": {
+    format: {
+      control: "select",
+      options: [
+        { label: "纯文本", value: "text" },
+        { label: "JSON Lines", value: "jsonl" },
+        { label: "CSV", value: "csv" },
+      ],
+      placeholder: "请选择日志格式",
+    },
+  },
 };
 
 function createGenericEnumUi(schema: JsonSchema): McpSelectInputUi | undefined {
@@ -95,8 +149,8 @@ function createGenericBooleanUi(schema: JsonSchema): McpBooleanInputUi | undefin
 
   return {
     control: "boolean",
-    trueLabel: "True",
-    falseLabel: "False",
+    trueLabel: "是",
+    falseLabel: "否",
   };
 }
 

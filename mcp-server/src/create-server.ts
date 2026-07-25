@@ -33,7 +33,7 @@ export function createServiceMcpServer(service: BuildingAiMcpService): Server {
                 content: [
                     {
                         type: "text",
-                        text: `Unknown tool "${request.params.name}"`,
+                        text: `未找到工具“${request.params.name}”`,
                     },
                 ],
                 isError: true,

@@ -66,6 +66,24 @@ export const BottomLeftToolSection = styled(ToolSection)`
   border-radius: 14px;
 `;
 
+export const TopRightToolSection = styled(ToolSection)`
+  position: absolute;
+  top: 16px;
+  right: 68px;
+  height: 40px;
+  padding: 4px;
+  border-radius: 10px;
+`;
+
+export const BottomCenterToolSection = styled(ToolSection)`
+  position: absolute;
+  bottom: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 4px;
+  border-radius: 14px;
+`;
+
 export const BottomRightToolSection = styled.div`
   position: absolute;
   right: 16px;
@@ -80,13 +98,6 @@ export const BottomRightToolSection = styled.div`
 export const ViewportToolSection = styled(ToolSection)`
   padding: 4px;
   border-radius: 14px;
-`;
-
-export const ToolDivider = styled.div`
-  width: 24px;
-  height: 1px;
-  margin: 1px 0;
-  background: rgba(68, 83, 130, 0.16);
 `;
 
 export const SelectZoom = styled.span`

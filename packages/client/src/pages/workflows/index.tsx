@@ -4,6 +4,8 @@ import {
   useWorkflowListQuery,
   type WorkflowItem,
 } from "@buildingai/services/web";
+import { Badge } from "@buildingai/ui/components/ui/badge";
+import { Button } from "@buildingai/ui/components/ui/button";
 import {
   Empty,
   EmptyContent,
@@ -12,10 +14,6 @@ import {
   EmptyMedia,
   EmptyTitle,
 } from "@buildingai/ui/components/ui/empty";
-import { useNavigate } from "react-router-dom";
-import { toast } from "sonner";
-
-import { Button } from "@buildingai/ui/components/ui/button";
 import {
   Item,
   ItemActions,
@@ -28,6 +26,8 @@ import {
 import { Skeleton } from "@buildingai/ui/components/ui/skeleton";
 import { ArrowRight, FileText, Pencil, Plus, RefreshCw, Workflow } from "lucide-react";
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { toast } from "sonner";
 
 import { WorkflowNameDialog } from "./components/workflow-name-dialog";
 import { initialData } from "./initial-data";
@@ -46,6 +46,23 @@ function formatWorkflowTime(value: string) {
 function getNodeCount(workflow: WorkflowItem) {
   const nodes = workflow.schema?.nodes;
   return Array.isArray(nodes) ? nodes.length : 0;
+}
+
+function getWorkflowPublishStatus(workflow: WorkflowItem): {
+  label: string;
+  className: string;
+} {
+  if (workflow.isPublished) {
+    return {
+      label: "已发布",
+      className: "border-emerald-200 bg-emerald-50 text-emerald-700",
+    };
+  }
+
+  return {
+    label: "未发布",
+    className: "border-border bg-background text-muted-foreground",
+  };
 }
 
 export default function WorkflowsIndexPage() {
@@ -152,43 +169,54 @@ export default function WorkflowsIndexPage() {
         </Empty>
       ) : (
         <ItemGroup>
-          {workflows.map((workflow) => (
-            <Item
-              key={workflow.id}
-              variant="outline"
-              className="bg-background hover:bg-muted/50 flex-nowrap p-0"
-            >
-              <button
-                type="button"
-                className="focus-visible:ring-ring/50 flex min-w-0 flex-1 items-center gap-3.5 rounded-md px-4 py-3.5 text-left outline-none focus-visible:ring-[3px]"
-                onClick={() => navigate(`/workflows/${workflow.id}`)}
+          {workflows.map((workflow) => {
+            const publishStatus = getWorkflowPublishStatus(workflow);
+            return (
+              <Item
+                key={workflow.id}
+                variant="outline"
+                className="bg-background hover:bg-muted/50 flex-nowrap p-0"
               >
-                <ItemMedia variant="icon" className="text-primary">
-                  <FileText />
-                </ItemMedia>
-                <ItemContent>
-                  <ItemTitle>{workflow.name}</ItemTitle>
-                  <ItemDescription>
-                    {workflow.description?.trim() || "无描述"} · {getNodeCount(workflow)} 个节点 ·
-                    更新于 {formatWorkflowTime(workflow.updatedAt)}
-                  </ItemDescription>
-                </ItemContent>
-                <ArrowRight className="text-muted-foreground size-4 shrink-0" />
-              </button>
-              <ItemActions className="pr-2">
-                <Button
+                <button
                   type="button"
-                  variant="ghost"
-                  size="icon-sm"
-                  onClick={() => setRenamingWorkflow(workflow)}
-                  aria-label={`重命名${workflow.name}`}
-                  title="重命名"
+                  className="focus-visible:ring-ring/50 flex min-w-0 flex-1 items-center gap-3.5 rounded-md px-4 py-3.5 text-left outline-none focus-visible:ring-[3px]"
+                  onClick={() => navigate(`/workflows/${workflow.id}`)}
                 >
-                  <Pencil />
-                </Button>
-              </ItemActions>
-            </Item>
-          ))}
+                  <ItemMedia variant="icon" className="text-primary">
+                    <FileText />
+                  </ItemMedia>
+                  <ItemContent>
+                    <div className="flex min-w-0 items-center gap-2">
+                      <ItemTitle>{workflow.name}</ItemTitle>
+                      <Badge
+                        variant="outline"
+                        className={`shrink-0 font-normal ${publishStatus.className}`}
+                      >
+                        {publishStatus.label}
+                      </Badge>
+                    </div>
+                    <ItemDescription>
+                      {workflow.description?.trim() || "无描述"} · {getNodeCount(workflow)} 个节点 ·
+                      更新于 {formatWorkflowTime(workflow.updatedAt)}
+                    </ItemDescription>
+                  </ItemContent>
+                  <ArrowRight className="text-muted-foreground size-4 shrink-0" />
+                </button>
+                <ItemActions className="pr-2">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon-sm"
+                    onClick={() => setRenamingWorkflow(workflow)}
+                    aria-label={`重命名${workflow.name}`}
+                    title="重命名"
+                  >
+                    <Pencil />
+                  </Button>
+                </ItemActions>
+              </Item>
+            );
+          })}
         </ItemGroup>
       )}
 

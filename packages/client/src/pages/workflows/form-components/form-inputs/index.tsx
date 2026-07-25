@@ -3,7 +3,6 @@
  * SPDX-License-Identifier: MIT
  */
 
-import { DynamicValueInput } from "@flowgram.ai/form-materials";
 import type { IFlowValue } from "@flowgram.ai/form-materials";
 import { Field } from "@flowgram.ai/free-layout-editor";
 import type { ReactNode } from "react";
@@ -14,7 +13,16 @@ import type { JsonSchema } from "../../typings";
 import { Feedback } from "../feedback";
 import { FormItem } from "../form-item";
 import { ReadonlyValue } from "../readonly-value";
+import { FlowValueInput } from "./flow-value-input";
 import { LLMModelReadonlyValue, LLMModelSelect } from "./model-select";
+
+export { FlowAssignRows } from "./flow-assign-rows";
+export { FlowInputsValues } from "./flow-inputs-values";
+export {
+  FlowValueInput,
+  type FlowValueInputProps,
+  type FlowValueInputUi,
+} from "./flow-value-input";
 
 export interface FormInputRendererProps {
   inputName: string;
@@ -93,7 +101,7 @@ export function FormInputs({ renderInput }: FormInputsProps = {}) {
                         )}
                         {!formComponent &&
                           (customInput ?? (
-                            <DynamicValueInput
+                            <FlowValueInput
                               value={field.value}
                               onChange={field.onChange}
                               readonly={readonly}

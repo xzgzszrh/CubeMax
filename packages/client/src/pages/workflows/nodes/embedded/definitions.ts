@@ -86,6 +86,15 @@ export const EMBEDDED_NODE_DEFINITIONS: EmbeddedNodeDefinition[] = [
           title: "校验位",
           description: "串口校验模式。",
           enum: ["none", "even", "odd", "mark", "space"],
+          extra: {
+            enumLabels: {
+              none: "无校验",
+              even: "偶校验",
+              odd: "奇校验",
+              mark: "标记校验",
+              space: "空格校验",
+            },
+          },
           default: "none",
         },
         timeoutMs: timeoutProperty,
@@ -128,6 +137,15 @@ export const EMBEDDED_NODE_DEFINITIONS: EmbeddedNodeDefinition[] = [
           title: "复位策略",
           description: "设备复位方式。",
           enum: ["dtr", "rts", "bootloader", "command", "probe"],
+          extra: {
+            enumLabels: {
+              dtr: "DTR 信号",
+              rts: "RTS 信号",
+              bootloader: "进入引导程序",
+              command: "发送复位命令",
+              probe: "调试探针",
+            },
+          },
           default: "dtr",
         },
         timeoutMs: timeoutProperty,
@@ -202,6 +220,14 @@ export const EMBEDDED_NODE_DEFINITIONS: EmbeddedNodeDefinition[] = [
           title: "行尾",
           description: "发送时追加的行尾字符。",
           enum: ["none", "lf", "crlf", "cr"],
+          extra: {
+            enumLabels: {
+              none: "不追加",
+              lf: "换行符（LF）",
+              crlf: "回车换行（CRLF）",
+              cr: "回车符（CR）",
+            },
+          },
           default: "lf",
         },
         timeoutMs: timeoutProperty,
@@ -314,6 +340,16 @@ export const EMBEDDED_NODE_DEFINITIONS: EmbeddedNodeDefinition[] = [
           title: "模式",
           description: "引脚工作模式。",
           enum: ["input", "output", "input_pullup", "input_pulldown", "analog", "pwm"],
+          extra: {
+            enumLabels: {
+              input: "输入",
+              output: "输出",
+              input_pullup: "上拉输入",
+              input_pulldown: "下拉输入",
+              analog: "模拟输入",
+              pwm: "PWM 输出",
+            },
+          },
           default: "output",
         },
       },
@@ -553,6 +589,13 @@ export const EMBEDDED_NODE_DEFINITIONS: EmbeddedNodeDefinition[] = [
           title: "格式",
           description: "日志格式。",
           enum: ["text", "jsonl", "csv"],
+          extra: {
+            enumLabels: {
+              text: "纯文本",
+              jsonl: "JSON Lines",
+              csv: "CSV",
+            },
+          },
           default: "text",
         },
       },

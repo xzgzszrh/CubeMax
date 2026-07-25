@@ -14,6 +14,18 @@ export interface WorkflowListResult {
     totalPages: number;
 }
 
+export interface PublishedWorkflowResult {
+    id: string;
+    name: string;
+    description?: string;
+    schema: object;
+    publishedAt: Date;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+    return !!value && typeof value === "object" && !Array.isArray(value);
+}
+
 @Injectable()
 export class WorkflowService {
     constructor(
@@ -35,10 +47,15 @@ export class WorkflowService {
             .take(pageSize);
 
         if (keyword) {
-            qb.andWhere(
-                "(workflow.name ILIKE :keyword OR workflow.description ILIKE :keyword)",
-                { keyword: `%${keyword}%` },
-            );
+            qb.andWhere("(workflow.name ILIKE :keyword OR workflow.description ILIKE :keyword)", {
+                keyword: `%${keyword}%`,
+            });
+        }
+
+        if (query.isPublished !== undefined) {
+            qb.andWhere("workflow.isPublished = :isPublished", {
+                isPublished: query.isPublished,
+            });
         }
 
         const [items, total] = await qb.getManyAndCount();
@@ -75,6 +92,81 @@ export class WorkflowService {
         if (dto.schema !== undefined) workflow.schema = dto.schema;
 
         return this.workflowRepository.save(workflow);
+    }
+
+    async publish(id: string, userId: string): Promise<AiWorkflow> {
+        const workflow = await this.findOne(id, userId);
+        this.assertPublishableSchema(workflow.schema);
+
+        if (workflow.isPublished) return workflow;
+
+        workflow.isPublished = true;
+        workflow.publishedAt = new Date();
+
+        return this.workflowRepository.save(workflow);
+    }
+
+    async unpublish(id: string, userId: string): Promise<AiWorkflow> {
+        const workflow = await this.findOne(id, userId);
+        if (!workflow.isPublished) {
+            throw HttpErrorFactory.badRequest("该工作流当前未发布");
+        }
+
+        workflow.isPublished = false;
+        return this.workflowRepository.save(workflow);
+    }
+
+    async findPublished(id: string, userId: string): Promise<PublishedWorkflowResult> {
+        const workflow = await this.findOne(id, userId);
+        if (!workflow.isPublished || !workflow.schema || !workflow.publishedAt) {
+            throw HttpErrorFactory.badRequest("该工作流当前未发布");
+        }
+
+        return {
+            id: workflow.id,
+            name: workflow.name,
+            description: workflow.description,
+            schema: workflow.schema,
+            publishedAt: workflow.publishedAt,
+        };
+    }
+
+    private assertPublishableSchema(schema?: object): void {
+        if (!isRecord(schema) || !Array.isArray(schema.nodes) || !Array.isArray(schema.edges)) {
+            throw HttpErrorFactory.badRequest("工作流结构不完整，无法发布");
+        }
+
+        const nodes = schema.nodes.flatMap((node) =>
+            isRecord(node) && typeof node.id === "string" && typeof node.type === "string"
+                ? [{ id: node.id, type: node.type }]
+                : [],
+        );
+        const startIds = nodes.filter((node) => node.type === "start").map((node) => node.id);
+        const endIds = new Set(nodes.filter((node) => node.type === "end").map((node) => node.id));
+        if (!startIds.length || !endIds.size) {
+            throw HttpErrorFactory.badRequest("工作流必须包含开始节点和结束节点");
+        }
+
+        const adjacency = new Map<string, string[]>();
+        schema.edges.forEach((edge) => {
+            if (!isRecord(edge)) return;
+            const source = edge.sourceNodeID ?? edge.source;
+            const target = edge.targetNodeID ?? edge.target;
+            if (typeof source !== "string" || typeof target !== "string") return;
+            adjacency.set(source, [...(adjacency.get(source) ?? []), target]);
+        });
+
+        const visited = new Set<string>();
+        const queue = [...startIds];
+        while (queue.length) {
+            const nodeId = queue.shift()!;
+            if (endIds.has(nodeId)) return;
+            if (visited.has(nodeId)) continue;
+            visited.add(nodeId);
+            queue.push(...(adjacency.get(nodeId) ?? []));
+        }
+
+        throw HttpErrorFactory.badRequest("开始节点与结束节点之间没有可执行路径");
     }
 
     async remove(id: string, userId: string): Promise<void> {

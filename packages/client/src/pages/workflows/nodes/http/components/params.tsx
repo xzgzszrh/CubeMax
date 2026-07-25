@@ -3,12 +3,12 @@
  * SPDX-License-Identifier: MIT
  */
 
-import { Field } from "@flowgram.ai/free-layout-editor";
-import { DisplayInputsValues, InputsValues } from "@flowgram.ai/form-materials";
 import type { IFlowValue } from "@flowgram.ai/form-materials";
+import { DisplayInputsValues } from "@flowgram.ai/form-materials";
+import { Field } from "@flowgram.ai/free-layout-editor";
 
+import { FlowInputsValues, FormItem } from "../../../form-components";
 import { useIsSidebar, useNodeRenderContext } from "../../../hooks";
-import { FormItem } from "../../../form-components";
 
 export function Params() {
   const { readonly } = useNodeRenderContext();
@@ -28,10 +28,13 @@ export function Params() {
     <FormItem name="查询参数" type="object" vertical>
       <Field<Record<string, IFlowValue | undefined> | undefined> name="paramsValues">
         {({ field }) => (
-          <InputsValues
+          <FlowInputsValues
             value={field.value}
             onChange={(value) => field.onChange(value)}
+            schema={{ type: "string" }}
             readonly={readonly}
+            addLabel="添加查询参数"
+            keyPlaceholder="参数名称"
           />
         )}
       </Field>

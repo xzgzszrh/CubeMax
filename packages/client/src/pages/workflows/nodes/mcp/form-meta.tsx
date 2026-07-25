@@ -35,7 +35,8 @@ function getServerLabel(server: McpServer): string {
 }
 
 function getToolLabel(tool: McpTool): string {
-  return tool.description ? `${tool.name} - ${tool.description}` : tool.name;
+  const name = tool.title || tool.name;
+  return tool.description ? `${name} - ${tool.description}` : name;
 }
 
 function findTool(servers: McpServer[], serverId?: string, toolName?: string): McpTool | undefined {

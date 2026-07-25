@@ -3,21 +3,18 @@
  * SPDX-License-Identifier: MIT
  */
 
-import { Field } from "@flowgram.ai/free-layout-editor";
-import type { FormMeta } from "@flowgram.ai/free-layout-editor";
-import {
-  createInferInputsPlugin,
-  DisplayInputsValues,
-  InputsValues,
-} from "@flowgram.ai/form-materials";
 import type { IFlowValue } from "@flowgram.ai/form-materials";
+import { createInferInputsPlugin, DisplayInputsValues } from "@flowgram.ai/form-materials";
+import type { FormMeta } from "@flowgram.ai/free-layout-editor";
+import { Field } from "@flowgram.ai/free-layout-editor";
 
+import { FlowInputsValues, FormContent, FormHeader } from "../../form-components";
+import { useIsSidebar, useNodeRenderContext } from "../../hooks";
 import { defaultFormMeta } from "../default-form-meta";
-import { useIsSidebar } from "../../hooks";
-import { FormHeader, FormContent } from "../../form-components";
 
 export const renderForm = () => {
   const isSidebar = useIsSidebar();
+  const { readonly } = useNodeRenderContext();
   if (isSidebar) {
     return (
       <>
@@ -26,7 +23,13 @@ export const renderForm = () => {
           <Field<Record<string, IFlowValue | undefined> | undefined> name="inputsValues">
             {({ field: { value, onChange } }) => (
               <>
-                <InputsValues value={value} onChange={(_v) => onChange(_v)} />
+                <FlowInputsValues
+                  value={value}
+                  onChange={(_v) => onChange(_v)}
+                  readonly={readonly}
+                  addLabel="添加输出"
+                  keyPlaceholder="输出名称"
+                />
               </>
             )}
           </Field>

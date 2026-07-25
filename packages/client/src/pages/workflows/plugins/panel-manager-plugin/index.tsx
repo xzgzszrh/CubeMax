@@ -30,7 +30,10 @@ const testRunPanelFactory: PanelFactory<TestRunSidePanelProps> = {
 
 const problemPanelFactory: PanelFactory<void> = {
   key: PanelType.ProblemPanel,
-  defaultSize: 200,
+  defaultSize: 420,
+  minSize: 340,
+  maxSize: 560,
+  resize: true,
   render: () => <ProblemPanel />,
 };
 

@@ -36,7 +36,7 @@
   &.active {
     color: var(--semi-color-text-0) !important;
     background: var(--semi-color-bg-2) !important;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+    box-shadow: 0 1px 3px rgb(0 0 0 / 8%);
   }
 }
 
@@ -48,15 +48,20 @@
   border: 1px solid transparent;
   border-radius: 8px;
 
+  :global(.semi-input-wrapper),
+  :global(.semi-input-number),
   :global(.semi-select),
   :global(.semi-tree-select) {
     width: 100%;
+    min-width: 0;
     height: 32px;
     background: transparent;
     border: 0;
     border-radius: 8px;
   }
 
+  :global(.semi-input-wrapper:hover),
+  :global(.semi-input-number:hover),
   :global(.semi-select:hover),
   :global(.semi-tree-select:hover) {
     background: var(--semi-color-fill-1);
@@ -72,14 +77,42 @@
   }
 }
 
+.constant-control {
+  display: flex;
+  align-items: stretch;
+  min-width: 0;
+  width: 100%;
+}
+
+.type-selector {
+  display: flex;
+  align-items: center;
+  flex: 0 0 34px;
+  justify-content: center;
+  border-right: 1px solid var(--semi-color-border);
+
+  :global(.semi-button) {
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    background: transparent;
+    border: 0;
+  }
+}
+
+.constant-input {
+  min-width: 0;
+  flex: 1;
+
+  > * {
+    width: 100%;
+  }
+}
+
 .boolean-value-control {
   overflow: visible;
   background: transparent;
   border-color: transparent;
-
-  &.error {
-    border-color: var(--semi-color-danger);
-  }
 }
 
 .boolean-options {

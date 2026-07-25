@@ -1,5 +1,6 @@
 import { Transform, Type } from "class-transformer";
 import {
+    IsBoolean,
     IsInt,
     IsNotEmpty,
     IsObject,
@@ -27,6 +28,11 @@ export class QueryWorkflowDto {
     @IsOptional()
     @IsString()
     keyword?: string;
+
+    @IsOptional()
+    @Transform(({ value }) => value === true || value === "true")
+    @IsBoolean()
+    isPublished?: boolean;
 }
 
 export class CreateWorkflowDto {

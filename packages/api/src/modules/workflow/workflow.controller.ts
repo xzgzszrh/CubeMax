@@ -5,7 +5,7 @@ import { WebController } from "@common/decorators/controller.decorator";
 import { Body, Delete, Get, Param, Patch, Post, Put, Query } from "@nestjs/common";
 
 import { CreateWorkflowDto, QueryWorkflowDto, UpdateWorkflowDto } from "./workflow.dto";
-import { WorkflowListResult, WorkflowService } from "./workflow.service";
+import { PublishedWorkflowResult, WorkflowListResult, WorkflowService } from "./workflow.service";
 
 @WebController("workflows")
 export class WorkflowController {
@@ -51,6 +51,30 @@ export class WorkflowController {
         @Body() dto: UpdateWorkflowDto,
     ): Promise<AiWorkflow> {
         return this.workflowService.update(id, user.id, dto);
+    }
+
+    @Post(":id/publish")
+    async publish(
+        @Playground() user: UserPlayground,
+        @Param("id") id: string,
+    ): Promise<AiWorkflow> {
+        return this.workflowService.publish(id, user.id);
+    }
+
+    @Post(":id/unpublish")
+    async unpublish(
+        @Playground() user: UserPlayground,
+        @Param("id") id: string,
+    ): Promise<AiWorkflow> {
+        return this.workflowService.unpublish(id, user.id);
+    }
+
+    @Get(":id/published")
+    async findPublished(
+        @Playground() user: UserPlayground,
+        @Param("id") id: string,
+    ): Promise<PublishedWorkflowResult> {
+        return this.workflowService.findPublished(id, user.id);
     }
 
     @Delete(":id")

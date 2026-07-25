@@ -29,6 +29,7 @@ type BuiltinMcpCatalogItem = {
 export type BuiltinMcpTool = {
     id: string;
     name: string;
+    title?: string;
     description?: string;
     inputSchema?: Record<string, unknown>;
     mcpServerId: string;
@@ -208,6 +209,7 @@ export class BuiltinMcpRegistryService implements OnApplicationBootstrap {
             base.tools = tools.map((tool) => ({
                 id: `${id}:${tool.name}`,
                 name: tool.name,
+                title: tool.title,
                 description: tool.description,
                 inputSchema: tool.inputSchema,
                 mcpServerId: id,

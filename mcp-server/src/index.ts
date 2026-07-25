@@ -13,7 +13,7 @@ async function handleMcpRequest(serviceKey: string, req: Parameters<typeof getRe
     const service = getMcpService(serviceKey);
     if (!service) {
         sendJson(res, 404, {
-            error: "MCP service not found",
+            error: "未找到 MCP 服务",
             availableServices: getMcpServiceKeys(),
         });
         return;
@@ -24,7 +24,7 @@ async function handleMcpRequest(serviceKey: string, req: Parameters<typeof getRe
             allow: "POST",
             "content-type": "application/json; charset=utf-8",
         });
-        res.end(JSON.stringify({ error: "Method not allowed. Use POST for MCP requests." }));
+        res.end(JSON.stringify({ error: "不支持此请求方法，MCP 请求请使用 POST。" }));
         return;
     }
 
@@ -51,7 +51,7 @@ async function handleMcpRequest(serviceKey: string, req: Parameters<typeof getRe
                 jsonrpc: "2.0",
                 error: {
                     code: -32603,
-                    message: "Internal server error",
+                    message: "服务器内部错误",
                 },
                 id: null,
             });
@@ -81,7 +81,7 @@ const httpServer = createHttpServer((req, res) => {
         const item = createMcpCatalog(getBaseUrl(req)).find((service) => service.key === parts[1]);
         if (!item) {
             sendJson(res, 404, {
-                error: "MCP service not found",
+                error: "未找到 MCP 服务",
                 availableServices: getMcpServiceKeys(),
             });
             return;
@@ -95,14 +95,14 @@ const httpServer = createHttpServer((req, res) => {
         handleMcpRequest(parts[1] ?? "", req, res).catch((error) => {
             console.error("[mcp-server] unhandled MCP request error:", error);
             if (!res.headersSent) {
-                sendJson(res, 500, { error: "Internal server error" });
+                sendJson(res, 500, { error: "服务器内部错误" });
             }
         });
         return;
     }
 
     sendJson(res, 404, {
-        error: "Not found",
+        error: "未找到请求的资源",
         routes: ["/health", "/catalog", "/catalog/:serviceKey", "/mcp/:serviceKey"],
     });
 });

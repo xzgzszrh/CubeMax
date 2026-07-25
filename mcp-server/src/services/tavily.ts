@@ -7,7 +7,7 @@ const TAVILY_BASE_URL = process.env.TAVILY_BASE_URL ?? "https://api.tavily.com";
 
 function getTavilyApiKey(): string {
     if (!TAVILY_API_KEY) {
-        throw new Error("TAVILY_API_KEY environment variable is not set");
+        throw new Error("未配置 TAVILY_API_KEY 环境变量");
     }
     return TAVILY_API_KEY;
 }
@@ -25,7 +25,7 @@ async function tavilyPost<T>(endpoint: string, body: Record<string, unknown>): P
 
     if (!response.ok) {
         const text = await response.text().catch(() => "");
-        throw new Error(`Tavily API error ${response.status}: ${text || response.statusText}`);
+        throw new Error(`Tavily API 请求失败（${response.status}）：${text || response.statusText}`);
     }
 
     return response.json() as Promise<T>;
@@ -64,26 +64,26 @@ function formatSearchResults(data: TavilySearchResponse): CallToolResult {
     const lines: string[] = [];
 
     if (data.answer) {
-        lines.push(`## Answer\n\n${data.answer}\n`);
+        lines.push(`## 答案\n\n${data.answer}\n`);
     }
 
-    lines.push(`## Results (${data.results.length})\n`);
+    lines.push(`## 搜索结果（${data.results.length} 条）\n`);
 
     for (const result of data.results) {
         lines.push(`### ${result.title}\n`);
         lines.push(`**URL:** ${result.url}`);
-        lines.push(`**Score:** ${result.score.toFixed(3)}\n`);
+        lines.push(`**相关度：** ${result.score.toFixed(3)}\n`);
         lines.push(`${result.content}\n`);
     }
 
     if (data.images && data.images.length > 0) {
-        lines.push(`## Images (${data.images.length})\n`);
+        lines.push(`## 相关图片（${data.images.length} 张）\n`);
         for (const img of data.images) {
             lines.push(`- ${img.url}${img.description ? ` — ${img.description}` : ""}`);
         }
     }
 
-    lines.push(`\n_Response time: ${data.response_time.toFixed(2)}s_`);
+    lines.push(`\n_响应时间：${data.response_time.toFixed(2)} 秒_`);
 
     return {
         content: [{ type: "text", text: lines.join("\n") }],
@@ -114,25 +114,25 @@ interface TavilyExtractResponse {
 function formatExtractResults(data: TavilyExtractResponse): CallToolResult {
     const lines: string[] = [];
 
-    lines.push(`## Extracted Content (${data.results.length} sources)\n`);
+    lines.push(`## 提取内容（${data.results.length} 个来源）\n`);
 
     for (const result of data.results) {
         lines.push(`### ${result.url}\n`);
         const content =
             result.raw_content.length > 2000
-                ? `${result.raw_content.slice(0, 2000)}...\n\n_(truncated, full content in structuredContent)_`
+                ? `${result.raw_content.slice(0, 2000)}...\n\n_（内容已截断，完整内容请查看 structuredContent）_`
                 : result.raw_content;
         lines.push(`${content}\n`);
     }
 
     if (data.failed_results && data.failed_results.length > 0) {
-        lines.push(`## Failed (${data.failed_results.length})\n`);
+        lines.push(`## 提取失败（${data.failed_results.length} 个）\n`);
         for (const fail of data.failed_results) {
             lines.push(`- ${fail.url}: ${fail.error}`);
         }
     }
 
-    lines.push(`\n_Response time: ${data.response_time.toFixed(2)}s_`);
+    lines.push(`\n_响应时间：${data.response_time.toFixed(2)} 秒_`);
 
     return {
         content: [{ type: "text", text: lines.join("\n") }],
@@ -148,59 +148,70 @@ function formatExtractResults(data: TavilyExtractResponse): CallToolResult {
 
 export const tavilyService: BuildingAiMcpService = {
     key: "tavily",
-    name: "Tavily Search",
-    description: "Web search and content extraction powered by Tavily API.",
+    name: "Tavily 搜索",
+    description: "由 Tavily API 提供的网页搜索与内容提取服务。",
     tools: [
         {
             name: "tavily_search",
-            title: "Web Search",
-            description:
-                "Search the web using Tavily. Returns ranked results with snippets, optional AI-generated answer, and images.",
+            title: "网页搜索",
+            description: "使用 Tavily 搜索网页，返回按相关度排序的摘要、可选的 AI 答案和图片。",
             inputSchema: {
                 type: "object",
                 properties: {
-                    query: { type: "string", description: "The search query to execute." },
+                    query: {
+                        type: "string",
+                        title: "搜索关键词",
+                        description: "要执行的搜索查询。",
+                    },
                     search_depth: {
                         type: "string",
+                        title: "搜索深度",
                         enum: ["basic", "advanced", "fast", "ultra-fast"],
                         default: "basic",
-                        description:
-                            "Controls latency vs relevance. 'basic' (default), 'advanced' (more relevant, 2 credits), 'fast', 'ultra-fast'.",
+                        description: "控制搜索速度与相关度，默认为基础模式。高级模式相关度更高，但会消耗 2 个积分。",
                     },
                     max_results: {
                         type: "number",
-                        description: "Maximum number of results (1-20, default 5).",
+                        title: "最大结果数",
+                        description: "返回结果的最大数量，范围为 1 到 20，默认为 5。",
                     },
                     topic: {
                         type: "string",
+                        title: "搜索主题",
                         enum: ["general", "news", "finance"],
                         default: "general",
-                        description: "Search category: 'general' (default), 'news', 'finance'.",
+                        description: "搜索内容的主题分类，默认为通用。",
                     },
                     time_range: {
                         type: "string",
+                        title: "时间范围",
                         enum: ["day", "week", "month", "year"],
-                        description: "Filter by time: 'day', 'week', 'month', 'year'.",
+                        description: "按最近一天、一周、一个月或一年筛选结果。",
                     },
                     include_answer: {
                         type: "boolean",
-                        description: "Include an AI-generated answer summary (default false).",
+                        title: "生成答案",
+                        description: "是否返回由 AI 生成的答案摘要，默认不返回。",
                     },
                     include_raw_content: {
                         type: "boolean",
-                        description: "Include full page content for each result (default false).",
+                        title: "返回原始内容",
+                        description: "是否返回每条结果的完整网页内容，默认不返回。",
                     },
                     include_images: {
                         type: "boolean",
-                        description: "Include related images (default false).",
+                        title: "返回相关图片",
+                        description: "是否返回相关图片，默认不返回。",
                     },
                     include_domains: {
                         type: "string",
-                        description: "Comma-separated domains to include.",
+                        title: "包含域名",
+                        description: "仅搜索指定域名，多个域名请使用英文逗号分隔。",
                     },
                     exclude_domains: {
                         type: "string",
-                        description: "Comma-separated domains to exclude.",
+                        title: "排除域名",
+                        description: "排除指定域名，多个域名请使用英文逗号分隔。",
                     },
                 },
                 required: ["query"],
@@ -209,7 +220,7 @@ export const tavilyService: BuildingAiMcpService = {
             async execute(args): Promise<CallToolResult> {
                 const query = args.query;
                 if (typeof query !== "string" || !query.trim()) {
-                    throw new Error('"query" is required and must be a non-empty string');
+                    throw new Error('“搜索关键词”必填，且不能为空');
                 }
 
                 const body: Record<string, unknown> = { query: query.trim() };
@@ -235,31 +246,34 @@ export const tavilyService: BuildingAiMcpService = {
         },
         {
             name: "tavily_extract",
-            title: "Extract Content",
-            description: "Extract and clean content from one or more URLs using Tavily.",
+            title: "提取网页内容",
+            description: "使用 Tavily 从一个或多个网址中提取并清理网页内容。",
             inputSchema: {
                 type: "object",
                 properties: {
                     urls: {
                         type: "string",
-                        description: "One or more URLs to extract content from, comma-separated.",
+                        title: "网页地址",
+                        description: "要提取内容的一个或多个网址，多个网址请使用英文逗号分隔。",
                     },
                     extract_depth: {
                         type: "string",
+                        title: "提取深度",
                         enum: ["basic", "advanced"],
                         default: "basic",
-                        description:
-                            "Extraction depth: 'basic' (default) or 'advanced' (more content, higher latency).",
+                        description: "内容提取深度。高级模式可提取更多内容，但耗时更长。",
                     },
                     include_images: {
                         type: "boolean",
-                        description: "Include extracted images (default false).",
+                        title: "返回图片",
+                        description: "是否返回提取到的图片，默认不返回。",
                     },
                     format: {
                         type: "string",
+                        title: "输出格式",
                         enum: ["markdown", "text"],
                         default: "markdown",
-                        description: "Output format: 'markdown' (default) or 'text'.",
+                        description: "提取内容的输出格式，默认为 Markdown。",
                     },
                 },
                 required: ["urls"],
@@ -268,15 +282,15 @@ export const tavilyService: BuildingAiMcpService = {
             async execute(args): Promise<CallToolResult> {
                 const urlsRaw = args.urls;
                 if (!urlsRaw) {
-                    throw new Error('"urls" is required');
+                    throw new Error('“网页地址”必填');
                 }
 
                 const urls = parseStringArray(urlsRaw);
                 if (!urls || urls.length === 0) {
-                    throw new Error('"urls" must contain at least one valid URL');
+                    throw new Error('“网页地址”至少需要包含一个有效网址');
                 }
                 if (urls.length > 20) {
-                    throw new Error('"urls" cannot exceed 20 URLs');
+                    throw new Error('“网页地址”最多支持 20 个网址');
                 }
 
                 const body: Record<string, unknown> = { urls };

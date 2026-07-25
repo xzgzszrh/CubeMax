@@ -1,10 +1,11 @@
 import { definePageMeta, useDocumentHead } from "@buildingai/hooks";
 import type { Extension } from "@buildingai/services/console";
-import type { Tag } from "@buildingai/services/web";
+import type { Tag, WorkflowItem } from "@buildingai/services/web";
 import {
   listTags,
   useWebAppsDecorateItemsInfiniteQuery,
   useWebAppsDecorateQuery,
+  useWorkflowListQuery,
 } from "@buildingai/services/web";
 import { AspectRatio } from "@buildingai/ui/components/ui/aspect-ratio";
 import { Avatar, AvatarFallback, AvatarImage } from "@buildingai/ui/components/ui/avatar";
@@ -29,7 +30,7 @@ import { ScrollArea } from "@buildingai/ui/components/ui/scroll-area";
 import { SidebarTrigger } from "@buildingai/ui/components/ui/sidebar";
 import { useQuery } from "@tanstack/react-query";
 import Autoplay from "embla-carousel-autoplay";
-import { ChevronRight, Loader2, Search } from "lucide-react";
+import { ChevronRight, Loader2, Search, Workflow as WorkflowIcon } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 
@@ -43,39 +44,66 @@ function extToDisplayItem(ext: Extension) {
   return {
     id: ext.id,
     name: ext.name,
-    identifier: ext.identifier,
     title: ext.alias || ext.name,
     description: ext.aliasDescription || ext.description || "",
     avatar: ext.aliasIcon || ext.icon,
     visible: ext.aliasShow ?? true,
+    path: `/apps/${ext.identifier}`,
+    kind: "extension" as const,
   };
 }
 
-type DisplayAppItem = ReturnType<typeof extToDisplayItem>;
+function workflowToDisplayItem(workflow: WorkflowItem) {
+  return {
+    id: `workflow:${workflow.id}`,
+    name: workflow.name,
+    title: workflow.name,
+    description: workflow.description?.trim() || "已发布工作流",
+    avatar: undefined,
+    visible: true,
+    path: `/apps/workflows/${workflow.id}`,
+    kind: "workflow" as const,
+  };
+}
+
+type DisplayAppItem =
+  | ReturnType<typeof extToDisplayItem>
+  | ReturnType<typeof workflowToDisplayItem>;
 
 const AppItem = ({ item }: { item: DisplayAppItem }) => {
   return (
     <Item
       className="group/apps-item hover:bg-accent cursor-pointer px-0 transition-[padding] hover:px-4"
       onClick={() => {
-        window.location.href = `/apps/${item.identifier}`;
+        window.location.href = item.path;
       }}
     >
       <ItemMedia>
         <Avatar className="size-10 rounded-lg after:rounded-lg">
           <AvatarImage src={item.avatar} className="rounded-lg" />
           <AvatarFallback className="rounded-lg">
-            {item.title.slice(0, 2).toUpperCase()}
+            {item.kind === "workflow" ? (
+              <WorkflowIcon className="size-5" />
+            ) : (
+              item.title.slice(0, 2).toUpperCase()
+            )}
           </AvatarFallback>
         </Avatar>
       </ItemMedia>
       <ItemContent>
-        <ItemTitle>{item.title}</ItemTitle>
+        <div className="flex min-w-0 items-center gap-2">
+          <ItemTitle>{item.title}</ItemTitle>
+          {item.kind === "workflow" && (
+            <Badge variant="outline" className="shrink-0 font-normal">
+              工作流
+            </Badge>
+          )}
+        </div>
         <ItemDescription className="line-clamp-1">{item.description}</ItemDescription>
       </ItemContent>
       <ItemActions className="opacity-0 group-hover/apps-item:opacity-100">
         <Button size="icon-sm" variant="outline" className="rounded-full" aria-label="查看" asChild>
-          <Link to={`/apps/${item.identifier}`}>
+          <Link to={item.path}>
             <ChevronRight />
           </Link>
         </Button>
@@ -122,6 +150,16 @@ const AppsIndexPage = () => {
     pageSize: 20,
   });
 
+  const { data: publishedWorkflows, isLoading: workflowsLoading } = useWorkflowListQuery(
+    {
+      page: 1,
+      pageSize: 100,
+      keyword: debouncedKeyword || undefined,
+      isPublished: true,
+    },
+    { enabled: selectedTagId === null },
+  );
+
   // 配置数据
   const pageTitle = config?.title || "应用中心";
   const pageDescription = config?.description || "与你喜爱的应用进行交互";
@@ -133,11 +171,13 @@ const AppsIndexPage = () => {
 
   // 应用列表（仅展示 visible 的）
   const displayItems = useMemo<DisplayAppItem[]>(() => {
-    if (!itemsData?.pages) return [];
-    return itemsData.pages
+    const extensionItems = (itemsData?.pages ?? [])
       .flatMap((page) => page.items.map(extToDisplayItem))
       .filter((item) => item.visible);
-  }, [itemsData]);
+    const workflowItems =
+      selectedTagId === null ? (publishedWorkflows?.items ?? []).map(workflowToDisplayItem) : [];
+    return [...workflowItems, ...extensionItems];
+  }, [itemsData, publishedWorkflows?.items, selectedTagId]);
 
   // 无限滚动观察
   useEffect(() => {
@@ -244,7 +284,7 @@ const AppsIndexPage = () => {
                   <AppItem key={item.id} item={item} />
                 ))}
               </div>
-            ) : itemsLoading ? null : (
+            ) : itemsLoading || workflowsLoading ? null : (
               <Empty>
                 <EmptyContent>
                   <EmptyDescription>暂无应用</EmptyDescription>

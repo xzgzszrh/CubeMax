@@ -114,6 +114,15 @@ function SidebarProvider({
       const openState = typeof value === "function" ? value(open) : value;
       if (setOpenProp) {
         setOpenProp(openState);
+      } else if (temporaryOpen !== null) {
+        // A route is temporarily overriding the sidebar state (e.g. datasets collapses
+        // it to make room for its own sidebar). An explicit toggle from the user must
+        // still win, so update the override itself instead of the underlying state,
+        // which the override would otherwise keep masking. Not persisted: the user's
+        // saved preference belongs to the routes without an override.
+        // Bypass setTemporaryOpen so the toggle keeps its transition.
+        _setTemporaryOpen(openState);
+        return;
       } else {
         _setOpen(openState);
       }
@@ -127,7 +136,7 @@ function SidebarProvider({
         }
       }
     },
-    [setOpenProp, open],
+    [setOpenProp, open, temporaryOpen, storageKey],
   );
 
   // Helper to toggle the sidebar.

@@ -16,3 +16,11 @@ export class WorkflowRuntimeTaskIdDto {
     @IsString()
     taskID: string;
 }
+
+export class PublishedWorkflowRuntimeTaskDto {
+    @IsString()
+    workflowId: string;
+
+    @IsObject()
+    inputs: Record<string, unknown>;
+}

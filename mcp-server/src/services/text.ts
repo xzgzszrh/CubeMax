@@ -3,18 +3,18 @@ import type { BuildingAiMcpService } from "../types.js";
 
 export const textService: BuildingAiMcpService = {
     key: "text",
-    name: "Text",
-    description: "Small text transformation and inspection tools.",
+    name: "文本处理",
+    description: "提供常用的文本转换与检查工具。",
     tools: [
         {
             name: "echo",
-            title: "Echo",
-            description: "Return a message with an optional prefix.",
+            title: "回显文本",
+            description: "返回输入的文本，可选添加前缀。",
             inputSchema: {
                 type: "object",
                 properties: {
-                    message: { type: "string", description: "Text to return." },
-                    prefix: { type: "string", description: "Optional prefix." },
+                    message: { type: "string", title: "文本", description: "要返回的文本。" },
+                    prefix: { type: "string", title: "前缀", description: "可选的文本前缀。" },
                 },
                 required: ["message"],
                 additionalProperties: false,
@@ -22,7 +22,7 @@ export const textService: BuildingAiMcpService = {
             outputSchema: {
                 type: "object",
                 properties: {
-                    text: { type: "string" },
+                    text: { type: "string", title: "返回文本" },
                 },
                 required: ["text"],
                 additionalProperties: false,
@@ -40,12 +40,12 @@ export const textService: BuildingAiMcpService = {
         },
         {
             name: "countCharacters",
-            title: "Count Characters",
-            description: "Count Unicode characters in a text value.",
+            title: "统计字符数",
+            description: "统计文本中的 Unicode 字符数量。",
             inputSchema: {
                 type: "object",
                 properties: {
-                    text: { type: "string", description: "Text to count." },
+                    text: { type: "string", title: "文本", description: "要统计字符数的文本。" },
                 },
                 required: ["text"],
                 additionalProperties: false,
@@ -53,8 +53,8 @@ export const textService: BuildingAiMcpService = {
             outputSchema: {
                 type: "object",
                 properties: {
-                    count: { type: "number" },
-                    text: { type: "string" },
+                    count: { type: "number", title: "字符数" },
+                    text: { type: "string", title: "统计结果" },
                 },
                 required: ["count", "text"],
                 additionalProperties: false,
@@ -62,7 +62,7 @@ export const textService: BuildingAiMcpService = {
             async execute(args) {
                 const text = getRequiredString(args, "text");
                 const count = Array.from(text).length;
-                const summary = `${count} characters`;
+                const summary = `共 ${count} 个字符`;
 
                 return {
                     content: [{ type: "text", text: summary }],
