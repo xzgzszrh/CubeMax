@@ -41,6 +41,14 @@ export type { Billing, Duration } from "./membership-plans.entity";
 export { MembershipPlanDuration, MembershipPlans } from "./membership-plans.entity";
 export { Menu, MenuSourceType, MenuType } from "./menu.entity";
 export { NoticeSetting } from "./notice-setting.entity";
+export { Organization } from "./organization.entity";
+export {
+    OrganizationMember,
+    OrganizationMemberType,
+    OrganizationRole,
+    type OrganizationMemberTypeValue,
+    type OrganizationRoleType,
+} from "./organization-member.entity";
 export { Payconfig } from "./payconfig.entity";
 export { Permission, PermissionType } from "./permission.entity";
 export { Recharge } from "./recharge.entity";
@@ -61,3 +69,27 @@ export { UserDict } from "./user-dict.entity";
 export { UserSubscription } from "./user-subscription.entity";
 export { UserToken } from "./user-token.entity";
 export { AiWorkflow } from "./ai-workflow.entity";
+export {
+    XiaozhiAccount,
+    XiaozhiAccountStatus,
+    type XiaozhiAccountStatusType,
+} from "./xiaozhi-account.entity";
+export { XiaozhiAgentBinding } from "./xiaozhi-agent-binding.entity";
+export { XiaozhiScene } from "./xiaozhi-scene.entity";
+export {
+    XiaozhiMcpConnection,
+    XiaozhiMcpConnectionStatus,
+    type XiaozhiMcpConnectionStatusType,
+    XiaozhiMcpSettings,
+} from "./xiaozhi-mcp-connection.entity";
+export { ClassroomEvent } from "./classroom-event.entity";
+export {
+    ClassroomInteraction,
+    ClassroomInteractionStatus,
+    type ClassroomInteractionStatusType,
+    type ClassroomInteractionTarget,
+    type ClassroomDisplayConfig,
+    type ClassroomDisplayLayout,
+    type ClassroomDisplaySortBy,
+} from "./classroom-interaction.entity";
+export { type XiaozhiQuickCommandTarget, XiaozhiQuickCommand } from "./xiaozhi-quick-command.entity";

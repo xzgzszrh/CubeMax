@@ -43,6 +43,7 @@ import { DecorateModule } from "./decorate/decorate.module";
 import { FinanceModule } from "./finance/finance.module";
 import { MenuModule } from "./menu/menu.module";
 import { NoticeModule } from "./notice/notice.module";
+import { OrganizationModule } from "./organization/organization.module";
 import { PayModule } from "./pay/pay.module";
 import { PermissionModule } from "./permission/permission.module";
 import { Pm2Module } from "./pm2/pm2.module";
@@ -136,6 +137,7 @@ export class AppModule {
                 ScheduleModule,
                 SmsModule,
                 NoticeModule,
+                OrganizationModule,
                 NotificationModule,
                 WorkflowModule,
                 await ExtensionCoreModule.register(),

@@ -60,6 +60,19 @@ export const apiHttpClient = createHttpClient({
     },
 });
 
+// Workspace selection is intentionally sent on every request. APIs that own
+// organization-scoped assets use it as part of their authorization boundary.
+apiHttpClient.instance.interceptors.request.use((config) => {
+    if (typeof window === "undefined") return config;
+    const organizationId = window.localStorage.getItem("buildingai:active-organization-id");
+    if (organizationId) {
+        config.headers.set("x-organization-id", organizationId);
+    } else {
+        config.headers.delete("x-organization-id");
+    }
+    return config;
+});
+
 export const consoleHttpClient = createHttpClient({
     baseURL: isDev ? devBase : prodBase,
     pathPrefix: import.meta.env.VITE_APP_CONSOLE_API_PREFIX || "/console",

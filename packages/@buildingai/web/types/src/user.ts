@@ -37,6 +37,8 @@ export interface UserInfo {
     lastLoginAt: string;
     power: number;
     source: UserCreateSourceType;
+    /** 组织托管子账号没有个人工作空间。 */
+    hasPersonalWorkspace: boolean;
 }
 
 export interface MenuItem {

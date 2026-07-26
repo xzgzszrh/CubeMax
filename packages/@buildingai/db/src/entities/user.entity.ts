@@ -20,6 +20,14 @@ import { Permission } from "./permission.entity";
 @AppEntity({ name: "user", comment: "用户信息" })
 export class User extends SoftDeleteBaseEntity {
     /**
+     * 是否拥有个人工作空间。
+     *
+     * 组织创建的托管子账号不拥有个人空间，也不能自行加入或退出组织。
+     */
+    @Column({ type: "boolean", default: true, comment: "是否拥有个人工作空间" })
+    hasPersonalWorkspace: boolean;
+
+    /**
      * 用户oa_openid
      */
     @Column({ nullable: true, unique: true, comment: "用户oa_openid" })

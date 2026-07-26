@@ -26,6 +26,7 @@ import ConsoleLayout from "../layouts/console";
 import DynamicHomePage from "../pages";
 import AppIframePage from "../pages/apps/[identifier]";
 import ChatPage from "../pages/chat";
+import ClassroomDisplayPage from "../pages/classroom-display";
 import { LoginPage } from "../pages/login";
 import { OAuthCallbackPage } from "../pages/login/oauth-callback";
 import AlipayReturnPage from "../pages/payment/alipay-return";
@@ -50,6 +51,10 @@ export const router = createBrowserRouter([
       {
         path: "/payment/alipay-return",
         element: <AlipayReturnPage />,
+      },
+      {
+        path: "/classroom-display/:publicId",
+        element: <ClassroomDisplayPage />,
       },
       {
         path: "/agents/:id/configuration",

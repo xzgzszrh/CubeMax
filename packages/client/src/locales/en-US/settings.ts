@@ -34,6 +34,8 @@ export default {
     account: {
       label: "Account",
       profile: "Profile",
+      workspace: "Workspace",
+      classroom: "Classroom",
       wallet: "My Points",
       subscribe: "Subscription",
       redeemCardKey: "Redeem Card",

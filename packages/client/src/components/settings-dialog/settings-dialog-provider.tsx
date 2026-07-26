@@ -30,18 +30,22 @@ import { toast } from "sonner";
 
 import { SETTINGS_NAV, type SettingsPage } from "./constants";
 import {
+  ClassroomSetting,
   GeneralSetting,
   ProfileSetting,
   RedeemCDKSetting,
   SubscribeSetting,
   ToolsSetting,
   WalletSetting,
+  WorkspaceSetting,
 } from "./settings-items";
 import { AboutSetting } from "./settings-items/about-setting";
 import PersonalizedSetting from "./settings-items/personalized-setting";
 
 const SETTINGS_COMPONENTS: Record<SettingsPage, React.ComponentType> = {
   profile: ProfileSetting,
+  workspace: WorkspaceSetting,
+  classroom: ClassroomSetting,
   general: GeneralSetting,
   wallet: WalletSetting,
   redeemCDK: RedeemCDKSetting,
@@ -257,7 +261,7 @@ export function SettingsDialogProvider({ children }: { children: React.ReactNode
       {children}
       <Dialog open={state.open} onOpenChange={handleOpenChange}>
         <DialogContent
-          className="max-w-dvw overflow-hidden rounded-none border-0 p-0 sm:border md:max-h-[500px] md:max-w-[700px] md:rounded-lg lg:max-w-[800px]"
+          className="max-w-dvw overflow-hidden rounded-none border-0 p-0 sm:border md:max-h-[min(760px,90dvh)] md:max-w-[860px] md:rounded-lg lg:max-w-[1040px]"
           onOpenAutoFocus={(e) => e.preventDefault()}
         >
           <DialogTitle className="sr-only">Settings</DialogTitle>
@@ -320,7 +324,7 @@ export function SettingsDialogProvider({ children }: { children: React.ReactNode
                 </SidebarGroup>
               </SidebarContent>
             </Sidebar>
-            <main className="flex h-dvh flex-1 flex-col overflow-hidden md:h-[500px]">
+            <main className="flex h-dvh flex-1 flex-col overflow-hidden md:h-[min(760px,90dvh)]">
               <header className="flex h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12">
                 <div className="flex items-center gap-2 px-4">
                   <SidebarTrigger className="flex md:hidden" />

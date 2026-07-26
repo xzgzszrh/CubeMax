@@ -1,0 +1,624 @@
+import { type UserPlayground } from "@buildingai/db";
+import { Playground } from "@buildingai/decorators/playground.decorator";
+import { UUIDValidationPipe } from "@buildingai/pipe/param-validate.pipe";
+import { WebController } from "@common/decorators/controller.decorator";
+import {
+    Body,
+    Delete,
+    Get,
+    Headers,
+    Param,
+    ParseIntPipe,
+    Patch,
+    Post,
+    Query,
+    UploadedFile,
+    UseInterceptors,
+} from "@nestjs/common";
+import { FileInterceptor } from "@nestjs/platform-express";
+
+import {
+    ClassroomEventsQueryDto,
+    ClassroomTestEventDto,
+    SaveClassroomInteractionDto,
+} from "../dto/classroom.dto";
+import {
+    BatchConfigureXiaozhiMcpDto,
+    ReportXiaozhiMcpCompletionDto,
+    UpdateXiaozhiMcpConnectionDto,
+    UpdateXiaozhiMcpSettingsDto,
+} from "../dto/xiaozhi-mcp.dto";
+import {
+    AddOrganizationMemberDto,
+    ApplyXiaozhiSceneDto,
+    AssignXiaozhiAgentDto,
+    BatchCreateManagedAccountsDto,
+    BindXiaozhiAccountDto,
+    BindXiaozhiDeviceDto,
+    ChatHistoryQueryDto,
+    CreateOrganizationDto,
+    OrganizationSearchDto,
+    ReconnectXiaozhiAccountDto,
+    RenameXiaozhiAgentDto,
+    SaveXiaozhiQuickCommandDto,
+    SaveXiaozhiSceneDto,
+    UpdateDeviceAliasDto,
+    UpdateDeviceAutoUpdateDto,
+    UpdateOrganizationMemberDto,
+    UpdateXiaozhiAccountDto,
+    UpdateXiaozhiAgentConfigDto,
+} from "../dto/organization.dto";
+import { ClassroomService } from "../services/classroom.service";
+import { OrganizationService } from "../services/organization.service";
+import { XiaozhiAutomationService } from "../services/xiaozhi-automation.service";
+import { XiaozhiMcpService } from "../services/xiaozhi-mcp.service";
+import { XiaozhiService } from "../services/xiaozhi.service";
+
+@WebController("organizations")
+export class OrganizationController {
+    constructor(
+        private readonly organizationService: OrganizationService,
+        private readonly xiaozhiService: XiaozhiService,
+        private readonly automationService: XiaozhiAutomationService,
+        private readonly mcpService: XiaozhiMcpService,
+        private readonly classroomService: ClassroomService,
+    ) {}
+
+    @Get("context")
+    getContext(@Playground() user: UserPlayground) {
+        return this.organizationService.getContext(user.id);
+    }
+
+    @Post()
+    create(@Playground() user: UserPlayground, @Body() dto: CreateOrganizationDto) {
+        return this.organizationService.create(user.id, dto);
+    }
+
+    @Get(":organizationId/members")
+    listMembers(
+        @Playground() user: UserPlayground,
+        @Param("organizationId", UUIDValidationPipe) organizationId: string,
+        @Query() query: OrganizationSearchDto,
+    ) {
+        return this.organizationService.listMembers(user.id, organizationId, query.keyword);
+    }
+
+    @Get(":organizationId/search-users")
+    searchUsers(
+        @Playground() user: UserPlayground,
+        @Param("organizationId", UUIDValidationPipe) organizationId: string,
+        @Query() query: OrganizationSearchDto,
+    ) {
+        return this.organizationService.searchPersonalUsers(user.id, organizationId, query.keyword);
+    }
+
+    @Post(":organizationId/members")
+    addMember(
+        @Playground() user: UserPlayground,
+        @Param("organizationId", UUIDValidationPipe) organizationId: string,
+        @Body() dto: AddOrganizationMemberDto,
+    ) {
+        return this.organizationService.addMember(user.id, organizationId, dto);
+    }
+
+    @Patch(":organizationId/members/:memberId")
+    updateMember(
+        @Playground() user: UserPlayground,
+        @Param("organizationId", UUIDValidationPipe) organizationId: string,
+        @Param("memberId", UUIDValidationPipe) memberId: string,
+        @Body() dto: UpdateOrganizationMemberDto,
+    ) {
+        return this.organizationService.updateMemberRoles(
+            user.id,
+            organizationId,
+            memberId,
+            dto.roles,
+        );
+    }
+
+    @Post(":organizationId/leave")
+    leave(
+        @Playground() user: UserPlayground,
+        @Param("organizationId", UUIDValidationPipe) organizationId: string,
+    ) {
+        return this.organizationService.leave(user.id, organizationId);
+    }
+
+    @Post(":organizationId/subaccounts")
+    createSubaccounts(
+        @Playground() user: UserPlayground,
+        @Param("organizationId", UUIDValidationPipe) organizationId: string,
+        @Body() dto: BatchCreateManagedAccountsDto,
+    ) {
+        return this.organizationService.createManagedAccounts(
+            user.id,
+            organizationId,
+            dto.accounts,
+        );
+    }
+
+    @Post(":organizationId/subaccounts/import")
+    @UseInterceptors(
+        FileInterceptor("file", {
+            limits: { fileSize: 2 * 1024 * 1024 },
+        }),
+    )
+    importSubaccounts(
+        @Playground() user: UserPlayground,
+        @Param("organizationId", UUIDValidationPipe) organizationId: string,
+        @UploadedFile() file: Express.Multer.File,
+    ) {
+        return this.organizationService.importManagedAccounts(user.id, organizationId, file);
+    }
+
+    @Get("xiaozhi/captcha")
+    getXiaozhiCaptcha(@Playground() user: UserPlayground) {
+        return this.xiaozhiService.getCaptcha(user.id);
+    }
+
+    @Get("xiaozhi/accounts")
+    getXiaozhiAccounts(
+        @Playground() user: UserPlayground,
+        @Headers("x-organization-id") organizationId?: string,
+    ) {
+        return this.xiaozhiService.listAccounts(user.id, organizationId);
+    }
+
+    @Post("xiaozhi/accounts")
+    bindXiaozhiAccount(
+        @Playground() user: UserPlayground,
+        @Headers("x-organization-id") organizationId: string | undefined,
+        @Body() dto: BindXiaozhiAccountDto,
+    ) {
+        return this.xiaozhiService.bindAccount(user.id, organizationId, dto);
+    }
+
+    @Post("xiaozhi/accounts/:accountId/sync")
+    syncXiaozhiAccount(
+        @Playground() user: UserPlayground,
+        @Headers("x-organization-id") organizationId: string | undefined,
+        @Param("accountId", UUIDValidationPipe) accountId: string,
+    ) {
+        return this.xiaozhiService.syncAccount(user.id, organizationId, accountId);
+    }
+
+    @Post("xiaozhi/accounts/:accountId/reconnect")
+    reconnectXiaozhiAccount(
+        @Playground() user: UserPlayground,
+        @Headers("x-organization-id") organizationId: string | undefined,
+        @Param("accountId", UUIDValidationPipe) accountId: string,
+        @Body() dto: ReconnectXiaozhiAccountDto,
+    ) {
+        return this.xiaozhiService.reconnectAccount(user.id, organizationId, accountId, dto);
+    }
+
+    @Patch("xiaozhi/accounts/:accountId")
+    updateXiaozhiAccount(
+        @Playground() user: UserPlayground,
+        @Headers("x-organization-id") organizationId: string | undefined,
+        @Param("accountId", UUIDValidationPipe) accountId: string,
+        @Body() dto: UpdateXiaozhiAccountDto,
+    ) {
+        return this.xiaozhiService.updateAccountLabel(
+            user.id,
+            organizationId,
+            accountId,
+            dto.label,
+        );
+    }
+
+    @Delete("xiaozhi/accounts/:accountId")
+    removeXiaozhiAccount(
+        @Playground() user: UserPlayground,
+        @Headers("x-organization-id") organizationId: string | undefined,
+        @Param("accountId", UUIDValidationPipe) accountId: string,
+    ) {
+        return this.xiaozhiService.removeAccount(user.id, organizationId, accountId);
+    }
+
+    @Get("xiaozhi/agents")
+    getXiaozhiAgents(
+        @Playground() user: UserPlayground,
+        @Headers("x-organization-id") organizationId?: string,
+    ) {
+        return this.xiaozhiService.listAgents(user.id, organizationId);
+    }
+
+    @Patch("xiaozhi/agents/:agentId/assignment")
+    assignXiaozhiAgent(
+        @Playground() user: UserPlayground,
+        @Headers("x-organization-id") organizationId: string | undefined,
+        @Param("agentId", UUIDValidationPipe) agentId: string,
+        @Body() dto: AssignXiaozhiAgentDto,
+    ) {
+        return this.xiaozhiService.assignAgent(
+            user.id,
+            organizationId,
+            agentId,
+            dto.assignedUserId,
+        );
+    }
+
+    @Delete("xiaozhi/agents/:agentId")
+    deleteXiaozhiAgent(
+        @Playground() user: UserPlayground,
+        @Headers("x-organization-id") organizationId: string | undefined,
+        @Param("agentId", UUIDValidationPipe) agentId: string,
+    ) {
+        return this.xiaozhiService.deleteAgent(user.id, organizationId, agentId);
+    }
+
+    @Get("xiaozhi/agents/:agentId/editor")
+    getXiaozhiAgentEditor(
+        @Playground() user: UserPlayground,
+        @Headers("x-organization-id") organizationId: string | undefined,
+        @Param("agentId", UUIDValidationPipe) agentId: string,
+    ) {
+        return this.xiaozhiService.getAgentEditorData(user.id, organizationId, agentId);
+    }
+
+    @Patch("xiaozhi/agents/:agentId/name")
+    renameXiaozhiAgent(
+        @Playground() user: UserPlayground,
+        @Headers("x-organization-id") organizationId: string | undefined,
+        @Param("agentId", UUIDValidationPipe) agentId: string,
+        @Body() dto: RenameXiaozhiAgentDto,
+    ) {
+        return this.xiaozhiService.renameAgent(user.id, organizationId, agentId, dto.name);
+    }
+
+    @Patch("xiaozhi/agents/:agentId/config")
+    updateXiaozhiAgentConfig(
+        @Playground() user: UserPlayground,
+        @Headers("x-organization-id") organizationId: string | undefined,
+        @Param("agentId", UUIDValidationPipe) agentId: string,
+        @Body() dto: UpdateXiaozhiAgentConfigDto,
+    ) {
+        return this.xiaozhiService.updateAgentConfig(
+            user.id,
+            organizationId,
+            agentId,
+            dto.config,
+        );
+    }
+
+    @Get("xiaozhi/agents/:agentId/devices")
+    getXiaozhiDevices(
+        @Playground() user: UserPlayground,
+        @Headers("x-organization-id") organizationId: string | undefined,
+        @Param("agentId", UUIDValidationPipe) agentId: string,
+    ) {
+        return this.xiaozhiService.listDevices(user.id, organizationId, agentId);
+    }
+
+    @Post("xiaozhi/agents/:agentId/devices")
+    bindXiaozhiDevice(
+        @Playground() user: UserPlayground,
+        @Headers("x-organization-id") organizationId: string | undefined,
+        @Param("agentId", UUIDValidationPipe) agentId: string,
+        @Body() dto: BindXiaozhiDeviceDto,
+    ) {
+        return this.xiaozhiService.bindDevice(
+            user.id,
+            organizationId,
+            agentId,
+            dto.verificationCode,
+        );
+    }
+
+    @Patch("xiaozhi/agents/:agentId/devices/:deviceId/alias")
+    updateXiaozhiDeviceAlias(
+        @Playground() user: UserPlayground,
+        @Headers("x-organization-id") organizationId: string | undefined,
+        @Param("agentId", UUIDValidationPipe) agentId: string,
+        @Body() dto: UpdateDeviceAliasDto,
+    ) {
+        return this.xiaozhiService.updateDeviceAlias(user.id, organizationId, agentId, dto);
+    }
+
+    @Patch("xiaozhi/agents/:agentId/devices/:deviceId/auto-update")
+    updateXiaozhiDeviceAutoUpdate(
+        @Playground() user: UserPlayground,
+        @Headers("x-organization-id") organizationId: string | undefined,
+        @Param("agentId", UUIDValidationPipe) agentId: string,
+        @Body() dto: UpdateDeviceAutoUpdateDto,
+    ) {
+        return this.xiaozhiService.updateDeviceAutoUpdate(user.id, organizationId, agentId, dto);
+    }
+
+    @Delete("xiaozhi/agents/:agentId/devices/:deviceId")
+    unbindXiaozhiDevice(
+        @Playground() user: UserPlayground,
+        @Headers("x-organization-id") organizationId: string | undefined,
+        @Param("agentId", UUIDValidationPipe) agentId: string,
+        @Param("deviceId", ParseIntPipe) deviceId: number,
+    ) {
+        return this.xiaozhiService.unbindDevice(user.id, organizationId, agentId, deviceId);
+    }
+
+    @Get("xiaozhi/scenes")
+    listXiaozhiScenes(
+        @Playground() user: UserPlayground,
+        @Headers("x-organization-id") organizationId?: string,
+    ) {
+        return this.automationService.listScenes(user.id, organizationId);
+    }
+
+    @Post("xiaozhi/scenes")
+    createXiaozhiScene(
+        @Playground() user: UserPlayground,
+        @Headers("x-organization-id") organizationId: string | undefined,
+        @Body() dto: SaveXiaozhiSceneDto,
+    ) {
+        return this.automationService.createScene(user.id, organizationId, dto);
+    }
+
+    @Patch("xiaozhi/scenes/:sceneId")
+    updateXiaozhiScene(
+        @Playground() user: UserPlayground,
+        @Headers("x-organization-id") organizationId: string | undefined,
+        @Param("sceneId", UUIDValidationPipe) sceneId: string,
+        @Body() dto: SaveXiaozhiSceneDto,
+    ) {
+        return this.automationService.updateScene(user.id, organizationId, sceneId, dto);
+    }
+
+    @Delete("xiaozhi/scenes/:sceneId")
+    removeXiaozhiScene(
+        @Playground() user: UserPlayground,
+        @Headers("x-organization-id") organizationId: string | undefined,
+        @Param("sceneId", UUIDValidationPipe) sceneId: string,
+    ) {
+        return this.automationService.removeScene(user.id, organizationId, sceneId);
+    }
+
+    @Post("xiaozhi/scenes/:sceneId/apply")
+    applyXiaozhiScene(
+        @Playground() user: UserPlayground,
+        @Headers("x-organization-id") organizationId: string | undefined,
+        @Param("sceneId", UUIDValidationPipe) sceneId: string,
+        @Body() dto: ApplyXiaozhiSceneDto,
+    ) {
+        return this.automationService.applySceneToAgents(
+            user.id,
+            organizationId,
+            sceneId,
+            dto.agentIds,
+        );
+    }
+
+    @Get("xiaozhi/quick-commands")
+    listXiaozhiQuickCommands(
+        @Playground() user: UserPlayground,
+        @Headers("x-organization-id") organizationId?: string,
+    ) {
+        return this.automationService.listCommands(user.id, organizationId);
+    }
+
+    @Post("xiaozhi/quick-commands")
+    createXiaozhiQuickCommand(
+        @Playground() user: UserPlayground,
+        @Headers("x-organization-id") organizationId: string | undefined,
+        @Body() dto: SaveXiaozhiQuickCommandDto,
+    ) {
+        return this.automationService.createCommand(user.id, organizationId, dto);
+    }
+
+    @Patch("xiaozhi/quick-commands/:commandId")
+    updateXiaozhiQuickCommand(
+        @Playground() user: UserPlayground,
+        @Headers("x-organization-id") organizationId: string | undefined,
+        @Param("commandId", UUIDValidationPipe) commandId: string,
+        @Body() dto: SaveXiaozhiQuickCommandDto,
+    ) {
+        return this.automationService.updateCommand(user.id, organizationId, commandId, dto);
+    }
+
+    @Delete("xiaozhi/quick-commands/:commandId")
+    removeXiaozhiQuickCommand(
+        @Playground() user: UserPlayground,
+        @Headers("x-organization-id") organizationId: string | undefined,
+        @Param("commandId", UUIDValidationPipe) commandId: string,
+    ) {
+        return this.automationService.removeCommand(user.id, organizationId, commandId);
+    }
+
+    @Post("xiaozhi/quick-commands/:commandId/execute")
+    executeXiaozhiQuickCommand(
+        @Playground() user: UserPlayground,
+        @Headers("x-organization-id") organizationId: string | undefined,
+        @Param("commandId", UUIDValidationPipe) commandId: string,
+    ) {
+        return this.automationService.executeCommand(user.id, organizationId, commandId);
+    }
+
+    @Get("xiaozhi/agents/:agentId/chats")
+    getXiaozhiAgentChats(
+        @Playground() user: UserPlayground,
+        @Headers("x-organization-id") organizationId: string | undefined,
+        @Param("agentId", UUIDValidationPipe) agentId: string,
+        @Query() query: ChatHistoryQueryDto,
+    ) {
+        return this.xiaozhiService.listAgentChats(
+            user.id,
+            organizationId,
+            agentId,
+            query.pageSize,
+        );
+    }
+
+    @Get("xiaozhi/agents/:agentId/chats/:chatId/messages")
+    getXiaozhiChatMessages(
+        @Playground() user: UserPlayground,
+        @Headers("x-organization-id") organizationId: string | undefined,
+        @Param("agentId", UUIDValidationPipe) agentId: string,
+        @Param("chatId", ParseIntPipe) chatId: number,
+    ) {
+        return this.xiaozhiService.listChatMessages(user.id, organizationId, agentId, chatId);
+    }
+
+    @Get("xiaozhi/mcp/connections")
+    listXiaozhiMcpConnections(
+        @Playground() user: UserPlayground,
+        @Headers("x-organization-id") organizationId?: string,
+    ) {
+        return this.mcpService.listConnections(user.id, organizationId);
+    }
+
+    @Get("xiaozhi/mcp/settings")
+    getXiaozhiMcpSettings(
+        @Playground() user: UserPlayground,
+        @Headers("x-organization-id") organizationId?: string,
+    ) {
+        return this.mcpService.getSettings(user.id, organizationId);
+    }
+
+    @Patch("xiaozhi/mcp/settings")
+    updateXiaozhiMcpSettings(
+        @Playground() user: UserPlayground,
+        @Headers("x-organization-id") organizationId: string | undefined,
+        @Body() dto: UpdateXiaozhiMcpSettingsDto,
+    ) {
+        return this.mcpService.updateSettings(user.id, organizationId, dto);
+    }
+
+    @Post("xiaozhi/mcp/batch-configure")
+    batchConfigureXiaozhiMcp(
+        @Playground() user: UserPlayground,
+        @Headers("x-organization-id") organizationId: string | undefined,
+        @Body() dto: BatchConfigureXiaozhiMcpDto,
+    ) {
+        return this.mcpService.batchConfigure(user.id, organizationId, dto);
+    }
+
+    @Post("xiaozhi/mcp/connections/:connectionId/reconnect")
+    reconnectXiaozhiMcp(
+        @Playground() user: UserPlayground,
+        @Headers("x-organization-id") organizationId: string | undefined,
+        @Param("connectionId", UUIDValidationPipe) connectionId: string,
+    ) {
+        return this.mcpService.reconnectConnection(user.id, organizationId, connectionId);
+    }
+
+    @Patch("xiaozhi/mcp/connections/:connectionId")
+    updateXiaozhiMcpConnection(
+        @Playground() user: UserPlayground,
+        @Headers("x-organization-id") organizationId: string | undefined,
+        @Param("connectionId", UUIDValidationPipe) connectionId: string,
+        @Body() dto: UpdateXiaozhiMcpConnectionDto,
+    ) {
+        return this.mcpService.setConnectionEnabled(
+            user.id,
+            organizationId,
+            connectionId,
+            dto.enabled,
+        );
+    }
+
+    @Delete("xiaozhi/mcp/connections/:connectionId")
+    removeXiaozhiMcpConnection(
+        @Playground() user: UserPlayground,
+        @Headers("x-organization-id") organizationId: string | undefined,
+        @Param("connectionId", UUIDValidationPipe) connectionId: string,
+    ) {
+        return this.mcpService.removeConnection(user.id, organizationId, connectionId);
+    }
+
+    @Post("xiaozhi/mcp/connections/:connectionId/report")
+    reportXiaozhiMcpCompletion(
+        @Playground() user: UserPlayground,
+        @Headers("x-organization-id") organizationId: string | undefined,
+        @Param("connectionId", UUIDValidationPipe) connectionId: string,
+        @Body() dto: ReportXiaozhiMcpCompletionDto,
+    ) {
+        return this.mcpService.reportManualCompletion(
+            user.id,
+            organizationId,
+            connectionId,
+            dto,
+        );
+    }
+
+    @Get("classroom/interactions")
+    listClassroomInteractions(
+        @Playground() user: UserPlayground,
+        @Headers("x-organization-id") organizationId?: string,
+    ) {
+        return this.classroomService.listInteractions(user.id, organizationId);
+    }
+
+    @Post("classroom/interactions")
+    createClassroomInteraction(
+        @Playground() user: UserPlayground,
+        @Headers("x-organization-id") organizationId: string | undefined,
+        @Body() dto: SaveClassroomInteractionDto,
+    ) {
+        return this.classroomService.createInteraction(user.id, organizationId, dto);
+    }
+
+    @Patch("classroom/interactions/:interactionId")
+    updateClassroomInteraction(
+        @Playground() user: UserPlayground,
+        @Headers("x-organization-id") organizationId: string | undefined,
+        @Param("interactionId", UUIDValidationPipe) interactionId: string,
+        @Body() dto: SaveClassroomInteractionDto,
+    ) {
+        return this.classroomService.updateInteraction(
+            user.id,
+            organizationId,
+            interactionId,
+            dto,
+        );
+    }
+
+    @Delete("classroom/interactions/:interactionId")
+    removeClassroomInteraction(
+        @Playground() user: UserPlayground,
+        @Headers("x-organization-id") organizationId: string | undefined,
+        @Param("interactionId", UUIDValidationPipe) interactionId: string,
+    ) {
+        return this.classroomService.removeInteraction(user.id, organizationId, interactionId);
+    }
+
+    @Post("classroom/interactions/:interactionId/start")
+    startClassroomInteraction(
+        @Playground() user: UserPlayground,
+        @Headers("x-organization-id") organizationId: string | undefined,
+        @Param("interactionId", UUIDValidationPipe) interactionId: string,
+    ) {
+        return this.classroomService.startInteraction(user.id, organizationId, interactionId);
+    }
+
+    @Post("classroom/interactions/:interactionId/end")
+    endClassroomInteraction(
+        @Playground() user: UserPlayground,
+        @Headers("x-organization-id") organizationId: string | undefined,
+        @Param("interactionId", UUIDValidationPipe) interactionId: string,
+    ) {
+        return this.classroomService.endInteraction(user.id, organizationId, interactionId);
+    }
+
+    @Get("classroom/interactions/:interactionId/events")
+    listClassroomEvents(
+        @Playground() user: UserPlayground,
+        @Headers("x-organization-id") organizationId: string | undefined,
+        @Param("interactionId", UUIDValidationPipe) interactionId: string,
+        @Query() query: ClassroomEventsQueryDto,
+    ) {
+        return this.classroomService.listEvents(
+            user.id,
+            organizationId,
+            interactionId,
+            query.limit,
+        );
+    }
+
+    @Post("classroom/events/test")
+    createClassroomTestEvent(
+        @Playground() user: UserPlayground,
+        @Headers("x-organization-id") organizationId: string | undefined,
+        @Body() dto: ClassroomTestEventDto,
+    ) {
+        return this.classroomService.createTestEvent(user.id, organizationId, dto);
+    }
+}

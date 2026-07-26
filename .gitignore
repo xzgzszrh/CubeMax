@@ -76,3 +76,5 @@ extensions/*
 !extensions/simple-blog/.output
 extensions/simple-blog/dist
 releases
+
+temp_transfer/
