@@ -110,6 +110,7 @@ export type XiaozhiAgent = {
     linkedAgentId: string | null;
     linkedAgentName: string | null;
     linkedAgentSyncedAt: string | null;
+    lockedConfigKeys: string[];
 };
 
 export type XiaozhiDevice = {
@@ -827,6 +828,23 @@ export function useExecuteXiaozhiQuickCommandMutation(options?: any) {
             apiHttpClient.post(
                 `/organizations/xiaozhi/quick-commands/${commandId}/execute`,
                 undefined,
+                { headers: organizationHeaders() },
+            ),
+        ...options,
+        onSuccess: (...args: any[]) => {
+            queryClient.invalidateQueries({ queryKey: ["xiaozhi"] });
+            options?.onSuccess?.(...args);
+        },
+    });
+}
+
+export function useUpdateXiaozhiConfigLocksMutation(options?: any) {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: (data: { agentId: string; keys: string[] }) =>
+            apiHttpClient.patch(
+                `/organizations/xiaozhi/agents/${data.agentId}/config-locks`,
+                { keys: data.keys },
                 { headers: organizationHeaders() },
             ),
         ...options,

@@ -14,6 +14,7 @@ import {
 } from "@buildingai/ui/components/ui/select";
 import { Switch } from "@buildingai/ui/components/ui/switch";
 import { Textarea } from "@buildingai/ui/components/ui/textarea";
+import { Lock, LockOpen } from "lucide-react";
 import { useMemo } from "react";
 
 export type Speed = "slow" | "normal" | "fast";
@@ -132,19 +133,44 @@ export function formToConfig(
  * The full role-config editor shared by the per-agent dialog and the scene
  * editor. Renders language/voice/model selectors, behavior switches, custom
  * character, knowledge base and MCP tool pickers.
+ *
+ * Lock support: pass `lockedKeys` plus `onToggleLock` to show per-field lock
+ * toggles (teacher view), or `lockEnforced` to disable locked fields
+ * (student view). Omit all three for the scene editor.
  */
 export function AgentConfigFields({
   form,
   setForm,
   resources,
   disabled,
+  lockedKeys,
+  lockEnforced = false,
+  onToggleLock,
 }: {
   form: EditorForm;
   setForm: (form: EditorForm) => void;
   resources: XiaozhiAgentEditorData;
   disabled: boolean;
+  lockedKeys?: Set<string>;
+  lockEnforced?: boolean;
+  onToggleLock?: (key: string) => void;
 }) {
   const voices = resources.ttsList.ttsVoices[form.language] || [];
+  const isLocked = (key: string) => Boolean(lockedKeys?.has(key));
+  const fieldDisabled = (key: string) => disabled || (lockEnforced && isLocked(key));
+  const lockBadge = (key: string) =>
+    onToggleLock ? (
+      <button
+        type="button"
+        className="text-muted-foreground hover:text-foreground"
+        title={isLocked(key) ? "已锁定，学生不可修改；点击解锁" : "点击锁定，锁定后学生不可修改"}
+        onClick={() => onToggleLock(key)}
+      >
+        {isLocked(key) ? <Lock className="size-3.5" /> : <LockOpen className="size-3.5" />}
+      </button>
+    ) : lockEnforced && isLocked(key) ? (
+      <Lock className="text-muted-foreground size-3.5" aria-label="老师已锁定" />
+    ) : null;
   const availableTools = useMemo(
     () =>
       resources.mcpTools.filter((tool) => {
@@ -159,10 +185,13 @@ export function AgentConfigFields({
     <>
       <div className="grid gap-4 sm:grid-cols-2">
         <div>
-          <Label className="mb-1.5">对话语言</Label>
+          <div className="mb-1.5 flex items-center gap-1.5">
+            <Label>对话语言</Label>
+            {lockBadge("language")}
+          </div>
           <Select
             value={form.language}
-            disabled={disabled}
+            disabled={fieldDisabled("language")}
             onValueChange={(language) => {
               const nextVoices = resources.ttsList.ttsVoices[language] || [];
               const allowedTools = new Set(
@@ -197,10 +226,13 @@ export function AgentConfigFields({
           </Select>
         </div>
         <div>
-          <Label className="mb-1.5">角色音色</Label>
+          <div className="mb-1.5 flex items-center gap-1.5">
+            <Label>角色音色</Label>
+            {lockBadge("tts_voice")}
+          </div>
           <Select
             value={form.ttsVoice}
-            disabled={disabled || !voices.length}
+            disabled={fieldDisabled("tts_voice") || !voices.length}
             onValueChange={(ttsVoice) => setForm({ ...form, ttsVoice })}
           >
             <SelectTrigger>
@@ -216,10 +248,13 @@ export function AgentConfigFields({
           </Select>
         </div>
         <div>
-          <Label className="mb-1.5">语言模型</Label>
+          <div className="mb-1.5 flex items-center gap-1.5">
+            <Label>语言模型</Label>
+            {lockBadge("llm_model")}
+          </div>
           <Select
             value={form.llmModel}
-            disabled={disabled}
+            disabled={fieldDisabled("llm_model")}
             onValueChange={(llmModel) => setForm({ ...form, llmModel })}
           >
             <SelectTrigger>
@@ -235,10 +270,13 @@ export function AgentConfigFields({
           </Select>
         </div>
         <div>
-          <Label className="mb-1.5">识别速度</Label>
+          <div className="mb-1.5 flex items-center gap-1.5">
+            <Label>识别速度</Label>
+            {lockBadge("asr_speed")}
+          </div>
           <Select
             value={form.asrSpeed}
-            disabled={disabled}
+            disabled={fieldDisabled("asr_speed")}
             onValueChange={(value) => setForm({ ...form, asrSpeed: value as Speed })}
           >
             <SelectTrigger>
@@ -254,10 +292,13 @@ export function AgentConfigFields({
           </Select>
         </div>
         <div>
-          <Label className="mb-1.5">语音速度</Label>
+          <div className="mb-1.5 flex items-center gap-1.5">
+            <Label>语音速度</Label>
+            {lockBadge("tts_speech_speed")}
+          </div>
           <Select
             value={form.ttsSpeechSpeed}
-            disabled={disabled}
+            disabled={fieldDisabled("tts_speech_speed")}
             onValueChange={(value) => setForm({ ...form, ttsSpeechSpeed: value as Speed })}
           >
             <SelectTrigger>
@@ -273,10 +314,13 @@ export function AgentConfigFields({
           </Select>
         </div>
         <div>
-          <Label className="mb-1.5">记忆模式</Label>
+          <div className="mb-1.5 flex items-center gap-1.5">
+            <Label>记忆模式</Label>
+            {lockBadge("memory_type")}
+          </div>
           <Select
             value={form.memoryType}
-            disabled={disabled}
+            disabled={fieldDisabled("memory_type")}
             onValueChange={(value) =>
               setForm({ ...form, memoryType: value as EditorForm["memoryType"] })
             }
@@ -294,14 +338,17 @@ export function AgentConfigFields({
           </Select>
         </div>
         <div>
-          <Label className="mb-1.5">音调 ({form.ttsPitch})</Label>
+          <div className="mb-1.5 flex items-center gap-1.5">
+            <Label>音调 ({form.ttsPitch})</Label>
+            {lockBadge("tts_pitch")}
+          </div>
           <Input
             type="number"
             min={-3}
             max={3}
             step={1}
             value={form.ttsPitch}
-            disabled={disabled}
+            disabled={fieldDisabled("tts_pitch")}
             onChange={(event) =>
               setForm({
                 ...form,
@@ -314,12 +361,12 @@ export function AgentConfigFields({
 
       <div className="flex items-center justify-between gap-3 border-t pt-3">
         <div>
-          <p className="font-medium">青少年模式</p>
+          <p className="flex items-center gap-1.5 font-medium">青少年模式 {lockBadge("teen_mode")}</p>
           <p className="text-muted-foreground text-xs">开启后上游会对回答内容做适龄限制。</p>
         </div>
         <Switch
           checked={form.teenMode}
-          disabled={disabled}
+          disabled={fieldDisabled("teen_mode")}
           onCheckedChange={(teenMode) => setForm({ ...form, teenMode })}
         />
       </div>
@@ -327,12 +374,12 @@ export function AgentConfigFields({
       <div className="border-t pt-3">
         <div className="mb-2 flex items-center justify-between gap-3">
           <div>
-            <p className="font-medium">自定义角色设定</p>
+            <p className="flex items-center gap-1.5 font-medium">自定义角色设定 {lockBadge("character")}</p>
             <p className="text-muted-foreground text-xs">关闭时沿用小智模板自带的人物设定。</p>
           </div>
           <Switch
             checked={form.customCharacter}
-            disabled={disabled}
+            disabled={fieldDisabled("character")}
             onCheckedChange={(customCharacter) => setForm({ ...form, customCharacter })}
           />
         </div>
@@ -342,7 +389,7 @@ export function AgentConfigFields({
             maxLength={2000}
             placeholder="描述这个角色的身份、说话风格和教学任务"
             value={form.character}
-            disabled={disabled}
+            disabled={fieldDisabled("character")}
             onChange={(event) => setForm({ ...form, character: event.target.value })}
           />
         ) : null}
@@ -350,10 +397,13 @@ export function AgentConfigFields({
 
       {resources.knowledgeBases.length ? (
         <div className="border-t pt-3">
-          <Label className="mb-1.5">知识库</Label>
+          <div className="mb-1.5 flex items-center gap-1.5">
+            <Label>知识库</Label>
+            {lockBadge("knowledge_base_ids")}
+          </div>
           <Select
             value={form.knowledgeBaseId || "none"}
-            disabled={disabled}
+            disabled={fieldDisabled("knowledge_base_ids")}
             onValueChange={(value) =>
               setForm({ ...form, knowledgeBaseId: value === "none" ? "" : value })
             }
@@ -375,7 +425,7 @@ export function AgentConfigFields({
 
       {availableTools.length ? (
         <div className="border-t pt-3">
-          <p className="mb-2 font-medium">扩展工具</p>
+          <p className="mb-2 flex items-center gap-1.5 font-medium">扩展工具 {lockBadge("mcp_endpoints")}</p>
           <div className="flex flex-wrap gap-2">
             {availableTools.map((tool) => {
               const endpointId = String(tool.endpoint_id);
@@ -385,7 +435,7 @@ export function AgentConfigFields({
                   key={endpointId}
                   size="sm"
                   variant={enabled ? "default" : "outline"}
-                  disabled={disabled}
+                  disabled={fieldDisabled("mcp_endpoints")}
                   title={tool.description}
                   onClick={() =>
                     setForm({

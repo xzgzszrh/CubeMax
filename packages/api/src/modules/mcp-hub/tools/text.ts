@@ -1,5 +1,5 @@
-import { getOptionalString, getRequiredString } from "../args.js";
-import type { BuildingAiMcpService } from "../types.js";
+import type { BuildingAiMcpService } from "../mcp-hub.types";
+import { getOptionalString, getRequiredString } from "../utils/tool-args.util";
 
 export const textService: BuildingAiMcpService = {
     key: "text",

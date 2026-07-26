@@ -7,6 +7,7 @@ import {
   useSyncLinkedBuildingAgentMutation,
   useUnbindXiaozhiDeviceMutation,
   useUpdateXiaozhiAgentConfigMutation,
+  useUpdateXiaozhiConfigLocksMutation,
   useUpdateXiaozhiDeviceAliasMutation,
   useUpdateXiaozhiDeviceAutoUpdateMutation,
   useXiaozhiAgentChatsQuery,
@@ -49,6 +50,8 @@ import {
   Cpu,
   Link2,
   LoaderCircle,
+  Lock,
+  LockOpen,
   MessageSquare,
   Plus,
   RefreshCw,
@@ -58,7 +61,7 @@ import {
   Trash2,
   Unlink,
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
 import {
@@ -149,8 +152,38 @@ export function XiaozhiAgentDialog({
   });
   const renameAgent = useRenameXiaozhiAgentMutation();
   const updateConfig = useUpdateXiaozhiAgentConfigMutation();
-  // 学生本人（被分发者）也可以绑定自己的 BuildingAI 智能体。
+  // 学生本人（被分发者）可以绑定自己的智能体，也可以修改未锁定的角色配置。
   const canLink = canManage || (Boolean(userInfo?.id) && agent?.assignedUserId === userInfo?.id);
+  const canEditConfig = canLink;
+  const lockedKeys = useMemo(
+    () => new Set(agent?.lockedConfigKeys || []),
+    [agent?.lockedConfigKeys],
+  );
+  const updateLocks = useUpdateXiaozhiConfigLocksMutation();
+  // 只有组织空间才有「学生」概念，锁定开关只对组织的管理者显示。
+  const showLockToggles = canManage && Boolean(agent?.organizationId);
+
+  function toggleLock(key: string) {
+    if (!agent) return;
+    const next = new Set(lockedKeys);
+    if (next.has(key)) next.delete(key);
+    else next.add(key);
+    updateLocks.mutate({ agentId: agent.id, keys: [...next] });
+  }
+
+  const nameLocked = lockedKeys.has("name");
+  const nameLockBadge = showLockToggles ? (
+    <button
+      type="button"
+      className="text-muted-foreground hover:text-foreground"
+      title={nameLocked ? "已锁定，学生不可修改；点击解锁" : "点击锁定，锁定后学生不可修改"}
+      onClick={() => toggleLock("name")}
+    >
+      {nameLocked ? <Lock className="size-3.5" /> : <LockOpen className="size-3.5" />}
+    </button>
+  ) : !canManage && nameLocked ? (
+    <Lock className="text-muted-foreground size-3.5" aria-label="老师已锁定" />
+  ) : null;
   const { data: myAgentsData, isLoading: myAgentsLoading } = useMyAgentsInfiniteQuery(
     { pageSize: 50 },
     { enabled: open && tab === "link" && canLink },
@@ -227,7 +260,8 @@ export function XiaozhiAgentDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <Tabs value={tab} onValueChange={setTab}>
+        {/* DialogContent 是 grid：min-w-0 阻止内容的最小宽度把面板撑出对话框。 */}
+        <Tabs value={tab} onValueChange={setTab} className="min-w-0">
           <TabsList>
             <TabsTrigger value="devices">
               <Cpu /> 设备
@@ -401,14 +435,15 @@ export function XiaozhiAgentDialog({
             ) : (
               <div className="max-h-[380px] space-y-4 overflow-auto pr-1">
                 <div>
-                  <Label className="mb-1.5" htmlFor="xiaozhi-agent-name">
-                    智能体名称
-                  </Label>
+                  <div className="mb-1.5 flex items-center gap-1.5">
+                    <Label htmlFor="xiaozhi-agent-name">智能体名称</Label>
+                    {nameLockBadge}
+                  </div>
                   <Input
                     id="xiaozhi-agent-name"
                     value={agentName}
                     maxLength={40}
-                    disabled={!canManage}
+                    disabled={!canEditConfig || (!canManage && nameLocked)}
                     onChange={(event) => setAgentName(event.target.value)}
                   />
                 </div>
@@ -417,26 +452,35 @@ export function XiaozhiAgentDialog({
                   form={form}
                   setForm={setForm}
                   resources={editorData}
-                  disabled={!canManage}
+                  disabled={!canEditConfig}
+                  lockedKeys={lockedKeys}
+                  lockEnforced={!canManage}
+                  onToggleLock={showLockToggles ? toggleLock : undefined}
                 />
 
-                {canManage ? (
+                {canEditConfig ? (
                   <div className="flex items-center justify-between border-t pt-3">
-                    <Button
-                      variant="ghost"
-                      className="text-destructive"
-                      loading={deleteAgent.isPending}
-                      onClick={confirmDeleteAgent}
-                    >
-                      <Trash2 /> 删除智能体
-                    </Button>
+                    {canManage ? (
+                      <Button
+                        variant="ghost"
+                        className="text-destructive"
+                        loading={deleteAgent.isPending}
+                        onClick={confirmDeleteAgent}
+                      >
+                        <Trash2 /> 删除智能体
+                      </Button>
+                    ) : (
+                      <p className="text-muted-foreground text-xs">
+                        带锁标记的选项由老师锁定，无法修改。
+                      </p>
+                    )}
                     <Button loading={saving} onClick={saveConfig}>
                       <Save /> 保存配置
                     </Button>
                   </div>
                 ) : (
                   <p className="text-muted-foreground border-t pt-3 text-xs">
-                    只有组织的老师或管理员可以修改角色配置。
+                    只有管理员或被分发的学生本人可以修改角色配置。
                   </p>
                 )}
               </div>
@@ -458,14 +502,16 @@ export function XiaozhiAgentDialog({
                       className="hover:bg-muted/60 flex w-full flex-col gap-1 px-3 py-2.5 text-left"
                       onClick={() => setActiveChatId(chat.id)}
                     >
-                      <div className="flex items-center justify-between gap-3">
-                        <p className="font-medium">{chat.title}</p>
+                      <div className="flex w-full items-center justify-between gap-3">
+                        <p className="min-w-0 truncate font-medium">{chat.title}</p>
                         <span className="text-muted-foreground shrink-0 text-xs">
                           {formatDateTime(chat.createdAt)}
                         </span>
                       </div>
                       {chat.summary ? (
-                        <p className="text-muted-foreground line-clamp-2 text-xs">{chat.summary}</p>
+                        <p className="text-muted-foreground line-clamp-2 text-xs break-words">
+                          {chat.summary}
+                        </p>
                       ) : null}
                       <p className="text-muted-foreground text-xs">
                         {chat.messageCount} 条消息 · {chat.model || "未知模型"}
@@ -497,26 +543,26 @@ export function XiaozhiAgentDialog({
                     <LoaderCircle className="size-5 animate-spin" />
                   </div>
                 ) : (
-                  <div className="max-h-[320px] space-y-3 overflow-auto border-y px-3 py-3">
+                  <div className="max-h-[320px] w-full min-w-0 space-y-3 overflow-y-auto overflow-x-hidden border-y px-3 py-3">
                     {messages.length ? (
                       messages.map((message) => (
                         <div
                           key={message.id}
                           className={
                             message.role === "user"
-                              ? "flex flex-col items-end gap-1"
-                              : "flex flex-col items-start gap-1"
+                              ? "flex w-full flex-col items-end gap-1"
+                              : "flex w-full flex-col items-start gap-1"
                           }
                         >
-                          <span className="text-muted-foreground text-xs">
+                          <span className="text-muted-foreground max-w-full truncate text-xs">
                             {message.role === "user" ? "学生" : message.name || "方糖猫"} ·{" "}
                             {formatDateTime(message.createdAt)}
                           </span>
                           <div
                             className={
                               message.role === "user"
-                                ? "bg-primary text-primary-foreground max-w-[80%] rounded-md px-3 py-2 text-sm"
-                                : "bg-muted max-w-[80%] rounded-md px-3 py-2 text-sm"
+                                ? "bg-primary text-primary-foreground max-w-[80%] rounded-md px-3 py-2 text-sm break-words whitespace-pre-wrap"
+                                : "bg-muted max-w-[80%] rounded-md px-3 py-2 text-sm break-words whitespace-pre-wrap"
                             }
                           >
                             {message.content || "（无文本内容）"}

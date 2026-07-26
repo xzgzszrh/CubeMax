@@ -50,4 +50,11 @@ export class XiaozhiAgentBinding extends SoftDeleteBaseEntity {
 
     @Column({ type: "timestamptz", nullable: true, comment: "角色设定最近同步时间" })
     linkedAgentSyncedAt: Date | null;
+
+    @Column({
+        type: "jsonb",
+        default: () => "'[]'",
+        comment: "老师锁定的配置项，学生不可修改",
+    })
+    lockedConfigKeys: string[];
 }

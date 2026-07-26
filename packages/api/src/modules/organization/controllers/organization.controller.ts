@@ -43,6 +43,7 @@ import {
     RenameXiaozhiAgentDto,
     SaveXiaozhiQuickCommandDto,
     SaveXiaozhiSceneDto,
+    UpdateConfigLocksDto,
     UpdateDeviceAliasDto,
     UpdateDeviceAutoUpdateDto,
     UpdateOrganizationMemberDto,
@@ -238,6 +239,16 @@ export class OrganizationController {
             agentId,
             dto.assignedUserId,
         );
+    }
+
+    @Patch("xiaozhi/agents/:agentId/config-locks")
+    updateXiaozhiConfigLocks(
+        @Playground() user: UserPlayground,
+        @Headers("x-organization-id") organizationId: string | undefined,
+        @Param("agentId", UUIDValidationPipe) agentId: string,
+        @Body() dto: UpdateConfigLocksDto,
+    ) {
+        return this.xiaozhiService.updateConfigLocks(user.id, organizationId, agentId, dto.keys);
     }
 
     @Patch("xiaozhi/agents/:agentId/building-agent")

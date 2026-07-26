@@ -21,13 +21,13 @@ const DEFAULT_NODE_PANEL_GROUP = {
 
 const NodeWrap = styled.div`
   width: 100%;
-  height: 32px;
-  border-radius: 5px;
+  height: 36px;
+  border-radius: 6px;
   box-sizing: border-box;
   display: flex;
   align-items: center;
   cursor: pointer;
-  padding: 0 10px;
+  padding: 0 12px;
   &:hover {
     background-color: hsl(252deg 62% 55% / 9%);
     color: hsl(252 62% 54.9%);
@@ -35,7 +35,7 @@ const NodeWrap = styled.div`
 `;
 
 const NodeLabel = styled.div`
-  font-size: 12px;
+  font-size: 14px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -44,17 +44,17 @@ const NodeLabel = styled.div`
 
 const NodeGroupTitle = styled.div`
   color: rgba(28, 31, 35, 0.55);
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 600;
   line-height: 20px;
-  padding: 8px 10px 4px;
+  padding: 4px 12px 2px;
 `;
 
 const NodeGroup = styled.div`
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  column-gap: 6px;
-  row-gap: 2px;
+  column-gap: 4px;
+  row-gap: 0;
 `;
 
 interface NodeProps {
@@ -73,7 +73,7 @@ function Node(props: NodeProps) {
       style={props.disabled ? { opacity: 0.3 } : {}}
       title={props.label}
     >
-      <div style={{ fontSize: 14 }}>{props.icon}</div>
+      <div style={{ fontSize: 18, display: "flex", alignItems: "center" }}>{props.icon}</div>
       <NodeLabel>{props.label}</NodeLabel>
     </NodeWrap>
   );
@@ -175,7 +175,7 @@ export const NodeList: FC<NodeListProps> = (props) => {
                 icon={
                   <img
                     alt=""
-                    style={{ width: 12, height: 12, borderRadius: 4, display: "block" }}
+                    style={{ width: 20, height: 20, borderRadius: 5, display: "block" }}
                     src={registry.info?.icon}
                   />
                 }

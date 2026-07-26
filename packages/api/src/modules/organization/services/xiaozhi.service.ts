@@ -48,6 +48,22 @@ type UpstreamPayload<T> = {
     error?: string;
 };
 
+/** Role-config fields a teacher may lock against student edits. */
+export const CONFIG_LOCK_KEYS = [
+    "name",
+    "language",
+    "tts_voice",
+    "llm_model",
+    "asr_speed",
+    "tts_speech_speed",
+    "memory_type",
+    "tts_pitch",
+    "teen_mode",
+    "character",
+    "knowledge_base_ids",
+    "mcp_endpoints",
+] as const;
+
 
 @Injectable()
 export class XiaozhiService {
@@ -586,13 +602,41 @@ export class XiaozhiService {
         return { agent, config };
     }
 
+    /** Whether the workspace access grants full asset management rights. */
+    private isAssetManager(access: Awaited<ReturnType<OrganizationService["requireWorkspace"]>>) {
+        return (
+            access.type === "personal" ||
+            access.permissions.includes(OrganizationPermission.ASSET_MANAGE)
+        );
+    }
+
+    /** Update which config fields are locked against student edits. */
+    async updateConfigLocks(
+        userId: string,
+        organizationId: string | null | undefined,
+        agentId: string,
+        keys: string[],
+    ) {
+        const { agent } = await this.resolveAgent(userId, organizationId, agentId, true);
+        const allowed = new Set<string>(CONFIG_LOCK_KEYS);
+        agent.lockedConfigKeys = [...new Set(keys.filter((key) => allowed.has(key)))];
+        return this.agentRepository.save(agent);
+    }
+
     async renameAgent(
         userId: string,
         organizationId: string | null | undefined,
         agentId: string,
         name: string,
     ) {
-        const { agent, account } = await this.resolveAgent(userId, organizationId, agentId, true);
+        const { access, agent, account } = await this.resolveLinkableAgent(
+            userId,
+            organizationId,
+            agentId,
+        );
+        if (!this.isAssetManager(access) && agent.lockedConfigKeys?.includes("name")) {
+            throw HttpErrorFactory.forbidden("智能体名称已被老师锁定，无法修改");
+        }
         await this.request(account, "/agents/update-name", {
             method: "POST",
             body: { id: Number(agent.upstreamAgentId), name: name.trim() },
@@ -607,16 +651,40 @@ export class XiaozhiService {
         agentId: string,
         config: Record<string, unknown>,
     ) {
-        const { agent, account } = await this.resolveAgent(userId, organizationId, agentId, true);
+        const { access, agent, account } = await this.resolveLinkableAgent(
+            userId,
+            organizationId,
+            agentId,
+        );
+
+        // Students edit the config of their own cubecat, but locked fields
+        // are forced back to the current upstream values before saving.
+        let payload = config;
+        if (!this.isAssetManager(access)) {
+            const locked = (agent.lockedConfigKeys || []).filter((key) => key !== "name");
+            if (locked.length) {
+                const detail = await this.request<{ agent?: Record<string, unknown> }>(
+                    account,
+                    `/agents/${agent.upstreamAgentId}`,
+                );
+                const current = detail.data?.agent || {};
+                payload = { ...config };
+                for (const key of locked) {
+                    if (key in current) payload[key] = current[key];
+                    else delete payload[key];
+                }
+            }
+        }
+
         await this.request(account, `/agents/${agent.upstreamAgentId}/config`, {
             method: "POST",
-            body: config,
+            body: payload,
         });
 
         // Mirror the fields the agent list renders so the UI stays consistent
         // without waiting for a full account sync.
-        const model = config.llm_model ?? config.model;
-        const voice = config.tts_voice ?? config.voice;
+        const model = payload.llm_model ?? payload.model;
+        const voice = payload.tts_voice ?? payload.voice;
         if (typeof model === "string") agent.model = model;
         if (typeof voice === "string") agent.voice = voice;
         return this.agentRepository.save(agent);

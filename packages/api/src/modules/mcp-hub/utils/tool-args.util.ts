@@ -1,3 +1,9 @@
+/**
+ * 内置 MCP 工具参数校验工具函数
+ *
+ * 从独立进程 mcp-server 移植而来（原 mcp-server/src/args.ts），行为保持一致。
+ */
+
 export function getRequiredNumber(args: Record<string, unknown>, key: string): number {
     const value = args[key];
     if (typeof value !== "number" || !Number.isFinite(value)) {

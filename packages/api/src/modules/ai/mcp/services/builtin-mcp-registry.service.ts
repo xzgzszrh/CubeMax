@@ -9,6 +9,8 @@ import {
     McpServerType,
 } from "@buildingai/db/entities";
 import { IsNull, Repository } from "@buildingai/db/typeorm";
+import { getLocalMcpHubBaseUrl } from "@modules/mcp-hub/mcp-hub.constants";
+import { McpHubService } from "@modules/mcp-hub/services/mcp-hub.service";
 import { Injectable, Logger, OnApplicationBootstrap } from "@nestjs/common";
 
 export const BUILTIN_MCP_PROVIDER_NAME = "CubeMax MCP Server";
@@ -86,6 +88,7 @@ export class BuiltinMcpRegistryService implements OnApplicationBootstrap {
         private readonly aiMcpServerRepository: Repository<AiMcpServer>,
         @InjectRepository(AiMcpTool)
         private readonly aiMcpToolRepository: Repository<AiMcpTool>,
+        private readonly mcpHubService: McpHubService,
     ) {}
 
     async onApplicationBootstrap() {
@@ -131,23 +134,34 @@ export class BuiltinMcpRegistryService implements OnApplicationBootstrap {
     }
 
     /**
-     * 重新从配置的 Hub 嗅探并刷新内存注册表
+     * 刷新内存注册表
+     *
+     * 本进程内置 hub（原独立 mcp-server，已合并进主后端）走进程内直读，
+     * 不发 HTTP——注册表在应用 bootstrap 阶段刷新，此时 HTTP 端口尚未监听，
+     * 自嗅探请求必然失败；直读还省去回环开销。BUILTIN_MCP_SERVER_URLS
+     * 仍可配置额外的外部 hub，嗅探结果与本地服务合并。
      */
     async refresh(): Promise<void> {
-        const hubUrls = this.getConfiguredHubUrls();
-        if (hubUrls.length === 0) {
-            this.servers.clear();
-            return;
-        }
-
         const next = new Map<string, BuiltinMcpServer>();
 
-        for (const hubUrl of hubUrls) {
+        const localServers = this.buildLocalServers();
+        for (const server of localServers) {
+            next.set(server.id, server);
+        }
+        const localUrls = new Set(localServers.map((server) => server.url));
+
+        let sortOrder = localServers.length;
+        for (const hubUrl of this.getConfiguredHubUrls()) {
             try {
                 const catalog = await this.fetchCatalog(hubUrl);
-                for (const [index, item] of catalog.entries()) {
-                    const server = await this.buildServer(hubUrl, item, index);
+                for (const item of catalog) {
+                    // 外部 hub 配置成指向自身时会与本地服务重复，跳过
+                    if (localUrls.has(item.url)) {
+                        continue;
+                    }
+                    const server = await this.buildServer(hubUrl, item, sortOrder);
                     next.set(server.id, server);
+                    sortOrder += 1;
                 }
             } catch (error) {
                 this.logger.warn(
@@ -158,6 +172,53 @@ export class BuiltinMcpRegistryService implements OnApplicationBootstrap {
 
         this.servers = next;
         this.logger.log(`Built-in MCP registry refreshed: ${next.size} service(s)`);
+    }
+
+    /**
+     * 从进程内置 hub 直读服务与工具，构建内存态服务对象。
+     *
+     * URL 指向本进程的回环 MCP 端点（/api/mcp-hub/mcp/:serviceKey），
+     * 供聊天运行时、工作流与小智网关等消费方按 URL 调用；
+     * ID 由服务 key 派生（而非 URL 哈希），端口或前缀变化时保持稳定。
+     */
+    private buildLocalServers(): BuiltinMcpServer[] {
+        const baseUrl = getLocalMcpHubBaseUrl();
+        const now = new Date().toISOString();
+
+        return this.mcpHubService.listServices().map((service, index) => {
+            const id = this.buildLocalServerId(service.key);
+            return {
+                id,
+                key: service.key,
+                name: service.name,
+                alias: service.name,
+                description: service.description,
+                icon: "",
+                type: McpServerType.SYSTEM,
+                url: `${baseUrl}/mcp/${service.key}`,
+                communicationType: McpCommunicationType.STREAMABLEHTTP,
+                headers: {},
+                providerName: BUILTIN_MCP_PROVIDER_NAME,
+                providerUrl: baseUrl.slice(0, 100),
+                sortOrder: index,
+                connectable: true,
+                connectError: "",
+                isDisabled: false,
+                isBuiltin: true as const,
+                tools: service.tools.map((tool) => ({
+                    id: `${id}:${tool.name}`,
+                    name: tool.name,
+                    title: tool.title,
+                    description: tool.description,
+                    inputSchema: tool.inputSchema as Record<string, unknown>,
+                    mcpServerId: id,
+                    createdAt: now,
+                    updatedAt: now,
+                })),
+                createdAt: now,
+                updatedAt: now,
+            };
+        });
     }
 
     /**
@@ -257,6 +318,14 @@ export class BuiltinMcpRegistryService implements OnApplicationBootstrap {
 
     private buildServerId(url: string): string {
         const hash = createHash("sha1").update(url).digest("hex").slice(0, 24);
+        return `${BUILTIN_MCP_ID_PREFIX}${hash}`;
+    }
+
+    /**
+     * 进程内置服务的ID由服务 key 派生，与部署端口/前缀无关
+     */
+    private buildLocalServerId(serviceKey: string): string {
+        const hash = createHash("sha1").update(`local:${serviceKey}`).digest("hex").slice(0, 24);
         return `${BUILTIN_MCP_ID_PREFIX}${hash}`;
     }
 

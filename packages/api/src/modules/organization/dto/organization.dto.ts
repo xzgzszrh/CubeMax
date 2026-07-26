@@ -173,6 +173,15 @@ export class UpdateXiaozhiAgentConfigDto {
     config: Record<string, unknown>;
 }
 
+export class UpdateConfigLocksDto {
+    @IsArray()
+    @ArrayMaxSize(20)
+    @ArrayUnique()
+    @IsString({ each: true })
+    @MaxLength(40, { each: true })
+    keys: string[];
+}
+
 export class LinkBuildingAgentDto {
     @IsOptional()
     @IsUUID(4, { message: "智能体ID格式不正确" })

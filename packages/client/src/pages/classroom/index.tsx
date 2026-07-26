@@ -76,6 +76,8 @@ const ClassroomPage = () => {
   const canManageAssets = permissions.includes(OrganizationPermission.ASSET_MANAGE);
   const canReadMembers = permissions.includes(OrganizationPermission.MEMBER_READ);
   const canManage = canManageAssets || !activeOrganizationId;
+  // 学生只保留「方糖猫」页：受限标签不渲染，也就不会发出无权限的请求。
+  const effectiveTab = !canManage && tab !== "devices" ? "devices" : tab;
 
   const { data: agents = [] } = useXiaozhiAgentsQuery({ enabled: Boolean(context) });
 
@@ -135,11 +137,13 @@ const ClassroomPage = () => {
           </Select>
         </div>
 
-        <Tabs value={tab} onValueChange={(value) => setTab(value as ClassroomTab)}>
+        <Tabs value={effectiveTab} onValueChange={(value) => setTab(value as ClassroomTab)}>
           <TabsList variant="line">
-            <TabsTrigger value="activities">
-              <Presentation /> 课堂活动
-            </TabsTrigger>
+            {canManage ? (
+              <TabsTrigger value="activities">
+                <Presentation /> 课堂活动
+              </TabsTrigger>
+            ) : null}
             <TabsTrigger value="devices">
               <Bot /> 方糖猫
             </TabsTrigger>
@@ -155,9 +159,11 @@ const ClassroomPage = () => {
             ) : null}
           </TabsList>
 
-          <TabsContent value="activities" className="pt-2">
-            <ClassroomSetting canManage={canManage} />
-          </TabsContent>
+          {canManage ? (
+            <TabsContent value="activities" className="pt-2">
+              <ClassroomSetting canManage={canManage} />
+            </TabsContent>
+          ) : null}
 
           <TabsContent value="devices" className="pt-2">
             <XiaozhiDevicePanel

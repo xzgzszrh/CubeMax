@@ -1,6 +1,5 @@
 packages:
   - packages/*
-  - mcp-server
   - extensions/*
   - packages/@buildingai/*
   - packages/@flowgram.ai/*

@@ -1,20 +1,20 @@
-import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
-
-import type { BuildingAiMcpService } from "../types.js";
-
-const TAVILY_API_KEY = process.env.TAVILY_API_KEY ?? "";
-const TAVILY_BASE_URL = process.env.TAVILY_BASE_URL ?? "https://api.tavily.com";
+import type { BuildingAiMcpService, McpToolCallResult } from "../mcp-hub.types";
 
 function getTavilyApiKey(): string {
-    if (!TAVILY_API_KEY) {
+    const apiKey = process.env.TAVILY_API_KEY ?? "";
+    if (!apiKey) {
         throw new Error("未配置 TAVILY_API_KEY 环境变量");
     }
-    return TAVILY_API_KEY;
+    return apiKey;
+}
+
+function getTavilyBaseUrl(): string {
+    return process.env.TAVILY_BASE_URL ?? "https://api.tavily.com";
 }
 
 async function tavilyPost<T>(endpoint: string, body: Record<string, unknown>): Promise<T> {
     const apiKey = getTavilyApiKey();
-    const response = await fetch(`${TAVILY_BASE_URL}${endpoint}`, {
+    const response = await fetch(`${getTavilyBaseUrl()}${endpoint}`, {
         method: "POST",
         headers: {
             "Content-Type": "application/json",
@@ -60,7 +60,7 @@ interface TavilySearchResponse {
     response_time: number;
 }
 
-function formatSearchResults(data: TavilySearchResponse): CallToolResult {
+function formatSearchResults(data: TavilySearchResponse): McpToolCallResult {
     const lines: string[] = [];
 
     if (data.answer) {
@@ -111,7 +111,7 @@ interface TavilyExtractResponse {
     response_time: number;
 }
 
-function formatExtractResults(data: TavilyExtractResponse): CallToolResult {
+function formatExtractResults(data: TavilyExtractResponse): McpToolCallResult {
     const lines: string[] = [];
 
     lines.push(`## 提取内容（${data.results.length} 个来源）\n`);
@@ -217,7 +217,7 @@ export const tavilyService: BuildingAiMcpService = {
                 required: ["query"],
                 additionalProperties: false,
             },
-            async execute(args): Promise<CallToolResult> {
+            async execute(args): Promise<McpToolCallResult> {
                 const query = args.query;
                 if (typeof query !== "string" || !query.trim()) {
                     throw new Error('“搜索关键词”必填，且不能为空');
@@ -279,7 +279,7 @@ export const tavilyService: BuildingAiMcpService = {
                 required: ["urls"],
                 additionalProperties: false,
             },
-            async execute(args): Promise<CallToolResult> {
+            async execute(args): Promise<McpToolCallResult> {
                 const urlsRaw = args.urls;
                 if (!urlsRaw) {
                     throw new Error('“网页地址”必填');

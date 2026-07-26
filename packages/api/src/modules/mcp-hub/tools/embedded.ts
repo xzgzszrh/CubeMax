@@ -1,6 +1,9 @@
-import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
-
-import type { BuildingAiMcpService, JsonSchemaObject, McpToolDescriptor } from "../types.js";
+import type {
+    BuildingAiMcpService,
+    JsonSchemaObject,
+    McpToolCallResult,
+    McpToolDescriptor,
+} from "../mcp-hub.types";
 
 const stubOutputSchema: JsonSchemaObject = {
     type: "object",
@@ -19,7 +22,7 @@ function createStubResult(
     tool: string,
     title: string,
     args: Record<string, unknown>,
-): CallToolResult {
+): McpToolCallResult {
     const message = `“${title}”目前仅为占位工具，尚未执行任何硬件操作。`;
 
     return {

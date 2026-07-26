@@ -1,5 +1,5 @@
-import { getRequiredNumber } from "../args.js";
-import type { BuildingAiMcpService } from "../types.js";
+import type { BuildingAiMcpService } from "../mcp-hub.types";
+import { getRequiredNumber } from "../utils/tool-args.util";
 
 function createNumberResultText(a: number, operator: string, b: number, result: number): string {
     return `${a} ${operator} ${b} = ${result}`;
