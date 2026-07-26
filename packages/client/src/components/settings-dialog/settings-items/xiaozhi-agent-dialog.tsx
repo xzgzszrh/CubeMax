@@ -1,7 +1,10 @@
 import {
   useBindXiaozhiDeviceMutation,
   useDeleteXiaozhiAgentMutation,
+  useLinkBuildingAgentMutation,
+  useMyAgentsInfiniteQuery,
   useRenameXiaozhiAgentMutation,
+  useSyncLinkedBuildingAgentMutation,
   useUnbindXiaozhiDeviceMutation,
   useUpdateXiaozhiAgentConfigMutation,
   useUpdateXiaozhiDeviceAliasMutation,
@@ -11,9 +14,8 @@ import {
   useXiaozhiChatMessagesQuery,
   useXiaozhiDevicesQuery,
   type XiaozhiAgent,
-  type XiaozhiAgentConfig,
-  type XiaozhiAgentEditorData,
 } from "@buildingai/services/web";
+import { useAuthStore } from "@buildingai/stores";
 import { Badge } from "@buildingai/ui/components/ui/badge";
 import { Button } from "@buildingai/ui/components/ui/button";
 import {
@@ -25,6 +27,13 @@ import {
 } from "@buildingai/ui/components/ui/dialog";
 import { Input } from "@buildingai/ui/components/ui/input";
 import { Label } from "@buildingai/ui/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@buildingai/ui/components/ui/select";
 import { Switch } from "@buildingai/ui/components/ui/switch";
 import {
   Table,
@@ -38,12 +47,16 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@buildingai/ui/compone
 import {
   ArrowLeft,
   Cpu,
+  Link2,
   LoaderCircle,
   MessageSquare,
   Plus,
+  RefreshCw,
   Save,
   SlidersHorizontal,
+  Sparkles,
   Trash2,
+  Unlink,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -74,8 +87,10 @@ export function XiaozhiAgentDialog({
   onOpenChange: (open: boolean) => void;
 }) {
   const agentId = agent?.id ?? null;
+  const { userInfo } = useAuthStore((state) => state.auth);
   const [tab, setTab] = useState("devices");
   const [verificationCode, setVerificationCode] = useState("");
+  const [linkAgentId, setLinkAgentId] = useState("");
   const [aliasDraft, setAliasDraft] = useState<{ deviceId: number; value: string } | null>(null);
   const [form, setForm] = useState<EditorForm | null>(null);
   const [agentName, setAgentName] = useState("");
@@ -103,13 +118,16 @@ export function XiaozhiAgentDialog({
     setAliasDraft(null);
     setActiveChatId(null);
     setForm(null);
+    setLinkAgentId("");
   }, [open, agentId]);
 
   useEffect(() => {
     if (!editorData || !agent) return;
     setForm(configToForm(editorData.config, editorData));
     setAgentName(editorData.config.agent_name || agent.name);
-  }, [agent, editorData]);
+    // agent 对象在列表每次刷新后都会换引用，只按 id 初始化，避免编辑中被重置。
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [agentId, editorData]);
 
   const bindDevice = useBindXiaozhiDeviceMutation({
     onSuccess: () => {
@@ -131,6 +149,25 @@ export function XiaozhiAgentDialog({
   });
   const renameAgent = useRenameXiaozhiAgentMutation();
   const updateConfig = useUpdateXiaozhiAgentConfigMutation();
+  // 学生本人（被分发者）也可以绑定自己的 BuildingAI 智能体。
+  const canLink = canManage || (Boolean(userInfo?.id) && agent?.assignedUserId === userInfo?.id);
+  const { data: myAgentsData, isLoading: myAgentsLoading } = useMyAgentsInfiniteQuery(
+    { pageSize: 50 },
+    { enabled: open && tab === "link" && canLink },
+  );
+  const myAgents = myAgentsData?.pages.flatMap((page) => page.items) || [];
+  const linkAgent = useLinkBuildingAgentMutation({
+    onSuccess: () => {
+      toast.success("已绑定并同步角色设定");
+      setLinkAgentId("");
+    },
+  });
+  const unlinkAgent = useLinkBuildingAgentMutation({
+    onSuccess: () => toast.success("已解除绑定"),
+  });
+  const syncLinkedAgent = useSyncLinkedBuildingAgentMutation({
+    onSuccess: () => toast.success("角色设定已重新同步"),
+  });
   const deleteAgent = useDeleteXiaozhiAgentMutation({
     onSuccess: () => {
       toast.success("智能体已删除");
@@ -200,6 +237,9 @@ export function XiaozhiAgentDialog({
             </TabsTrigger>
             <TabsTrigger value="history">
               <MessageSquare /> 对话记录
+            </TabsTrigger>
+            <TabsTrigger value="link">
+              <Sparkles /> AI 智能体
             </TabsTrigger>
           </TabsList>
 
@@ -492,6 +532,103 @@ export function XiaozhiAgentDialog({
                 )}
               </div>
             )}
+          </TabsContent>
+          <TabsContent value="link">
+            <div className="space-y-4">
+              <p className="text-muted-foreground text-xs">
+                把你在 BuildingAI 创建的智能体绑定到这只方糖猫：绑定后会用该智能体的角色设定覆盖方糖猫的自定义角色；
+                如果这只方糖猫已建立 MCP 接入连接，该智能体配置的 MCP 工具也会自动提供给设备使用。
+                在智能体编辑页修改后，回到这里点「重新同步」即可生效。
+              </p>
+
+              {agent.linkedAgentId ? (
+                <div className="flex items-center gap-3 border p-3">
+                  <div className="bg-muted flex size-9 shrink-0 items-center justify-center rounded-md">
+                    <Sparkles className="size-4" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate font-medium">
+                      {agent.linkedAgentName || "已绑定智能体"}
+                    </p>
+                    <p className="text-muted-foreground text-xs">
+                      上次同步：{formatDateTime(agent.linkedAgentSyncedAt)}
+                    </p>
+                  </div>
+                  {canLink ? (
+                    <div className="flex shrink-0 items-center gap-1">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        loading={syncLinkedAgent.isPending}
+                        onClick={() => syncLinkedAgent.mutate(agent.id)}
+                      >
+                        <RefreshCw /> 重新同步
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        loading={unlinkAgent.isPending}
+                        onClick={() =>
+                          unlinkAgent.mutate({ agentId: agent.id, buildingAgentId: null })
+                        }
+                      >
+                        <Unlink /> 解除绑定
+                      </Button>
+                    </div>
+                  ) : null}
+                </div>
+              ) : (
+                <div className="flex min-h-20 flex-col items-center justify-center gap-1 border py-4 text-center">
+                  <Link2 className="text-muted-foreground size-5" />
+                  <p className="text-sm font-medium">尚未绑定智能体</p>
+                </div>
+              )}
+
+              {canLink ? (
+                <div className="flex items-end gap-2">
+                  <div className="min-w-0 flex-1">
+                    <Label className="mb-1.5">选择我创建的智能体</Label>
+                    <Select
+                      value={linkAgentId}
+                      disabled={myAgentsLoading}
+                      onValueChange={setLinkAgentId}
+                    >
+                      <SelectTrigger>
+                        <SelectValue
+                          placeholder={myAgentsLoading ? "正在加载…" : "选择智能体"}
+                        />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {myAgents.map((item) => (
+                          <SelectItem value={item.id} key={item.id}>
+                            {item.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <Button
+                    loading={linkAgent.isPending}
+                    disabled={!linkAgentId}
+                    onClick={() =>
+                      linkAgent.mutate({ agentId: agent.id, buildingAgentId: linkAgentId })
+                    }
+                  >
+                    <Link2 /> 绑定并同步
+                  </Button>
+                </div>
+              ) : (
+                <p className="text-muted-foreground text-xs">
+                  只有管理员或这只方糖猫分发到的学生本人可以绑定智能体。
+                </p>
+              )}
+
+              {canLink && !myAgentsLoading && !myAgents.length ? (
+                <p className="text-muted-foreground text-xs">
+                  你还没有创建过智能体，先到左侧「智能体」页面创建一个，填写角色设定后再来绑定。
+                </p>
+              ) : null}
+            </div>
           </TabsContent>
         </Tabs>
       </DialogContent>

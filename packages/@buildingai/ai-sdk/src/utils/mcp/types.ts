@@ -87,6 +87,10 @@ export interface McpClient {
      */
     listTools(): Promise<McpToolInfo[]>;
     /**
+     * 直接调用一个 MCP 工具，返回原始调用结果
+     */
+    callTool(name: string, args: Record<string, unknown>): Promise<unknown>;
+    /**
      * 关闭客户端连接
      */
     close(): Promise<void>;

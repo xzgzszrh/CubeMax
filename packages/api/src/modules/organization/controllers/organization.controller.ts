@@ -37,6 +37,7 @@ import {
     BindXiaozhiDeviceDto,
     ChatHistoryQueryDto,
     CreateOrganizationDto,
+    LinkBuildingAgentDto,
     OrganizationSearchDto,
     ReconnectXiaozhiAccountDto,
     RenameXiaozhiAgentDto,
@@ -237,6 +238,30 @@ export class OrganizationController {
             agentId,
             dto.assignedUserId,
         );
+    }
+
+    @Patch("xiaozhi/agents/:agentId/building-agent")
+    linkBuildingAgent(
+        @Playground() user: UserPlayground,
+        @Headers("x-organization-id") organizationId: string | undefined,
+        @Param("agentId", UUIDValidationPipe) agentId: string,
+        @Body() dto: LinkBuildingAgentDto,
+    ) {
+        return this.xiaozhiService.linkBuildingAgent(
+            user.id,
+            organizationId,
+            agentId,
+            dto.agentId || null,
+        );
+    }
+
+    @Post("xiaozhi/agents/:agentId/building-agent/sync")
+    syncLinkedBuildingAgent(
+        @Playground() user: UserPlayground,
+        @Headers("x-organization-id") organizationId: string | undefined,
+        @Param("agentId", UUIDValidationPipe) agentId: string,
+    ) {
+        return this.xiaozhiService.syncLinkedBuildingAgent(user.id, organizationId, agentId);
     }
 
     @Delete("xiaozhi/agents/:agentId")

@@ -107,6 +107,9 @@ export type XiaozhiAgent = {
     onlineDeviceCount: number;
     lastConnectedAt: string | null;
     assignedUserId: string | null;
+    linkedAgentId: string | null;
+    linkedAgentName: string | null;
+    linkedAgentSyncedAt: string | null;
 };
 
 export type XiaozhiDevice = {
@@ -823,6 +826,40 @@ export function useExecuteXiaozhiQuickCommandMutation(options?: any) {
         mutationFn: (commandId) =>
             apiHttpClient.post(
                 `/organizations/xiaozhi/quick-commands/${commandId}/execute`,
+                undefined,
+                { headers: organizationHeaders() },
+            ),
+        ...options,
+        onSuccess: (...args: any[]) => {
+            queryClient.invalidateQueries({ queryKey: ["xiaozhi"] });
+            options?.onSuccess?.(...args);
+        },
+    });
+}
+
+export function useLinkBuildingAgentMutation(options?: any) {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: (data: { agentId: string; buildingAgentId: string | null }) =>
+            apiHttpClient.patch(
+                `/organizations/xiaozhi/agents/${data.agentId}/building-agent`,
+                { agentId: data.buildingAgentId },
+                { headers: organizationHeaders() },
+            ),
+        ...options,
+        onSuccess: (...args: any[]) => {
+            queryClient.invalidateQueries({ queryKey: ["xiaozhi"] });
+            options?.onSuccess?.(...args);
+        },
+    });
+}
+
+export function useSyncLinkedBuildingAgentMutation(options?: any) {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: (agentId: string) =>
+            apiHttpClient.post(
+                `/organizations/xiaozhi/agents/${agentId}/building-agent/sync`,
                 undefined,
                 { headers: organizationHeaders() },
             ),

@@ -68,6 +68,19 @@ export async function createMcpClient(options: CreateMcpClientOptions): Promise<
                 inputSchema: tool.inputSchema as Record<string, unknown> | undefined,
             }));
         },
+        callTool: async (toolName: string, args: Record<string, unknown>): Promise<unknown> => {
+            // AI SDK 的 MCP 客户端不直接暴露 tools/call；通过工具集里的
+            // execute 触发同一条 JSON-RPC 调用。
+            const toolSet = (await client.tools()) as unknown as Record<
+                string,
+                { execute?: (input: unknown, options: unknown) => Promise<unknown> }
+            >;
+            const tool = toolSet[toolName];
+            if (!tool || typeof tool.execute !== "function") {
+                throw new Error(`MCP 工具不存在: ${toolName}`);
+            }
+            return tool.execute(args, { toolCallId: toolName, messages: [] });
+        },
         close: async () => await client.close(),
     };
 }

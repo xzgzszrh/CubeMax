@@ -147,7 +147,7 @@ export default function ClassroomDisplayPage() {
 
   if (loading) {
     return (
-      <main className="flex min-h-dvh flex-col items-center justify-center gap-3 bg-slate-950 text-slate-200">
+      <main className="flex min-h-dvh flex-col items-center justify-center gap-3 bg-background text-foreground">
         <RefreshCw className="size-7 animate-spin" />
         <span>正在加载课堂大屏</span>
       </main>
@@ -155,7 +155,7 @@ export default function ClassroomDisplayPage() {
   }
   if (error || !data) {
     return (
-      <main className="flex min-h-dvh flex-col items-center justify-center gap-3 bg-slate-950 text-slate-200">
+      <main className="flex min-h-dvh flex-col items-center justify-center gap-3 bg-background text-foreground">
         <Clock3 className="size-7" />
         <strong>{error || "课堂大屏不存在"}</strong>
       </main>
@@ -172,7 +172,7 @@ export default function ClassroomDisplayPage() {
 
   return (
     <main
-      className="flex min-h-dvh flex-col gap-6 bg-slate-950 p-6 text-slate-100 lg:p-10"
+      className="flex min-h-dvh flex-col gap-6 bg-background p-6 text-foreground lg:p-10"
       style={accentStyle}
     >
       <header className="flex flex-wrap items-center gap-4">
@@ -185,7 +185,7 @@ export default function ClassroomDisplayPage() {
           </span>
           <div className="leading-tight">
             <strong className="block">方糖猫课堂</strong>
-            <span className="text-xs text-slate-400">
+            <span className="text-muted-foreground text-xs">
               {live ? "实时互动" : started ? "活动已结束" : "等待开始"}
             </span>
           </div>
@@ -193,7 +193,7 @@ export default function ClassroomDisplayPage() {
         <div className="min-w-0 flex-1 text-center">
           <h1 className="truncate text-2xl font-bold lg:text-4xl">{config.title}</h1>
           {config.subtitle ? (
-            <p className="mt-1 truncate text-sm text-slate-400 lg:text-base">{config.subtitle}</p>
+            <p className="mt-1 truncate text-muted-foreground text-sm lg:text-base">{config.subtitle}</p>
           ) : null}
         </div>
         <div className="flex items-center gap-4">
@@ -227,7 +227,7 @@ export default function ClassroomDisplayPage() {
       </header>
 
       {!started ? (
-        <section className="flex flex-1 flex-col items-center justify-center gap-4 text-slate-400">
+        <section className="flex flex-1 flex-col items-center justify-center text-muted-foreground gap-4">
           <Radio className="size-9" />
           <h2 className="text-xl font-medium">等待老师开始活动</h2>
         </section>
@@ -245,7 +245,7 @@ export default function ClassroomDisplayPage() {
                 className={
                   event
                     ? "flex items-center gap-3 rounded-xl border p-4"
-                    : "flex items-center gap-3 rounded-xl border border-slate-800 bg-slate-900/60 p-4"
+                    : "flex items-center gap-3 rounded-xl border border-border bg-card p-4"
                 }
                 style={
                   event
@@ -264,7 +264,7 @@ export default function ClassroomDisplayPage() {
                     style={{ color: "var(--display-accent)" }}
                   />
                 ) : (
-                  <Clock3 className="size-6 shrink-0 text-slate-500" />
+                  <Clock3 className="size-6 shrink-0 text-muted-foreground" />
                 )}
                 <div className="min-w-0 flex-1">
                   <strong className="block truncate">
@@ -272,7 +272,7 @@ export default function ClassroomDisplayPage() {
                       ? config.completionText.replaceAll("{agent}", target.agentName)
                       : target.agentName}
                   </strong>
-                  <small className="block truncate text-slate-400">
+                  <small className="block text-muted-foreground truncate">
                     {event ? event.summary : "进行中"}
                   </small>
                 </div>
@@ -287,7 +287,7 @@ export default function ClassroomDisplayPage() {
 
       {started && config.layout === "leaderboard" ? (
         <section className="flex flex-1 flex-col gap-1.5">
-          <div className="grid grid-cols-[3rem_1fr_7rem_5rem] gap-2 px-4 pb-1 text-xs text-slate-500">
+          <div className="grid grid-cols-[3rem_1fr_7rem_5rem] gap-2 px-4 pb-1 text-muted-foreground text-xs">
             <span>排名</span>
             <span>智能体</span>
             <span>完成时间</span>
@@ -295,7 +295,7 @@ export default function ClassroomDisplayPage() {
           </div>
           {entries.map(({ target, event }, index) => (
             <article
-              className="grid grid-cols-[3rem_1fr_7rem_5rem] items-center gap-2 rounded-lg border border-slate-800 bg-slate-900/60 px-4 py-2.5"
+              className="grid grid-cols-[3rem_1fr_7rem_5rem] items-center gap-2 rounded-lg border border-border bg-card px-4 py-2.5"
               style={
                 event
                   ? {
@@ -316,10 +316,10 @@ export default function ClassroomDisplayPage() {
                     style={{ color: "var(--display-accent)" }}
                   />
                 ) : (
-                  <Clock3 className="size-5 shrink-0 text-slate-500" />
+                  <Clock3 className="size-5 shrink-0 text-muted-foreground" />
                 )}
                 <strong className="truncate">{target.agentName}</strong>
-                <small className="truncate text-slate-400">{event?.summary || "进行中"}</small>
+                <small className="text-muted-foreground truncate">{event?.summary || "进行中"}</small>
               </div>
               <time className="font-mono text-sm">
                 {event ? formatTime(event.occurredAt) : "-"}
@@ -339,7 +339,7 @@ export default function ClassroomDisplayPage() {
           {data.events.length ? (
             data.events.map((event) => (
               <article
-                className="flex items-center gap-3 rounded-lg border border-slate-800 bg-slate-900/60 px-4 py-2.5"
+                className="flex items-center gap-3 rounded-lg border border-border bg-card px-4 py-2.5"
                 style={
                   config.showRecent && event.id === latestEventId
                     ? { boxShadow: "0 0 0 2px var(--display-accent)" }
@@ -347,7 +347,7 @@ export default function ClassroomDisplayPage() {
                 }
                 key={event.id}
               >
-                <time className="w-20 shrink-0 font-mono text-sm text-slate-400">
+                <time className="w-20 shrink-0 font-mono text-muted-foreground text-sm">
                   {formatTime(event.occurredAt)}
                 </time>
                 <CheckCircle2
@@ -358,7 +358,7 @@ export default function ClassroomDisplayPage() {
                   <strong className="block truncate">
                     {config.completionText.replaceAll("{agent}", event.agentName)}
                   </strong>
-                  <p className="truncate text-sm text-slate-400">{event.summary}</p>
+                  <p className="truncate text-muted-foreground text-sm">{event.summary}</p>
                 </div>
                 {config.showScore && event.score != null ? (
                   <em className="font-mono text-lg not-italic">{event.score}</em>
@@ -366,7 +366,7 @@ export default function ClassroomDisplayPage() {
               </article>
             ))
           ) : (
-            <div className="flex flex-1 flex-col items-center justify-center gap-4 text-slate-400">
+            <div className="flex flex-1 flex-col items-center justify-center text-muted-foreground gap-4">
               <Clock3 className="size-8" />
               <h2 className="text-xl font-medium">等待第一个完成通知</h2>
             </div>
@@ -374,7 +374,7 @@ export default function ClassroomDisplayPage() {
         </section>
       ) : null}
 
-      <footer className="flex items-center justify-between text-sm text-slate-500">
+      <footer className="flex items-center text-muted-foreground justify-between text-sm">
         <span>{interaction.name}</span>
         <span>{live ? "完成状态自动更新" : started ? "最终结果" : ""}</span>
       </footer>

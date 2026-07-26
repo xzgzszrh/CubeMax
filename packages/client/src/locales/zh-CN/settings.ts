@@ -35,7 +35,6 @@ export default {
       label: "账户",
       profile: "账户",
       workspace: "工作空间",
-      classroom: "课堂互动",
       wallet: "我的积分",
       subscribe: "订阅管理",
       redeemCardKey: "卡密兑换",

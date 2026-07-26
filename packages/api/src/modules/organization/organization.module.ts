@@ -1,5 +1,8 @@
 import { TypeOrmModule } from "@buildingai/db/@nestjs/typeorm";
 import {
+    Agent,
+    AiMcpServer,
+    AiMcpTool,
     ClassroomEvent,
     ClassroomInteraction,
     Organization,
@@ -12,6 +15,7 @@ import {
     XiaozhiQuickCommand,
     XiaozhiScene,
 } from "@buildingai/db/entities";
+import { AiMcpModule } from "@modules/ai/mcp/ai-mcp.module";
 import { UserModule } from "@modules/user/user.module";
 import { Module } from "@nestjs/common";
 
@@ -26,6 +30,9 @@ import { XiaozhiService } from "./services/xiaozhi.service";
 @Module({
     imports: [
         TypeOrmModule.forFeature([
+            Agent,
+            AiMcpServer,
+            AiMcpTool,
             Organization,
             OrganizationMember,
             User,
@@ -39,6 +46,7 @@ import { XiaozhiService } from "./services/xiaozhi.service";
             ClassroomEvent,
         ]),
         UserModule,
+        AiMcpModule,
     ],
     controllers: [OrganizationController, ClassroomPublicController],
     providers: [

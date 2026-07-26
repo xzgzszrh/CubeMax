@@ -26,6 +26,7 @@ import ConsoleLayout from "../layouts/console";
 import DynamicHomePage from "../pages";
 import AppIframePage from "../pages/apps/[identifier]";
 import ChatPage from "../pages/chat";
+import ClassroomPage from "../pages/classroom";
 import ClassroomDisplayPage from "../pages/classroom-display";
 import { LoginPage } from "../pages/login";
 import { OAuthCallbackPage } from "../pages/login/oauth-callback";
@@ -116,6 +117,14 @@ export const router = createBrowserRouter([
           {
             path: "/chat/:id",
             element: <ChatPage />,
+          },
+          {
+            path: "/classroom",
+            element: (
+              <AuthGuard>
+                <ClassroomPage />
+              </AuthGuard>
+            ),
           },
           {
             path: "/apps",

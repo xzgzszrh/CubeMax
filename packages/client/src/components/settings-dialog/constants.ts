@@ -4,7 +4,6 @@ import {
   Hammer,
   Info,
   type LucideIcon,
-  Presentation,
   Settings,
   TicketPercent,
   UserCircle,
@@ -15,7 +14,6 @@ import {
 export type SettingsPage =
   | "profile"
   | "workspace"
-  | "classroom"
   | "general"
   | "wallet"
   | "redeemCDK"
@@ -41,7 +39,6 @@ export const SETTINGS_NAV: SettingsNavGroup[] = [
     items: [
       { id: "profile", name: "settings.nav.account.profile", icon: UserCircle },
       { id: "workspace", name: "settings.nav.account.workspace", icon: Building2 },
-      { id: "classroom", name: "settings.nav.account.classroom", icon: Presentation },
       { id: "wallet", name: "settings.nav.account.wallet", icon: Wallet },
       {
         id: "subscribe",

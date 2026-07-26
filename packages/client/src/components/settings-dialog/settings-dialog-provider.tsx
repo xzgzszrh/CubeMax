@@ -30,7 +30,6 @@ import { toast } from "sonner";
 
 import { SETTINGS_NAV, type SettingsPage } from "./constants";
 import {
-  ClassroomSetting,
   GeneralSetting,
   ProfileSetting,
   RedeemCDKSetting,
@@ -45,7 +44,6 @@ import PersonalizedSetting from "./settings-items/personalized-setting";
 const SETTINGS_COMPONENTS: Record<SettingsPage, React.ComponentType> = {
   profile: ProfileSetting,
   workspace: WorkspaceSetting,
-  classroom: ClassroomSetting,
   general: GeneralSetting,
   wallet: WalletSetting,
   redeemCDK: RedeemCDKSetting,

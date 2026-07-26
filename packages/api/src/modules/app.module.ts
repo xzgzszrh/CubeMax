@@ -61,7 +61,9 @@ function buildStaticExcludePaths(...paths: Array<string | undefined>): string[] 
         .filter((path): path is string => Boolean(path))
         .flatMap((path) => {
             const normalized = `/${path.replace(/^\/+|\/+$/g, "")}`;
-            return [normalized, `${normalized}/(.*)`];
+            // path-to-regexp v8 (Express 5) syntax — the legacy "(.*)" form
+            // throws "Missing parameter name" on every SPA fallback request.
+            return [normalized, `${normalized}/{*splat}`];
         });
 }
 

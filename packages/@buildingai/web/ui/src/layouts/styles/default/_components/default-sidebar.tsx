@@ -1,5 +1,10 @@
 import type { DecorateMenuItem } from "@buildingai/services/web";
-import { useConversationsQuery, useDecorateMenuQuery } from "@buildingai/services/web";
+import {
+  OrganizationRole,
+  useConversationsQuery,
+  useDecorateMenuQuery,
+  useWorkspaceContextQuery,
+} from "@buildingai/services/web";
 import { useAuthStore } from "@buildingai/stores";
 import {
   Sidebar,
@@ -13,7 +18,7 @@ import {
   SidebarRail,
 } from "@buildingai/ui/components/ui/sidebar";
 import { isEnabled } from "@buildingai/utils/is";
-import { ArrowUpRight, LayoutDashboard } from "lucide-react";
+import { ArrowUpRight, LayoutDashboard, Presentation } from "lucide-react";
 import { useEffect, useMemo } from "react";
 import * as React from "react";
 import { Link, useNavigate } from "react-router-dom";
@@ -105,6 +110,7 @@ function useMenuItems(
 export function DefaultAppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const navigate = useNavigate();
   const { userInfo } = useAuthStore((state) => state.auth);
+  const { isLogin } = useAuthStore((state) => state.authActions);
   const { data: menuConfig, isLoading: isMenuLoading } = useDecorateMenuQuery();
   const { data: conversationsData } = useConversationsQuery(
     { page: 1, pageSize: 6 },
@@ -133,6 +139,39 @@ export function DefaultAppSidebar({ ...props }: React.ComponentProps<typeof Side
   ) : undefined;
 
   const navMain = useMenuItems(menuConfig?.menus ?? [], conversationItems, homeAction);
+
+  // 老师/管理员在任一组织有教学身份时，课堂入口以底部「讲台」按钮呈现；
+  // 学生和个人空间用户仍从主导航的「课堂」项进入。
+  const { data: workspaceContext } = useWorkspaceContextQuery({ enabled: isLogin() });
+  const isTeacher = useMemo(
+    () =>
+      (workspaceContext?.organizations ?? []).some((organization) =>
+        organization.roles.some(
+          (role) =>
+            role === OrganizationRole.TEACHER ||
+            role === OrganizationRole.ADMIN ||
+            role === OrganizationRole.SCHOOL_ADMIN,
+        ),
+      ),
+    [workspaceContext],
+  );
+
+  // 课堂（方糖猫设备与课堂互动）是固定入口，不走后台装修菜单配置。
+  const navWithClassroom = useMemo<NavItem[]>(
+    () =>
+      isLogin() && !isTeacher
+        ? [
+            ...navMain,
+            {
+              id: "menu_classroom_fixed",
+              title: "课堂",
+              icon: "presentation",
+              path: "/classroom",
+            },
+          ]
+        : navMain,
+    [navMain, isLogin, isTeacher],
+  );
 
   const consoleLink = useMemo(() => {
     const menus = userInfo?.menus || [];
@@ -168,7 +207,7 @@ export function DefaultAppSidebar({ ...props }: React.ComponentProps<typeof Side
         <DefaultLogo />
       </SidebarHeader>
       <SidebarContent>
-        <DefaultNavMain items={navMain} isLoading={isMenuLoading} />
+        <DefaultNavMain items={navWithClassroom} isLoading={isMenuLoading} />
         {(menuConfig?.groups ?? [])
           .filter((group) => !group.isHidden)
           .map((group) => (
@@ -177,6 +216,16 @@ export function DefaultAppSidebar({ ...props }: React.ComponentProps<typeof Side
       </SidebarContent>
       <SidebarFooter className="in-data-[state=collapsed]:overflow-hidden">
         <SidebarMenu>
+          {isTeacher && (
+            <SidebarMenuItem>
+              <SidebarMenuButton className="h-9" tooltip="讲台" asChild>
+                <Link to="/classroom">
+                  <Presentation />
+                  <span className="whitespace-nowrap">讲台</span>
+                </Link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          )}
           {isEnabled(userInfo?.permissions) && (
             <SidebarMenuItem>
               <SidebarMenuButton className="h-9" asChild>

@@ -41,4 +41,13 @@ export class XiaozhiAgentBinding extends SoftDeleteBaseEntity {
     @Index()
     @Column({ type: "uuid", nullable: true, comment: "分发到的组织成员用户ID" })
     assignedUserId: string | null;
+
+    @Column({ type: "uuid", nullable: true, comment: "绑定的 BuildingAI 智能体ID" })
+    linkedAgentId: string | null;
+
+    @Column({ nullable: true, length: 255, comment: "绑定的 BuildingAI 智能体名称快照" })
+    linkedAgentName: string | null;
+
+    @Column({ type: "timestamptz", nullable: true, comment: "角色设定最近同步时间" })
+    linkedAgentSyncedAt: Date | null;
 }

@@ -173,6 +173,12 @@ export class UpdateXiaozhiAgentConfigDto {
     config: Record<string, unknown>;
 }
 
+export class LinkBuildingAgentDto {
+    @IsOptional()
+    @IsUUID(4, { message: "智能体ID格式不正确" })
+    agentId?: string | null;
+}
+
 export class SaveXiaozhiSceneDto {
     @IsString()
     @IsNotEmpty({ message: "场景名称不能为空" })

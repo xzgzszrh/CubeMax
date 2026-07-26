@@ -1,5 +1,6 @@
 import { InjectRepository } from "@buildingai/db/@nestjs/typeorm";
 import {
+    Agent,
     XiaozhiAccount,
     XiaozhiAccountStatus,
     XiaozhiAgentBinding,
@@ -22,6 +23,7 @@ import {
 } from "../constants/xiaozhi-mappers";
 import type { BindXiaozhiAccountDto } from "../dto/organization.dto";
 import { OrganizationService } from "./organization.service";
+import { XiaozhiMcpGatewayService } from "./xiaozhi-mcp.service";
 
 type LoginChallenge = {
     userId: string;
@@ -67,7 +69,10 @@ export class XiaozhiService {
         private readonly accountRepository: Repository<XiaozhiAccount>,
         @InjectRepository(XiaozhiAgentBinding)
         private readonly agentRepository: Repository<XiaozhiAgentBinding>,
+        @InjectRepository(Agent)
+        private readonly buildingAgentRepository: Repository<Agent>,
         private readonly organizationService: OrganizationService,
+        private readonly mcpGateway: XiaozhiMcpGatewayService,
     ) {}
 
     async getCaptcha(userId: string) {
@@ -615,6 +620,159 @@ export class XiaozhiService {
         if (typeof model === "string") agent.model = model;
         if (typeof voice === "string") agent.voice = voice;
         return this.agentRepository.save(agent);
+    }
+
+    /**
+     * Resolve an agent for the self-service link feature: managers can touch
+     * any workspace agent, and a student can touch the agent distributed to
+     * them — this is the one deliberate write path students have.
+     */
+    private async resolveLinkableAgent(
+        userId: string,
+        organizationId: string | null | undefined,
+        agentId: string,
+    ) {
+        const resolved = await this.resolveAgent(userId, organizationId, agentId);
+        const { access, agent } = resolved;
+        const canWrite =
+            access.type === "personal" ||
+            access.permissions.includes(OrganizationPermission.ASSET_MANAGE) ||
+            agent.assignedUserId === userId;
+        if (!canWrite) throw HttpErrorFactory.forbidden("该方糖猫没有分发给你");
+        return resolved;
+    }
+
+    /** Render the role prompt with its saved form-variable inputs. */
+    private composeCharacter(buildingAgent: Agent) {
+        const inputs = buildingAgent.formFieldsInputs || {};
+        const substitute = (text: string) =>
+            text.replace(/\{\{\s*([\w.-]+)\s*\}\}/g, (match, key: string) => {
+                const value = inputs[key];
+                return value === undefined || value === null ? match : String(value);
+            });
+
+        const parts = [substitute(buildingAgent.rolePrompt || "").trim()];
+        const opening = substitute(buildingAgent.openingStatement || "").trim();
+        if (opening) parts.push(`对话开始时，请先说：${opening}`);
+        return parts.filter(Boolean).join("\n\n").slice(0, 12000);
+    }
+
+    /**
+     * Push a character prompt upstream while keeping every other config field
+     * as-is (the upstream config endpoint expects the full object).
+     */
+    private async pushCharacter(
+        account: XiaozhiAccount,
+        agent: XiaozhiAgentBinding,
+        character: string,
+    ) {
+        const detail = await this.request<{ agent?: Record<string, unknown> }>(
+            account,
+            `/agents/${agent.upstreamAgentId}`,
+        );
+        const current = detail.data?.agent;
+        if (!current) throw HttpErrorFactory.badGateway("小智智能体详情响应不完整");
+        const config = Object.fromEntries(
+            [
+                "language",
+                "tts_voice",
+                "asr_speed",
+                "tts_speech_speed",
+                "tts_pitch",
+                "llm_model",
+                "memory_type",
+                "teen_mode",
+                "mcp_endpoints",
+                "knowledge_base_ids",
+            ].flatMap((key) => (key in current ? [[key, current[key]]] : [])),
+        );
+        await this.request(account, `/agents/${agent.upstreamAgentId}/config`, {
+            method: "POST",
+            body: { ...config, character },
+        });
+    }
+
+    /**
+     * Link (or unlink with a null id) a BuildingAI agent to this xiaozhi
+     * agent and immediately sync its role prompt into the device character.
+     */
+    async linkBuildingAgent(
+        userId: string,
+        organizationId: string | null | undefined,
+        agentId: string,
+        buildingAgentId: string | null,
+    ) {
+        const { agent, account } = await this.resolveLinkableAgent(
+            userId,
+            organizationId,
+            agentId,
+        );
+
+        if (!buildingAgentId) {
+            agent.linkedAgentId = null;
+            agent.linkedAgentName = null;
+            agent.linkedAgentSyncedAt = null;
+            const saved = await this.agentRepository.save(agent);
+            void this.mcpGateway.reloadAgentTools(agent.id);
+            return saved;
+        }
+
+        const buildingAgent = await this.buildingAgentRepository.findOne({
+            where: { id: buildingAgentId, createBy: userId },
+        });
+        if (!buildingAgent) {
+            throw HttpErrorFactory.notFound("智能体不存在，只能绑定自己创建的智能体");
+        }
+        const character = this.composeCharacter(buildingAgent);
+        if (!character) {
+            throw HttpErrorFactory.badRequest("该智能体还没有角色设定，请先在智能体编辑页填写");
+        }
+
+        await this.pushCharacter(account, agent, character);
+        agent.linkedAgentId = buildingAgent.id;
+        agent.linkedAgentName = buildingAgent.name;
+        agent.linkedAgentSyncedAt = new Date();
+        const saved = await this.agentRepository.save(agent);
+        // The linked agent's MCP servers ride along on the device's MCP
+        // connection; refresh the gateway's tool list in the background.
+        void this.mcpGateway.reloadAgentTools(agent.id);
+        return saved;
+    }
+
+    /** Re-push the linked BuildingAI agent's current role prompt. */
+    async syncLinkedBuildingAgent(
+        userId: string,
+        organizationId: string | null | undefined,
+        agentId: string,
+    ) {
+        const { agent, account } = await this.resolveLinkableAgent(
+            userId,
+            organizationId,
+            agentId,
+        );
+        if (!agent.linkedAgentId) {
+            throw HttpErrorFactory.badRequest("该方糖猫还没有绑定智能体");
+        }
+        const buildingAgent = await this.buildingAgentRepository.findOne({
+            where: { id: agent.linkedAgentId },
+        });
+        if (!buildingAgent) {
+            agent.linkedAgentId = null;
+            agent.linkedAgentName = null;
+            agent.linkedAgentSyncedAt = null;
+            await this.agentRepository.save(agent);
+            throw HttpErrorFactory.notFound("绑定的智能体已被删除，绑定已自动解除");
+        }
+        const character = this.composeCharacter(buildingAgent);
+        if (!character) {
+            throw HttpErrorFactory.badRequest("该智能体还没有角色设定，请先在智能体编辑页填写");
+        }
+        await this.pushCharacter(account, agent, character);
+        agent.linkedAgentName = buildingAgent.name;
+        agent.linkedAgentSyncedAt = new Date();
+        const saved = await this.agentRepository.save(agent);
+        void this.mcpGateway.reloadAgentTools(agent.id);
+        return saved;
     }
 
     async listAgentChats(

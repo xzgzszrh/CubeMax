@@ -1,5 +1,10 @@
+import { createMcpClient } from "@buildingai/ai-sdk";
 import { InjectRepository } from "@buildingai/db/@nestjs/typeorm";
 import {
+    Agent,
+    AiMcpServer,
+    AiMcpTool,
+    McpCommunicationType,
     XiaozhiAccount,
     XiaozhiAgentBinding,
     XiaozhiMcpConnection,
@@ -9,6 +14,7 @@ import {
 } from "@buildingai/db/entities";
 import { In, IsNull, Repository } from "@buildingai/db/typeorm";
 import { HttpErrorFactory } from "@buildingai/errors";
+import { BuiltinMcpRegistryService } from "@modules/ai/mcp/services/builtin-mcp-registry.service";
 import { Injectable, Logger, type OnModuleDestroy, type OnModuleInit } from "@nestjs/common";
 import { EventEmitter2 } from "@nestjs/event-emitter";
 import { createCipheriv, createDecipheriv, createHash, randomBytes } from "crypto";
@@ -181,6 +187,25 @@ type ConnectionSnapshot = {
     ownerUserId: string;
 };
 
+/** One BuildingAI MCP tool exposed to the device through this connection. */
+type ExposedTool = {
+    exposedName: string;
+    toolName: string;
+    server: {
+        id: string;
+        name: string;
+        url: string;
+        communicationType: string;
+        headers: Record<string, string> | null;
+    };
+    definition: {
+        name: string;
+        title?: string;
+        description?: string;
+        inputSchema: Record<string, unknown>;
+    };
+};
+
 type ConnectorState = {
     connectionId: string;
     cancelled: boolean;
@@ -189,7 +214,11 @@ type ConnectorState = {
     socket: GatewaySocket | null;
     snapshot: ConnectionSnapshot | null;
     settings: XiaozhiMcpToolSettingsValues;
+    exposedTools: Map<string, ExposedTool>;
 };
+
+/** Ceiling for one passthrough tools/call round trip. */
+const BUILDING_TOOL_CALL_TIMEOUT_MS = 30_000;
 
 /**
  * Long-lived MCP gateway. For every enabled connection it keeps a WebSocket
@@ -211,6 +240,15 @@ export class XiaozhiMcpGatewayService implements OnModuleInit, OnModuleDestroy {
         private readonly connectionRepository: Repository<XiaozhiMcpConnection>,
         @InjectRepository(XiaozhiMcpSettings)
         private readonly settingsRepository: Repository<XiaozhiMcpSettings>,
+        @InjectRepository(XiaozhiAgentBinding)
+        private readonly bindingRepository: Repository<XiaozhiAgentBinding>,
+        @InjectRepository(Agent)
+        private readonly buildingAgentRepository: Repository<Agent>,
+        @InjectRepository(AiMcpServer)
+        private readonly mcpServerRepository: Repository<AiMcpServer>,
+        @InjectRepository(AiMcpTool)
+        private readonly mcpToolRepository: Repository<AiMcpTool>,
+        private readonly builtinMcpRegistry: BuiltinMcpRegistryService,
         private readonly eventEmitter: EventEmitter2,
     ) {}
 
@@ -250,6 +288,7 @@ export class XiaozhiMcpGatewayService implements OnModuleInit, OnModuleDestroy {
             socket: null,
             snapshot: null,
             settings: { ...DEFAULT_TOOL_SETTINGS },
+            exposedTools: new Map(),
         };
         this.connectors.set(connectionId, state);
         void this.connectState(state);
@@ -374,6 +413,10 @@ export class XiaozhiMcpGatewayService implements OnModuleInit, OnModuleDestroy {
             ownerUserId: connection.ownerUserId,
         };
         state.settings = await this.loadSettings(connection.organizationId, connection.ownerUserId);
+        state.exposedTools = await this.loadExposedTools(
+            connection.agentBindingId,
+            state.settings.toolName,
+        );
         await this.updateStatus(
             connection.id,
             state.attempt === 0
@@ -503,6 +546,201 @@ export class XiaozhiMcpGatewayService implements OnModuleInit, OnModuleDestroy {
         this.sendMessage(socket, { id, error: { code, message } });
     }
 
+    /**
+     * Load the BuildingAI MCP tools this connection exposes: the tools cached
+     * for every MCP server configured on the BuildingAI agent that is linked
+     * to this cubecat. No link (or no servers) means no extra tools.
+     */
+    private async loadExposedTools(
+        agentBindingId: string,
+        classroomToolName: string,
+    ): Promise<Map<string, ExposedTool>> {
+        const exposed = new Map<string, ExposedTool>();
+        try {
+            const binding = await this.bindingRepository.findOne({
+                where: { id: agentBindingId },
+            });
+            if (!binding?.linkedAgentId) return exposed;
+            const buildingAgent = await this.buildingAgentRepository.findOne({
+                where: { id: binding.linkedAgentId },
+            });
+            const serverIds = (buildingAgent?.mcpServerIds || []).filter(Boolean);
+            if (!serverIds.length) return exposed;
+
+            // Names must stay unique across servers and never shadow the
+            // classroom tool; suffix duplicates deterministically.
+            const addTool = (
+                server: ExposedTool["server"],
+                toolName: string,
+                description: string | null | undefined,
+                inputSchema: unknown,
+            ) => {
+                let exposedName = toolName;
+                let suffix = 2;
+                while (exposedName === classroomToolName || exposed.has(exposedName)) {
+                    exposedName = `${toolName}_${suffix}`;
+                    suffix += 1;
+                }
+                exposed.set(exposedName, {
+                    exposedName,
+                    toolName,
+                    server,
+                    definition: {
+                        name: exposedName,
+                        title: toolName,
+                        description: description || `${server.name} 提供的工具`,
+                        inputSchema:
+                            inputSchema && typeof inputSchema === "object"
+                                ? (inputSchema as Record<string, unknown>)
+                                : { type: "object", properties: {} },
+                    },
+                });
+            };
+
+            // 平台内置 MCP 服务（内存注册表）与用户配置的服务分开装载。
+            const builtinIds = serverIds.filter((id) => this.builtinMcpRegistry.isBuiltinId(id));
+            const databaseIds = serverIds.filter(
+                (id) => !this.builtinMcpRegistry.isBuiltinId(id),
+            );
+
+            for (const builtinId of builtinIds) {
+                const server = this.builtinMcpRegistry.getServer(builtinId);
+                if (!server || server.isDisabled || !server.connectable) continue;
+                const target: ExposedTool["server"] = {
+                    id: server.id,
+                    name: server.alias || server.name,
+                    url: server.url,
+                    communicationType: server.communicationType,
+                    headers: Object.keys(server.headers || {}).length ? server.headers : null,
+                };
+                for (const tool of server.tools) {
+                    if (!tool.name) continue;
+                    addTool(target, tool.name, tool.description, tool.inputSchema);
+                }
+            }
+
+            if (databaseIds.length) {
+                const servers = await this.mcpServerRepository.find({
+                    where: { id: In(databaseIds), isDisabled: false },
+                });
+                const usable = servers.filter(
+                    (server) => server.url && server.communicationType,
+                );
+                if (usable.length) {
+                    const tools = await this.mcpToolRepository.find({
+                        where: { mcpServerId: In(usable.map((server) => server.id)) },
+                    });
+                    const serverById = new Map(usable.map((server) => [server.id, server]));
+                    for (const tool of tools) {
+                        const server = serverById.get(tool.mcpServerId);
+                        if (!server || !tool.name) continue;
+                        addTool(
+                            {
+                                id: server.id,
+                                name: server.name,
+                                url: server.url,
+                                communicationType: server.communicationType,
+                                headers: server.headers ?? null,
+                            },
+                            tool.name,
+                            tool.description,
+                            tool.inputSchema,
+                        );
+                    }
+                }
+            }
+        } catch (error) {
+            this.logger.warn(`Failed to load BuildingAI MCP tools: ${safeErrorMessage(error)}`);
+        }
+        return exposed;
+    }
+
+    /** Proxy one tools/call to the BuildingAI MCP server that owns the tool. */
+    private async handleBuildingToolCall(
+        socket: GatewaySocket,
+        id: JsonRpcId,
+        exposed: ExposedTool,
+        params: Record<string, unknown>,
+    ) {
+        const args = (params.arguments || {}) as Record<string, unknown>;
+        let client: Awaited<ReturnType<typeof createMcpClient>> | null = null;
+        try {
+            client = await createMcpClient({
+                transport: {
+                    type:
+                        exposed.server.communicationType === McpCommunicationType.SSE
+                            ? "sse"
+                            : "http",
+                    url: exposed.server.url,
+                    ...(exposed.server.headers && { headers: exposed.server.headers }),
+                },
+                name: exposed.server.name,
+            });
+            const result = await Promise.race([
+                client.callTool(exposed.toolName, args),
+                new Promise((_, reject) =>
+                    setTimeout(
+                        () => reject(new Error("MCP 工具调用超时")),
+                        BUILDING_TOOL_CALL_TIMEOUT_MS,
+                    ),
+                ),
+            ]);
+
+            // Pass MCP-shaped results straight through; wrap anything else as text.
+            const content = (result as { content?: unknown })?.content;
+            if (Array.isArray(content)) {
+                this.sendResult(socket, id, result);
+            } else {
+                this.sendResult(socket, id, {
+                    content: [
+                        {
+                            type: "text",
+                            text:
+                                typeof result === "string"
+                                    ? result
+                                    : JSON.stringify(result ?? null),
+                        },
+                    ],
+                    isError: false,
+                });
+            }
+        } catch (error) {
+            this.sendError(socket, id, -32603, safeErrorMessage(error));
+        } finally {
+            if (client) {
+                try {
+                    await client.close();
+                } catch {
+                    // Best-effort cleanup; the per-call client is short-lived.
+                }
+            }
+        }
+    }
+
+    /**
+     * Refresh the exposed BuildingAI tools of the live connection bound to
+     * one cubecat (after link/unlink/resync) without dropping the socket, and
+     * tell the upstream that the tool list changed.
+     */
+    async reloadAgentTools(agentBindingId: string) {
+        const connection = await this.connectionRepository.findOne({
+            where: { agentBindingId },
+        });
+        if (!connection) return;
+        const state = this.connectors.get(connection.id);
+        if (!state || state.cancelled) return;
+        state.exposedTools = await this.loadExposedTools(
+            agentBindingId,
+            state.settings.toolName,
+        );
+        if (state.socket && state.socket.readyState === WS_OPEN) {
+            this.sendMessage(state.socket, {
+                jsonrpc: "2.0",
+                method: "notifications/tools/list_changed",
+            });
+        }
+    }
+
     private buildToolDefinition(settings: XiaozhiMcpToolSettingsValues) {
         return {
             name: settings.toolName,
@@ -557,7 +795,7 @@ export class XiaozhiMcpGatewayService implements OnModuleInit, OnModuleDestroy {
                 const requested = message.params?.protocolVersion;
                 this.sendResult(socket, id, {
                     protocolVersion: typeof requested === "string" ? requested : "2025-03-26",
-                    capabilities: { tools: {} },
+                    capabilities: { tools: { listChanged: true } },
                     serverInfo: { name: "buildingai-classroom", version: "1.0.0" },
                 });
                 return;
@@ -567,7 +805,10 @@ export class XiaozhiMcpGatewayService implements OnModuleInit, OnModuleDestroy {
                 return;
             case "tools/list":
                 this.sendResult(socket, id, {
-                    tools: [this.buildToolDefinition(state.settings)],
+                    tools: [
+                        this.buildToolDefinition(state.settings),
+                        ...[...state.exposedTools.values()].map((tool) => tool.definition),
+                    ],
                 });
                 return;
             case "tools/call":
@@ -589,6 +830,11 @@ export class XiaozhiMcpGatewayService implements OnModuleInit, OnModuleDestroy {
             return;
         }
         if (params.name !== state.settings.toolName) {
+            const exposed = state.exposedTools.get(String(params.name || ""));
+            if (exposed) {
+                await this.handleBuildingToolCall(socket, id, exposed, params);
+                return;
+            }
             this.sendError(socket, id, -32602, `未知工具: ${String(params.name || "")}`);
             return;
         }
