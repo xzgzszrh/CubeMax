@@ -23,6 +23,7 @@ import WorkflowEditorApp from "@/pages/workflows/app";
 import WorkflowsIndexPage from "@/pages/workflows/index";
 
 import ConsoleLayout from "../layouts/console";
+import PodiumLayout from "../layouts/podium";
 import DynamicHomePage from "../pages";
 import AppIframePage from "../pages/apps/[identifier]";
 import ChatPage from "../pages/chat";
@@ -30,6 +31,7 @@ import ClassroomPage from "../pages/classroom";
 import ClassroomDisplayPage from "../pages/classroom-display";
 import { LoginPage } from "../pages/login";
 import { OAuthCallbackPage } from "../pages/login/oauth-callback";
+import MyAssignmentsPage from "../pages/my-assignments";
 import AlipayReturnPage from "../pages/payment/alipay-return";
 
 export const router = createBrowserRouter([
@@ -56,6 +58,22 @@ export const router = createBrowserRouter([
       {
         path: "/classroom-display/:publicId",
         element: <ClassroomDisplayPage />,
+      },
+      {
+        /**
+         * 课堂大屏：把某个应用的大屏视图投到教室屏幕上。
+         *
+         * 刻意放在 DefaultLayout 之外 —— 大屏上不该出现侧边栏和账号菜单。
+         * 仍然要求登录（老师用自己的账号）：同浏览器开新标签页会直接沿用
+         * 已有登录态；在另一台大屏设备上登录时走 SCREEN 终端，不会影响老师
+         * 电脑上的控制台会话，详见 login-form 里 terminal 的说明。
+         */
+        path: "/board/:identifier/*",
+        element: (
+          <AuthGuard>
+            <AppIframePage basePath="/board" mode="board" />
+          </AuthGuard>
+        ),
       },
       {
         path: "/agents/:id/configuration",
@@ -123,6 +141,14 @@ export const router = createBrowserRouter([
             element: (
               <AuthGuard>
                 <ClassroomPage />
+              </AuthGuard>
+            ),
+          },
+          {
+            path: "/my-assignments",
+            element: (
+              <AuthGuard>
+                <MyAssignmentsPage />
               </AuthGuard>
             ),
           },
@@ -206,6 +232,15 @@ export const router = createBrowserRouter([
               <ConsoleLayout>
                 <GlobalError />
               </ConsoleLayout>
+            ),
+          },
+          {
+            path: "/podium/*",
+            element: <PodiumLayout />,
+            errorElement: (
+              <PodiumLayout>
+                <GlobalError />
+              </PodiumLayout>
             ),
           },
         ],

@@ -14,10 +14,7 @@ const OrganizationRole = {
     SCHOOL_ADMIN: "school_admin",
 } as const;
 
-import {
-    OrganizationPermission,
-    resolveOrganizationPermissions,
-} from "./organization-permissions";
+import { OrganizationPermission, resolveOrganizationPermissions } from "./organization-permissions";
 
 describe("resolveOrganizationPermissions", () => {
     it("allows every organization role to submit assignments", () => {
@@ -44,5 +41,20 @@ describe("resolveOrganizationPermissions", () => {
         expect(resolveOrganizationPermissions([OrganizationRole.SCHOOL_ADMIN]).sort()).toEqual(
             resolveOrganizationPermissions([OrganizationRole.ADMIN]).sort(),
         );
+    });
+
+    it("lets teachers allocate class quota but not top up the class pool", () => {
+        const permissions = resolveOrganizationPermissions([OrganizationRole.TEACHER]);
+
+        expect(permissions).toContain(OrganizationPermission.QUOTA_ALLOCATE);
+        expect(permissions).not.toContain(OrganizationPermission.BILLING_MANAGE);
+    });
+
+    it("keeps students out of every teaching management permission", () => {
+        const permissions = resolveOrganizationPermissions([OrganizationRole.STUDENT]);
+
+        expect(permissions).not.toContain(OrganizationPermission.QUOTA_ALLOCATE);
+        expect(permissions).not.toContain(OrganizationPermission.ASSET_MANAGE);
+        expect(permissions).not.toContain(OrganizationPermission.ASSIGNMENT_PUBLISH);
     });
 });

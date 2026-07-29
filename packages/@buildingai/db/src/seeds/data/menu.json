@@ -300,6 +300,68 @@
                 ]
             },
             {
+                "name": "教学管理",
+                "code": "teaching",
+                "path": "teaching",
+                "icon": "presentation",
+                "component": "",
+                "permissionCode": null,
+                "sort": 650,
+                "isHidden": 0,
+                "type": 1,
+                "sourceType": 1,
+                "children": [
+                    {
+                        "name": "组织管理",
+                        "code": "teaching-organization",
+                        "path": "organization",
+                        "icon": "",
+                        "component": "/console/teaching/organization",
+                        "permissionCode": "teaching:organization-list",
+                        "sort": 0,
+                        "isHidden": 0,
+                        "type": 2,
+                        "sourceType": 1
+                    },
+                    {
+                        "name": "方糖猫设备",
+                        "code": "teaching-device",
+                        "path": "device",
+                        "icon": "",
+                        "component": "/console/teaching/device",
+                        "permissionCode": "teaching:device-list",
+                        "sort": 10,
+                        "isHidden": 0,
+                        "type": 2,
+                        "sourceType": 1
+                    },
+                    {
+                        "name": "教学资产",
+                        "code": "teaching-asset",
+                        "path": "asset",
+                        "icon": "",
+                        "component": "/console/teaching/asset",
+                        "permissionCode": "teaching:asset-list",
+                        "sort": 20,
+                        "isHidden": 0,
+                        "type": 2,
+                        "sourceType": 1
+                    },
+                    {
+                        "name": "班级额度",
+                        "code": "teaching-quota",
+                        "path": "quota",
+                        "icon": "",
+                        "component": "/console/teaching/quota",
+                        "permissionCode": "teaching:quota-topup",
+                        "sort": 30,
+                        "isHidden": 0,
+                        "type": 2,
+                        "sourceType": 1
+                    }
+                ]
+            },
+            {
                 "name": "订单管理",
                 "code": null,
                 "path": "order",

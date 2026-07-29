@@ -4,7 +4,6 @@ import {
   OrganizationPermission,
   setActiveOrganizationId,
   useWorkspaceContextQuery,
-  useXiaozhiAgentsQuery,
   WORKSPACE_CHANGED_EVENT,
 } from "@buildingai/services/web";
 import { ScrollArea } from "@buildingai/ui/components/ui/scroll-area";
@@ -17,31 +16,23 @@ import {
 } from "@buildingai/ui/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@buildingai/ui/components/ui/tabs";
 import { useQueryClient } from "@tanstack/react-query";
-import {
-  Blocks,
-  Bot,
-  Building2,
-  Cable,
-  CircleUserRound,
-  LoaderCircle,
-  Presentation,
-} from "lucide-react";
+import { Bot, Building2, CircleUserRound, ClipboardList, LoaderCircle } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
-import { ClassroomSetting } from "@/components/settings-dialog/settings-items/classroom-setting";
-import { XiaozhiAutomationSetting } from "@/components/settings-dialog/settings-items/xiaozhi-automation-setting";
+import { MyAssignmentList } from "@/components/assignments";
 import { XiaozhiDevicePanel } from "@/components/settings-dialog/settings-items/xiaozhi-device-panel";
-import { XiaozhiMcpSetting } from "@/components/settings-dialog/settings-items/xiaozhi-mcp-setting";
 
 export const meta = definePageMeta({
   title: "课堂",
-  description: "方糖猫设备、场景与课堂互动管理",
+  description: "查看我的方糖猫设备与老师布置的任务",
   icon: "presentation",
 });
 
-type ClassroomTab = "activities" | "devices" | "automation" | "mcp";
-
+/**
+ * 学生视角的课堂页：只有「我的方糖猫」和「我的任务」。
+ * 老师的完整教学管理在左下角「讲台」（/podium）。
+ */
 const ClassroomPage = () => {
   useDocumentHead({ title: "课堂" });
   const queryClient = useQueryClient();
@@ -49,9 +40,7 @@ const ClassroomPage = () => {
   const [activeOrganizationId, setActiveId] = useState<string | null>(() =>
     getActiveOrganizationId(),
   );
-  const [tab, setTab] = useState<ClassroomTab>("activities");
 
-  // Stay in sync when the workspace is switched elsewhere (e.g. settings dialog).
   useEffect(() => {
     const handler = () => setActiveId(getActiveOrganizationId());
     window.addEventListener(WORKSPACE_CHANGED_EVENT, handler);
@@ -75,11 +64,6 @@ const ClassroomPage = () => {
   const permissions = activeOrganization?.permissions ?? [];
   const canManageAssets = permissions.includes(OrganizationPermission.ASSET_MANAGE);
   const canReadMembers = permissions.includes(OrganizationPermission.MEMBER_READ);
-  const canManage = canManageAssets || !activeOrganizationId;
-  // 学生只保留「方糖猫」页：受限标签不渲染，也就不会发出无权限的请求。
-  const effectiveTab = !canManage && tab !== "devices" ? "devices" : tab;
-
-  const { data: agents = [] } = useXiaozhiAgentsQuery({ enabled: Boolean(context) });
 
   function switchWorkspace(organizationId: string | null) {
     setActiveOrganizationId(organizationId);
@@ -106,7 +90,7 @@ const ClassroomPage = () => {
           <div>
             <h1 className="text-xl font-semibold">课堂</h1>
             <p className="text-muted-foreground mt-1 text-sm">
-              管理方糖猫设备、批量切换角色场景，并主持课堂互动。
+              查看分配给你的方糖猫，以及老师布置的任务。
             </p>
           </div>
           <Select
@@ -137,33 +121,17 @@ const ClassroomPage = () => {
           </Select>
         </div>
 
-        <Tabs value={effectiveTab} onValueChange={(value) => setTab(value as ClassroomTab)}>
+        <Tabs defaultValue="devices">
           <TabsList variant="line">
-            {canManage ? (
-              <TabsTrigger value="activities">
-                <Presentation /> 课堂活动
-              </TabsTrigger>
-            ) : null}
             <TabsTrigger value="devices">
-              <Bot /> 方糖猫
+              <Bot /> 我的方糖猫
             </TabsTrigger>
-            {canManage ? (
-              <TabsTrigger value="automation">
-                <Blocks /> 自动化
-              </TabsTrigger>
-            ) : null}
-            {canManage ? (
-              <TabsTrigger value="mcp">
-                <Cable /> MCP 接入
+            {activeOrganizationId ? (
+              <TabsTrigger value="assignments">
+                <ClipboardList /> 我的任务
               </TabsTrigger>
             ) : null}
           </TabsList>
-
-          {canManage ? (
-            <TabsContent value="activities" className="pt-2">
-              <ClassroomSetting canManage={canManage} />
-            </TabsContent>
-          ) : null}
 
           <TabsContent value="devices" className="pt-2">
             <XiaozhiDevicePanel
@@ -173,15 +141,9 @@ const ClassroomPage = () => {
             />
           </TabsContent>
 
-          {canManage ? (
-            <TabsContent value="automation" className="pt-2">
-              <XiaozhiAutomationSetting canManage={canManage} agents={agents} />
-            </TabsContent>
-          ) : null}
-
-          {canManage ? (
-            <TabsContent value="mcp" className="pt-2">
-              <XiaozhiMcpSetting canManage={canManage} />
+          {activeOrganizationId ? (
+            <TabsContent value="assignments" className="pt-2">
+              <MyAssignmentList />
             </TabsContent>
           ) : null}
         </Tabs>

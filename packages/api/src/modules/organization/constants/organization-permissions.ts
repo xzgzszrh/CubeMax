@@ -9,6 +9,7 @@ export const OrganizationPermission = {
     ASSET_MANAGE: "asset:manage",
     ORGANIZATION_MANAGE: "organization:manage",
     BILLING_MANAGE: "billing:manage",
+    QUOTA_ALLOCATE: "quota:allocate",
 } as const;
 
 export type OrganizationPermissionType =
@@ -28,6 +29,7 @@ export const ORGANIZATION_ROLE_PERMISSIONS: Record<
         OrganizationPermission.MEMBER_MANAGE,
         OrganizationPermission.ASSET_READ,
         OrganizationPermission.ASSET_MANAGE,
+        OrganizationPermission.QUOTA_ALLOCATE,
     ],
     [OrganizationRole.ADMIN]: ADMIN_PERMISSIONS,
     [OrganizationRole.SCHOOL_ADMIN]: ADMIN_PERMISSIONS,
@@ -36,7 +38,5 @@ export const ORGANIZATION_ROLE_PERMISSIONS: Record<
 export function resolveOrganizationPermissions(
     roles: OrganizationRoleType[],
 ): OrganizationPermissionType[] {
-    return [
-        ...new Set(roles.flatMap((role) => ORGANIZATION_ROLE_PERMISSIONS[role] ?? [])),
-    ];
+    return [...new Set(roles.flatMap((role) => ORGANIZATION_ROLE_PERMISSIONS[role] ?? []))];
 }

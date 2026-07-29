@@ -4,6 +4,7 @@ import { getEnabledExtensionsFromConfig, initExtensionCache } from "@buildingai/
 import { getExtensionSchemaName } from "@buildingai/core/modules";
 import {
     BillingModule,
+    ClassroomKitModule,
     CloudStorageModule,
     SecretModule,
     UploadModule as CoreUploadModule,
@@ -113,6 +114,7 @@ export class AppModule {
                 DatabaseModule,
                 GuardsModule,
                 BillingModule,
+                ClassroomKitModule,
                 AuthModule,
                 CDKModule, //
                 ChannelModule,

@@ -1,3 +1,4 @@
+import { CLASSROOM_DEVICE_CONFIG_KEYS } from "@buildingai/core/modules/classroom";
 import { InjectRepository } from "@buildingai/db/@nestjs/typeorm";
 import {
     XiaozhiAgentBinding,
@@ -14,20 +15,13 @@ import type { SaveXiaozhiQuickCommandDto, SaveXiaozhiSceneDto } from "../dto/org
 import { OrganizationService } from "./organization.service";
 import { XiaozhiService } from "./xiaozhi.service";
 
-/** Only these fields are captured into and re-applied from a scene. */
-const SCENE_CONFIG_KEYS = [
-    "language",
-    "tts_voice",
-    "character",
-    "asr_speed",
-    "tts_speech_speed",
-    "tts_pitch",
-    "llm_model",
-    "memory_type",
-    "teen_mode",
-    "mcp_endpoints",
-    "knowledge_base_ids",
-] as const;
+/**
+ * Only these fields are captured into and re-applied from a scene. Shared with
+ * the classroom app-session snapshot/restore path so both cover the same
+ * surface — a field one writes but the other cannot restore would be left
+ * permanently altered on a student's device.
+ */
+const SCENE_CONFIG_KEYS = CLASSROOM_DEVICE_CONFIG_KEYS;
 
 const APPLY_CONCURRENCY = 4;
 
@@ -177,11 +171,7 @@ export class XiaozhiAutomationService {
         return this.sceneRepository.save(scene);
     }
 
-    async removeScene(
-        userId: string,
-        organizationId: string | null | undefined,
-        sceneId: string,
-    ) {
+    async removeScene(userId: string, organizationId: string | null | undefined, sceneId: string) {
         await this.requireManage(userId, organizationId);
         const scene = await this.resolveScene(userId, organizationId, sceneId);
         // Quick commands referencing the scene can no longer run; remove them too.

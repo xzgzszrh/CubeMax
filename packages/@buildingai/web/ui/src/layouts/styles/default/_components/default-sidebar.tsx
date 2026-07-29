@@ -156,22 +156,31 @@ export function DefaultAppSidebar({ ...props }: React.ComponentProps<typeof Side
     [workspaceContext],
   );
 
-  // 课堂（方糖猫设备与课堂互动）是固定入口，不走后台装修菜单配置。
-  const navWithClassroom = useMemo<NavItem[]>(
-    () =>
-      isLogin() && !isTeacher
-        ? [
-            ...navMain,
-            {
-              id: "menu_classroom_fixed",
-              title: "课堂",
-              icon: "presentation",
-              path: "/classroom",
-            },
-          ]
-        : navMain,
-    [navMain, isLogin, isTeacher],
-  );
+  // 课堂与我的任务是固定入口，不走后台装修菜单配置。
+  // 「课堂」只给学生看（老师从底部「讲台」进）；「我的任务」只要属于任一班级就显示，
+  // 因为老师也可能同时是别的班的学生。
+  const inOrganization = (workspaceContext?.organizations.length ?? 0) > 0;
+  const navWithClassroom = useMemo<NavItem[]>(() => {
+    if (!isLogin()) return navMain;
+    const items = [...navMain];
+    if (!isTeacher) {
+      items.push({
+        id: "menu_classroom_fixed",
+        title: "课堂",
+        icon: "presentation",
+        path: "/classroom",
+      });
+    }
+    if (inOrganization) {
+      items.push({
+        id: "menu_my_assignments_fixed",
+        title: "我的任务",
+        icon: "clipboard-list",
+        path: "/my-assignments",
+      });
+    }
+    return items;
+  }, [navMain, isLogin, isTeacher, inOrganization]);
 
   const consoleLink = useMemo(() => {
     const menus = userInfo?.menus || [];
@@ -219,19 +228,25 @@ export function DefaultAppSidebar({ ...props }: React.ComponentProps<typeof Side
           {isTeacher && (
             <SidebarMenuItem>
               <SidebarMenuButton className="h-9" tooltip="讲台" asChild>
-                <Link to="/classroom">
+                <Link to="/podium/members">
                   <Presentation />
                   <span className="whitespace-nowrap">讲台</span>
+                  <SidebarMenuAction asChild>
+                    <div>
+                      <ArrowUpRight />
+                      <span className="sr-only">Toggle</span>
+                    </div>
+                  </SidebarMenuAction>
                 </Link>
               </SidebarMenuButton>
             </SidebarMenuItem>
           )}
           {isEnabled(userInfo?.permissions) && (
             <SidebarMenuItem>
-              <SidebarMenuButton className="h-9" asChild>
+              <SidebarMenuButton className="h-9" tooltip="管理员工作台" asChild>
                 <Link to={consoleLink}>
                   <LayoutDashboard />
-                  <span className="whitespace-nowrap">工作台</span>
+                  <span className="whitespace-nowrap">管理员工作台</span>
                   <SidebarMenuAction asChild>
                     <div>
                       <ArrowUpRight />

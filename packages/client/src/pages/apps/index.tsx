@@ -3,6 +3,7 @@ import type { Extension } from "@buildingai/services/console";
 import type { Tag, WorkflowItem } from "@buildingai/services/web";
 import {
   listTags,
+  useMyAppScopeQuery,
   useWebAppsDecorateItemsInfiniteQuery,
   useWebAppsDecorateQuery,
   useWorkflowListQuery,
@@ -160,6 +161,9 @@ const AppsIndexPage = () => {
     { enabled: selectedTagId === null },
   );
 
+  // 当前班级的应用可见范围；个人空间下查询被禁用，返回 undefined 即不过滤。
+  const { data: appScope } = useMyAppScopeQuery();
+
   // 配置数据
   const pageTitle = config?.title || "应用中心";
   const pageDescription = config?.description || "与你喜爱的应用进行交互";
@@ -176,8 +180,18 @@ const AppsIndexPage = () => {
       .filter((item) => item.visible);
     const workflowItems =
       selectedTagId === null ? (publishedWorkflows?.items ?? []).map(workflowToDisplayItem) : [];
-    return [...workflowItems, ...extensionItems];
-  }, [itemsData, publishedWorkflows?.items, selectedTagId]);
+    const items = [...workflowItems, ...extensionItems];
+
+    // 班级开启应用白名单后，学生只能看到老师授权过的应用。
+    if (!appScope?.restricted) return items;
+    const extensionIds = new Set(appScope.extensionIds);
+    const workflowIds = new Set(appScope.workflowIds);
+    return items.filter((item) =>
+      item.kind === "workflow"
+        ? workflowIds.has(item.id.replace(/^workflow:/, ""))
+        : extensionIds.has(item.id),
+    );
+  }, [appScope, itemsData, publishedWorkflows?.items, selectedTagId]);
 
   // 无限滚动观察
   useEffect(() => {

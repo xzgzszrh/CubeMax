@@ -20,7 +20,21 @@ function isNotFoundError(error: unknown) {
   return Boolean(error && typeof error === "object" && "status" in error && error.status === 404);
 }
 
-export default function AppIframePage() {
+type AppIframePageProps = {
+  /**
+   * 宿主侧的路由前缀。`/apps` 是带侧边栏的常规入口，`/board` 是投到教室大屏的
+   * 独立全屏入口 —— 两者渲染的是同一个应用，只是外壳和用途不同，所以共用这个
+   * 组件而不是复制一份。
+   */
+  basePath?: string;
+  /**
+   * 透传给应用的运行模式。应用据此决定渲染老师面板还是大屏排行榜，
+   * 不必自己约定路径规范。
+   */
+  mode?: "app" | "board";
+};
+
+export default function AppIframePage({ basePath = "/apps", mode = "app" }: AppIframePageProps) {
   const { identifier, "*": wildcard } = useParams();
   const location = useLocation();
   const navigate = useNavigate();
@@ -41,8 +55,13 @@ export default function AppIframePage() {
   const iframeSrc = useMemo(() => {
     if (!identifier) return "";
     const subPath = wildcard ? `/${wildcard}` : "";
-    return `${getExtensionBaseUrl()}/extension/${identifier}${subPath}${location.search}${location.hash}`;
-  }, [identifier, wildcard, location.search, location.hash]);
+    const search = new URLSearchParams(location.search);
+    if (mode !== "app") search.set("_mode", mode);
+    const query = search.toString();
+    return `${getExtensionBaseUrl()}/extension/${identifier}${subPath}${
+      query ? `?${query}` : ""
+    }${location.hash}`;
+  }, [identifier, wildcard, location.search, location.hash, mode]);
 
   // Listen for navigation messages from iframe (iframe → parent sync)
   useEffect(() => {
@@ -55,7 +74,7 @@ export default function AppIframePage() {
         const path = event.data.path ?? "";
         const search = event.data.search ?? "";
         const hash = event.data.hash ?? "";
-        const newUrl = `/apps/${identifier}${path}${search}${hash}`;
+        const newUrl = `${basePath}/${identifier}${path}${search}${hash}`;
 
         setExtensionRouteNotFoundUrl(newUrl);
 
@@ -72,7 +91,7 @@ export default function AppIframePage() {
       const path = event.data.path ?? "";
       const search = event.data.search ?? "";
       const hash = event.data.hash ?? "";
-      const newUrl = `/apps/${identifier}${path}${search}${hash}`;
+      const newUrl = `${basePath}/${identifier}${path}${search}${hash}`;
 
       if (newUrl !== currentUrl) {
         navigate(newUrl, { replace: true });
@@ -85,7 +104,7 @@ export default function AppIframePage() {
 
     window.addEventListener("message", handleMessage);
     return () => window.removeEventListener("message", handleMessage);
-  }, [currentUrl, identifier, navigate]);
+  }, [basePath, currentUrl, identifier, navigate]);
 
   // Handle browser back/forward (parent → iframe sync)
   useEffect(() => {

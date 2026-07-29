@@ -692,25 +692,6 @@ importers:
         specifier: ^0.4.26
         version: 0.4.26(eslint@9.39.4(jiti@2.6.1))
 
-  mcp-server:
-    dependencies:
-      '@modelcontextprotocol/sdk':
-        specifier: 1.27.1
-        version: 1.27.1(@cfworker/json-schema@4.1.1)(zod@4.3.6)
-      zod:
-        specifier: ^4.3.6
-        version: 4.3.6
-    devDependencies:
-      '@types/node':
-        specifier: catalog:dev
-        version: 24.12.0
-      tsx:
-        specifier: ^4.20.3
-        version: 4.23.0
-      typescript:
-        specifier: catalog:dev
-        version: 5.9.3
-
   packages/@buildingai/ai-sdk:
     dependencies:
       '@ai-sdk/anthropic':
@@ -24625,6 +24606,7 @@ snapshots:
       '@esbuild/win32-arm64': 0.28.1
       '@esbuild/win32-ia32': 0.28.1
       '@esbuild/win32-x64': 0.28.1
+    optional: true
 
   escalade@3.2.0: {}
 
@@ -30427,6 +30409,7 @@ snapshots:
       esbuild: 0.28.1
     optionalDependencies:
       fsevents: 2.3.3
+    optional: true
 
   tunnel-agent@0.6.0:
     dependencies:

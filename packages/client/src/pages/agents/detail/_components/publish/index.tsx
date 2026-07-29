@@ -10,6 +10,8 @@ import { useCallback, useMemo, useState } from "react";
 import { useParams } from "react-router-dom";
 import { toast } from "sonner";
 
+import { QuickSubmitButton } from "@/components/assignments";
+
 import { EmbedPublishDialog } from "./embed-publish-dialog";
 
 type PublishTab = "all" | "webapp";
@@ -271,6 +273,13 @@ export default function Publish() {
                 <TabsTrigger value="webapp">WebAPP</TabsTrigger>
               </TabsList>
             </Tabs>
+            {/* 学生在这里可以把当前智能体直接交给老师；没有可提交的任务时不渲染。 */}
+            <QuickSubmitButton
+              className="ml-auto"
+              targetType="agent"
+              targetId={agentId}
+              targetName={agent?.name}
+            />
           </div>
 
           {isLoading ? (

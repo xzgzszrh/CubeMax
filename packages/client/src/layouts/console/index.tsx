@@ -52,6 +52,10 @@ import SystemPayConfigIndexPage from "@/pages/console/system/pay-config";
 import SystemPm2LogRotateIndexPage from "@/pages/console/system/pm2-log-rotate";
 import SystemStorageConfigIndexPage from "@/pages/console/system/storage-config";
 import SystemWebsiteConfigIndexPage from "@/pages/console/system/website-config";
+import TeachingAssetPage from "@/pages/console/teaching/asset";
+import TeachingDevicePage from "@/pages/console/teaching/device";
+import TeachingOrganizationPage from "@/pages/console/teaching/organization";
+import TeachingQuotaPage from "@/pages/console/teaching/quota";
 import UserListIndexPage from "@/pages/console/user/list";
 import WorkflowConfigPage from "@/pages/console/workflow";
 
@@ -174,6 +178,27 @@ function ConsoleRoutes() {
           {
             path: "list",
             element: <UserListIndexPage />,
+          },
+        ],
+      },
+      {
+        path: "teaching",
+        children: [
+          {
+            path: "organization",
+            element: <TeachingOrganizationPage />,
+          },
+          {
+            path: "device",
+            element: <TeachingDevicePage />,
+          },
+          {
+            path: "asset",
+            element: <TeachingAssetPage />,
+          },
+          {
+            path: "quota",
+            element: <TeachingQuotaPage />,
           },
         ],
       },

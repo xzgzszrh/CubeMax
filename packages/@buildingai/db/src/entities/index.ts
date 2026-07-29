@@ -15,9 +15,25 @@ export { AiModel } from "./ai-model.entity";
 export { AiProvider } from "./ai-provider.entity";
 export { AiUserMcpServer } from "./ai-user-mcp-server.entity";
 export { UserMemory } from "./ai-user-memory.entity";
+export { AiWorkflow } from "./ai-workflow.entity";
 export { Analyse, AnalyseActionType } from "./analyse.entity";
 export { CardBatch, CardRedeemType } from "./card-batch.entity";
 export { CardKeyStatus, CDK } from "./cdk.entity";
+export {
+    ClassroomAppSession,
+    ClassroomAppSessionStatus,
+    type ClassroomAppSessionStatusType,
+} from "./classroom-app-session.entity";
+export { ClassroomEvent } from "./classroom-event.entity";
+export {
+    type ClassroomDisplayConfig,
+    type ClassroomDisplayLayout,
+    type ClassroomDisplaySortBy,
+    ClassroomInteraction,
+    ClassroomInteractionStatus,
+    type ClassroomInteractionStatusType,
+    type ClassroomInteractionTarget,
+} from "./classroom-interaction.entity";
 export { Datasets, SquarePublishStatus } from "./datasets.entity";
 export { DatasetsChatMessage } from "./datasets-chat-message.entity";
 export { DatasetsChatRecord } from "./datasets-chat-record.entity";
@@ -43,12 +59,35 @@ export { Menu, MenuSourceType, MenuType } from "./menu.entity";
 export { NoticeSetting } from "./notice-setting.entity";
 export { Organization } from "./organization.entity";
 export {
+    OrganizationAppGrant,
+    OrganizationAppType,
+    type OrganizationAppTypeValue,
+} from "./organization-app-grant.entity";
+export {
+    AssignmentStatus,
+    type AssignmentStatusType,
+    AssignmentTargetType,
+    type AssignmentTargetTypeValue,
+    OrganizationAssignment,
+} from "./organization-assignment.entity";
+export {
+    OrganizationAssignmentSubmission,
+    SubmissionStatus,
+    type SubmissionStatusType,
+} from "./organization-assignment-submission.entity";
+export {
     OrganizationMember,
     OrganizationMemberType,
-    OrganizationRole,
     type OrganizationMemberTypeValue,
+    OrganizationRole,
     type OrganizationRoleType,
 } from "./organization-member.entity";
+export { OrganizationQuota } from "./organization-quota.entity";
+export {
+    OrganizationQuotaLog,
+    QuotaLogAction,
+    type QuotaLogActionType,
+} from "./organization-quota-log.entity";
 export { Payconfig } from "./payconfig.entity";
 export { Permission, PermissionType } from "./permission.entity";
 export { Recharge } from "./recharge.entity";
@@ -68,28 +107,20 @@ export { User } from "./user.entity";
 export { UserDict } from "./user-dict.entity";
 export { UserSubscription } from "./user-subscription.entity";
 export { UserToken } from "./user-token.entity";
-export { AiWorkflow } from "./ai-workflow.entity";
 export {
     XiaozhiAccount,
     XiaozhiAccountStatus,
     type XiaozhiAccountStatusType,
 } from "./xiaozhi-account.entity";
 export { XiaozhiAgentBinding } from "./xiaozhi-agent-binding.entity";
-export { XiaozhiScene } from "./xiaozhi-scene.entity";
 export {
     XiaozhiMcpConnection,
     XiaozhiMcpConnectionStatus,
     type XiaozhiMcpConnectionStatusType,
     XiaozhiMcpSettings,
 } from "./xiaozhi-mcp-connection.entity";
-export { ClassroomEvent } from "./classroom-event.entity";
 export {
-    ClassroomInteraction,
-    ClassroomInteractionStatus,
-    type ClassroomInteractionStatusType,
-    type ClassroomInteractionTarget,
-    type ClassroomDisplayConfig,
-    type ClassroomDisplayLayout,
-    type ClassroomDisplaySortBy,
-} from "./classroom-interaction.entity";
-export { type XiaozhiQuickCommandTarget, XiaozhiQuickCommand } from "./xiaozhi-quick-command.entity";
+    XiaozhiQuickCommand,
+    type XiaozhiQuickCommandTarget,
+} from "./xiaozhi-quick-command.entity";
+export { XiaozhiScene } from "./xiaozhi-scene.entity";
