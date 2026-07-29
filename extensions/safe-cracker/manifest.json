@@ -1,0 +1,17 @@
+{
+    "identifier": "safe-cracker",
+    "name": "破解保险箱",
+    "type": "application",
+    "version": "0.0.1",
+    "description": "课堂互动游戏：学生通过与自己的方糖猫对话套出保险箱密码，最快破解者上榜",
+    "homepage": "",
+    "author": {
+        "avatar": "/static/avatars/buildingai.png",
+        "name": "BuildingAI Teams",
+        "homepage": ""
+    },
+    "changelog": [],
+    "engine": {
+        "buildingai": ">=26.5.2"
+    }
+}

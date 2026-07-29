@@ -75,6 +75,13 @@ extensions/*
 !extensions/simple-blog/build
 !extensions/simple-blog/.output
 extensions/simple-blog/dist
+# 自研应用：与 simple-blog 同样纳入版本管理。构建产物（build / .output）也要跟着走 ——
+# 安装流程只解压不构建，产物不进包应用就跑不起来。
+!extensions/safe-cracker
+!extensions/safe-cracker/*
+!extensions/safe-cracker/build
+!extensions/safe-cracker/.output
+extensions/safe-cracker/dist
 releases
 
 temp_transfer/

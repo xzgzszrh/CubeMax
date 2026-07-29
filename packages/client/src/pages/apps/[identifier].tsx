@@ -1,4 +1,4 @@
-import { fetchWebExtensionDetail } from "@buildingai/services/web";
+import { fetchWebExtensionDetail, getActiveOrganizationId } from "@buildingai/services/web";
 import NotFoundPage from "@buildingai/ui/components/exception/not-found-page";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -57,6 +57,10 @@ export default function AppIframePage({ basePath = "/apps", mode = "app" }: AppI
     const subPath = wildcard ? `/${wildcard}` : "";
     const search = new URLSearchParams(location.search);
     if (mode !== "app") search.set("_mode", mode);
+    // 应用要知道自己在为哪个班级运行。生产环境同源，扩展能自己读 localStorage；
+    // 开发环境宿主与扩展是不同端口，读不到，所以由宿主显式带过去。
+    const organizationId = getActiveOrganizationId();
+    if (organizationId) search.set("_org", organizationId);
     const query = search.toString();
     return `${getExtensionBaseUrl()}/extension/${identifier}${subPath}${
       query ? `?${query}` : ""

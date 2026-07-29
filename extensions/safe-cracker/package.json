@@ -1,0 +1,75 @@
+{
+    "name": "safe-cracker",
+    "version": "0.0.1",
+    "description": "课堂互动游戏：破解保险箱",
+    "author": "BuildingAI Teams",
+    "private": true,
+    "main": "./manifest.json",
+    "module": "./manifest.json",
+    "files": [
+        "build/**/*"
+    ],
+    "exports": {
+        ".": {
+            "import": "./manifest.json",
+            "require": "./manifest.json"
+        },
+        "./api": {
+            "types": "./build/index.d.ts",
+            "import": "./build/index.js",
+            "require": "./build/index.js"
+        },
+        "./*": "./*"
+    },
+    "scripts": {
+        "build:clean": "rimraf build .nuxt .output .temp",
+        "dev:web": "vite",
+        "dev:api": "cross-env NODE_ENV=development tsup --watch src/api",
+        "dev": "concurrently -n web,api -c cyan,magenta \"pnpm dev:web\" \"pnpm dev:api\"",
+        "build:api": "cross-env NODE_ENV=production tsup",
+        "build:web": "vite build",
+        "build:publish": "pnpm build:clean && pnpm run build:web && pnpm run build:api",
+        "format": "prettier --write src",
+        "lint": "eslint src",
+        "lint:fix": "eslint src --fix",
+        "check-types:api": "tsc --noEmit -p tsconfig.api.json",
+        "check-types:web": "tsc --noEmit -p tsconfig.web.json | grep -v '^\\.\\./\\.\\./packages/' || true",
+        "check-types": "pnpm check-types:api && pnpm check-types:web"
+    },
+    "dependencies": {
+        "@buildingai/base": "workspace:*",
+        "@buildingai/constants": "workspace:*",
+        "@buildingai/core": "workspace:*",
+        "@buildingai/db": "workspace:*",
+        "@buildingai/decorators": "workspace:*",
+        "@buildingai/dto": "workspace:*",
+        "@buildingai/errors": "workspace:*",
+        "@buildingai/extension-sdk": "workspace:*",
+        "@buildingai/hooks": "workspace:*",
+        "@buildingai/http": "workspace:*",
+        "@buildingai/i18n": "workspace:*",
+        "@buildingai/pipe": "workspace:*",
+        "@buildingai/services": "workspace:*",
+        "@buildingai/stores": "workspace:*",
+        "@buildingai/ui": "workspace:*",
+        "@buildingai/utils": "workspace:*",
+        "@buildingai/web-core": "workspace:*",
+        "@tanstack/react-query": "^5.62.16",
+        "lucide-react": "catalog:web",
+        "react": "catalog:web",
+        "react-dom": "catalog:web",
+        "react-router-dom": "catalog:web",
+        "vite-tsconfig-paths": "catalog:web"
+    },
+    "devDependencies": {
+        "@buildingai/eslint-config": "workspace:*",
+        "@buildingai/typescript-config": "workspace:*",
+        "@buildingai/web-types": "workspace:*",
+        "@types/react": "catalog:web",
+        "@types/react-dom": "catalog:web",
+        "eslint-plugin-react-refresh": "^0.4.26"
+    },
+    "engine": {
+        "buildingai": ">=26.5.2"
+    }
+}

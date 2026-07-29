@@ -1,8 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
-import { apiHttpClient } from "../base";
+import { ACTIVE_ORGANIZATION_STORAGE_KEY, apiHttpClient } from "../base";
 
-export const ACTIVE_ORGANIZATION_STORAGE_KEY = "buildingai:active-organization-id";
+// 常量定义在 base 里（宿主与扩展的 http client 都要用），这里转出以免调用点改动。
+export { ACTIVE_ORGANIZATION_STORAGE_KEY };
 export const WORKSPACE_CHANGED_EVENT = "buildingai:workspace-changed";
 
 export const OrganizationRole = {
