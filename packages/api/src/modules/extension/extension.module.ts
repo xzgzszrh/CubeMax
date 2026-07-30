@@ -1,3 +1,8 @@
+import {
+    ExtensionStatus,
+    ExtensionSupportTerminal,
+    ExtensionType,
+} from "@buildingai/constants/shared/extension.constant";
 import { getCachedExtensionList, loadExtensionModule } from "@buildingai/core/modules";
 import {
     ExtensionConfigService,
@@ -12,6 +17,8 @@ import { TerminalLogger } from "@buildingai/logger";
 import { ExtensionFeatureScanService } from "@common/modules/auth/services/extension-feature-scan.service";
 import { DynamicModule, Logger, Module, OnModuleInit } from "@nestjs/common";
 import { ModuleRef } from "@nestjs/core";
+import fs from "fs-extra";
+import path from "path";
 
 import { AuthModule } from "../auth/auth.module";
 import { Pm2Module } from "../pm2/pm2.module";
@@ -95,10 +102,88 @@ export class ExtensionCoreModule implements OnModuleInit {
         const dataSource = this.moduleRef.get(DataSource, { strict: false });
         const seedService = new ExtensionSeedService(dataSource);
 
+        // Give locally-developed extensions their database row before anything
+        // downstream looks for one.
+        await this.registerMissingLocalExtensions(extensionList);
+
         await seedService.executeNewExtensionSeeds(extensionList);
 
         // Sync extension member features (incremental update)
         await this.syncAllExtensionFeatures(extensionList);
+    }
+
+    /**
+     * 给 extensions.json 里已启用、但数据库里没有记录的本地扩展补上记录。
+     *
+     * 市场安装流程会同时写目录和数据库；而在仓库里直接开发的扩展只有目录，
+     * 于是它虽然能被加载、路由也通，却**不会出现在应用中心列表**（列表查的是
+     * `extension` 表里 status=ENABLED 的行）。这个差异非常难查：接口全都正常，
+     * 只是列表是空的。这里按 manifest 补齐，让"放进 extensions/ 就能用"成立。
+     *
+     * 只新增，不更新已有记录 —— 管理员在后台改过的别名、排序、标签不该被启动覆盖。
+     */
+    private async registerMissingLocalExtensions(
+        extensionList: {
+            identifier: string;
+            name: string;
+            version: string;
+            description?: string;
+            path: string;
+        }[],
+    ): Promise<void> {
+        try {
+            const extensionsService = this.moduleRef.get(ExtensionsService, { strict: false });
+
+            for (const info of extensionList) {
+                const existing = await extensionsService.findByIdentifier(info.identifier);
+                if (existing) continue;
+
+                // ExtensionInfo.name 是目录名，展示名和图标只在 manifest 里，
+                // 不读 manifest 的话应用中心会显示成 "safe-cracker" 这种目录名。
+                const manifest = await this.readManifest(info.path);
+
+                await extensionsService.create({
+                    name: manifest?.name || info.name,
+                    identifier: info.identifier,
+                    version: manifest?.version || info.version,
+                    description: manifest?.description ?? info.description,
+                    icon: manifest?.icon,
+                    homepage: manifest?.homepage,
+                    author: manifest?.author,
+                    type:
+                        manifest?.type === "functional"
+                            ? ExtensionType.FUNCTIONAL
+                            : ExtensionType.APPLICATION,
+                    supportTerminal: [ExtensionSupportTerminal.WEB],
+                    status: ExtensionStatus.ENABLED,
+                    isLocal: true,
+                });
+                this.logger.log(
+                    `本地扩展 ${info.identifier} 已补齐数据库记录（${manifest?.name || info.name}）`,
+                );
+            }
+        } catch (error) {
+            // 补记录失败不该拦住启动：扩展本身仍然可用，只是列表里看不到。
+            const message = error instanceof Error ? error.message : String(error);
+            this.logger.warn(`补齐本地扩展数据库记录失败: ${message}`);
+        }
+    }
+
+    /** 读扩展目录下的 manifest.json；读不到就返回 null，由调用方回退。 */
+    private async readManifest(extensionPath: string): Promise<{
+        name?: string;
+        version?: string;
+        description?: string;
+        icon?: string;
+        homepage?: string;
+        type?: string;
+        author?: { avatar?: string; name: string; homepage?: string };
+    } | null> {
+        try {
+            return await fs.readJson(path.join(extensionPath, "manifest.json"));
+        } catch {
+            return null;
+        }
     }
 
     /**
