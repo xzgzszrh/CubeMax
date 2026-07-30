@@ -109,3 +109,5 @@ _ts_decorate([
 ], UpdateArticleDto.prototype, "categoryId", void 0);
 
 exports.UpdateArticleDto = UpdateArticleDto;
+//# sourceMappingURL=update-article.dto.js.map
+//# sourceMappingURL=update-article.dto.js.map

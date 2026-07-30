@@ -131,3 +131,5 @@ _ts_decorate([
 ], StartGameDto.prototype, "lockStudentEdits", void 0);
 
 exports.StartGameDto = StartGameDto;
+//# sourceMappingURL=start-game.dto.js.map
+//# sourceMappingURL=start-game.dto.js.map

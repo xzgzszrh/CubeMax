@@ -104,3 +104,5 @@ class ArticleSeeder extends db.BaseSeeder {
 }
 
 exports.ArticleSeeder = ArticleSeeder;
+//# sourceMappingURL=article.seeder.js.map
+//# sourceMappingURL=article.seeder.js.map

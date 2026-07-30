@@ -181,3 +181,5 @@ SafeGameSession = _ts_decorate([
 ], SafeGameSession);
 
 exports.SafeGameSession = SafeGameSession;
+//# sourceMappingURL=safe-game-session.entity.js.map
+//# sourceMappingURL=safe-game-session.entity.js.map

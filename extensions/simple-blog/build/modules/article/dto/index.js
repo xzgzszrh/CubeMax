@@ -24,3 +24,5 @@ Object.keys(updateArticle_dto).forEach(function (k) {
 		get: function () { return updateArticle_dto[k]; }
 	});
 });
+//# sourceMappingURL=index.js.map
+//# sourceMappingURL=index.js.map

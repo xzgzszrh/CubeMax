@@ -232,3 +232,5 @@ Article = _ts_decorate([
 
 exports.Article = Article;
 exports.ArticleStatus = ArticleStatus;
+//# sourceMappingURL=article.entity.js.map
+//# sourceMappingURL=article.entity.js.map

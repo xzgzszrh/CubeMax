@@ -61,3 +61,5 @@ _ts_decorate([
 ], UpdateCategoryDto.prototype, "sort", void 0);
 
 exports.UpdateCategoryDto = UpdateCategoryDto;
+//# sourceMappingURL=update-category.dto.js.map
+//# sourceMappingURL=update-category.dto.js.map

@@ -49,3 +49,5 @@ ArticleModule = _ts_decorate([
 ], ArticleModule);
 
 exports.ArticleModule = ArticleModule;
+//# sourceMappingURL=article.module.js.map
+//# sourceMappingURL=article.module.js.map

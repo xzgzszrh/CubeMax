@@ -60,6 +60,18 @@ export const startLog = (currentPort?: number, startTime?: number) => {
 };
 
 /**
+ * Ports the dev stack reserves for other services. The API must never migrate
+ * onto these when retrying, or it silently shadows them.
+ *
+ * 4091 is the client's vite dev server (`packages/client/vite.config.ts`, and it
+ * uses `strictPort` so it cannot move out of the way). A duplicate API instance
+ * landing there binds IPv6 while vite binds IPv4 — browsers prefer IPv6, so the
+ * frontend suddenly answers with the API's static-file 404 and the real cause is
+ * almost impossible to guess.
+ */
+const RESERVED_DEV_PORTS = new Set([4091]);
+
+/**
  * Try to listen on a port. If the port is in use, try the next one (development only).
  * @param app NestJS application instance
  * @param initialPort Initial port number
@@ -89,11 +101,14 @@ export const tryListen = async (
             return;
         } catch (error) {
             if (error.code === "EADDRINUSE" && process.env.NODE_ENV === "development") {
-                retries++;
-                currentPort = initialPort + retries;
+                do {
+                    retries++;
+                    currentPort = initialPort + retries;
+                } while (RESERVED_DEV_PORTS.has(currentPort) && retries < maxRetries);
+                if (retries >= maxRetries) break;
                 TerminalLogger.warn(
                     "Port in use",
-                    `Port ${initialPort + retries - 1} is in use, trying port ${currentPort}...`,
+                    `Port ${initialPort} is in use, trying port ${currentPort}...`,
                 );
             } else {
                 // Non EADDRINUSE error or non-development environment: rethrow

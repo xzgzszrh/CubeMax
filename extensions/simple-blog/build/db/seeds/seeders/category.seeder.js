@@ -68,3 +68,5 @@ class CategorySeeder extends db.BaseSeeder {
 }
 
 exports.CategorySeeder = CategorySeeder;
+//# sourceMappingURL=category.seeder.js.map
+//# sourceMappingURL=category.seeder.js.map

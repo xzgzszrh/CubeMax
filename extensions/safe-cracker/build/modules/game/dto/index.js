@@ -17,3 +17,5 @@ Object.keys(startGame_dto).forEach(function (k) {
 		get: function () { return startGame_dto[k]; }
 	});
 });
+//# sourceMappingURL=index.js.map
+//# sourceMappingURL=index.js.map

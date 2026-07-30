@@ -161,3 +161,5 @@ SafeGameParticipant = _ts_decorate([
 ], SafeGameParticipant);
 
 exports.SafeGameParticipant = SafeGameParticipant;
+//# sourceMappingURL=safe-game-participant.entity.js.map
+//# sourceMappingURL=safe-game-participant.entity.js.map

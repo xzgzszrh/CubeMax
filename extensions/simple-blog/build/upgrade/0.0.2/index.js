@@ -40,3 +40,5 @@ class Upgrade {
 }
 
 exports.Upgrade = Upgrade;
+//# sourceMappingURL=index.js.map
+//# sourceMappingURL=index.js.map

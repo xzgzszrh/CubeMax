@@ -31,3 +31,5 @@ _ts_decorate([
 ], QueryCategoryDto.prototype, "name", void 0);
 
 exports.QueryCategoryDto = QueryCategoryDto;
+//# sourceMappingURL=query-category.dto.js.map
+//# sourceMappingURL=query-category.dto.js.map

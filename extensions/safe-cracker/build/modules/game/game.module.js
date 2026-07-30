@@ -42,3 +42,5 @@ GameModule = _ts_decorate([
 ], GameModule);
 
 exports.GameModule = GameModule;
+//# sourceMappingURL=game.module.js.map
+//# sourceMappingURL=game.module.js.map

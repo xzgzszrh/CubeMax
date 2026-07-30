@@ -88,3 +88,5 @@ CategoryWebController = _ts_decorate([
 ], CategoryWebController);
 
 exports.CategoryWebController = CategoryWebController;
+//# sourceMappingURL=category.web.controller.js.map
+//# sourceMappingURL=category.web.controller.js.map

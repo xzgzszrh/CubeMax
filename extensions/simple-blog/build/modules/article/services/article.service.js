@@ -357,3 +357,5 @@ ArticleService = _ts_decorate([
 ], ArticleService);
 
 exports.ArticleService = ArticleService;
+//# sourceMappingURL=article.service.js.map
+//# sourceMappingURL=article.service.js.map

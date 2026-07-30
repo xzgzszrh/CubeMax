@@ -243,3 +243,5 @@ ArticleController = _ts_decorate([
 ], ArticleController);
 
 exports.ArticleController = ArticleController;
+//# sourceMappingURL=article.controller.js.map
+//# sourceMappingURL=article.controller.js.map

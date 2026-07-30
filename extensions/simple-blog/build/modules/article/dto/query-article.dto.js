@@ -51,3 +51,5 @@ _ts_decorate([
 ], QueryArticleDto.prototype, "categoryId", void 0);
 
 exports.QueryArticleDto = QueryArticleDto;
+//# sourceMappingURL=query-article.dto.js.map
+//# sourceMappingURL=query-article.dto.js.map

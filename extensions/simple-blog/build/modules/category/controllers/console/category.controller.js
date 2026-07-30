@@ -188,3 +188,5 @@ CategoryController = _ts_decorate([
 ], CategoryController);
 
 exports.CategoryController = CategoryController;
+//# sourceMappingURL=category.controller.js.map
+//# sourceMappingURL=category.controller.js.map

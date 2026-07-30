@@ -42,3 +42,5 @@ CategoryModule = _ts_decorate([
 ], CategoryModule);
 
 exports.CategoryModule = CategoryModule;
+//# sourceMappingURL=category.module.js.map
+//# sourceMappingURL=category.module.js.map

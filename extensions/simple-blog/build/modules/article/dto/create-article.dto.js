@@ -107,3 +107,5 @@ _ts_decorate([
 ], CreateArticleDto.prototype, "categoryId", void 0);
 
 exports.CreateArticleDto = CreateArticleDto;
+//# sourceMappingURL=create-article.dto.js.map
+//# sourceMappingURL=create-article.dto.js.map

@@ -122,3 +122,5 @@ ArticleWebController = _ts_decorate([
 ], ArticleWebController);
 
 exports.ArticleWebController = ArticleWebController;
+//# sourceMappingURL=article.web.controller.js.map
+//# sourceMappingURL=article.web.controller.js.map
