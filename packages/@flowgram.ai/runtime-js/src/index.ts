@@ -8,3 +8,5 @@ export { registerLLMExecutor } from "./nodes/llm/index.ts";
 export type { LLMExecutorHandler, LLMExecutorInput } from "./nodes/llm/index.ts";
 export { registerMCPExecutor } from "./nodes/mcp/index.ts";
 export type { MCPExecutorHandler, MCPExecutorInput } from "./nodes/mcp/index.ts";
+export { registerLuaExecutor } from "./nodes/lua/index.ts";
+export type { LuaExecutorHandler, LuaExecutorInput } from "./nodes/lua/index.ts";

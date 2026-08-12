@@ -29,6 +29,7 @@ import { ChannelModule } from "@modules/channel/channel.module";
 import { ExtensionCoreModule } from "@modules/extension/extension.module";
 import { HealthModule } from "@modules/health/health.module";
 import { MembershipModule } from "@modules/membership/membership.module";
+import { LuaModuleModule } from "@modules/lua/lua.module";
 import { NotificationModule } from "@modules/notification/notification.module";
 import { DynamicModule, Module } from "@nestjs/common";
 import { ConfigModule } from "@nestjs/config";
@@ -125,6 +126,7 @@ export class AppModule {
                 PayModule,
                 PermissionModule,
                 MembershipModule,
+                LuaModuleModule,
                 Pm2Module,
                 RechargeModule,
                 RoleModule,

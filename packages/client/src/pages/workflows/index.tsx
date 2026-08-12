@@ -24,7 +24,7 @@ import {
   ItemTitle,
 } from "@buildingai/ui/components/ui/item";
 import { Skeleton } from "@buildingai/ui/components/ui/skeleton";
-import { ArrowRight, FileText, Pencil, Plus, RefreshCw, Workflow } from "lucide-react";
+import { ArrowRight, Code2, FileText, Pencil, Plus, RefreshCw, Workflow } from "lucide-react";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
@@ -112,6 +112,10 @@ export default function WorkflowsIndexPage() {
           </p>
         </div>
         <div className="flex items-center gap-2">
+          <Button type="button" variant="outline" onClick={() => navigate("/lua")}>
+            <Code2 />
+            Lua 创作
+          </Button>
           <Button
             type="button"
             variant="outline"

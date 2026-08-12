@@ -37,6 +37,7 @@ export enum WorkflowNodeType {
   EmbeddedSaveSerialLog = "embedded_save_serial_log",
   HTTP = "http",
   Code = "code",
+  Lua = "lua",
   Variable = "variable",
   Condition = "condition",
   MultiCondition = "multi-condition",

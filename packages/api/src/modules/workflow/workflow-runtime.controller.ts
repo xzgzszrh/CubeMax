@@ -15,6 +15,7 @@ import { Body, Get, Post, Put, Query } from "@nestjs/common";
 import { WorkflowService } from "./workflow.service";
 import { WorkflowEmbeddedExecutorService } from "./workflow-embedded-executor.service";
 import { WorkflowLlmExecutorService } from "./workflow-llm-executor.service";
+import { WorkflowLuaExecutorService } from "./workflow-lua-executor.service";
 import { WorkflowMcpExecutorService } from "./workflow-mcp-executor.service";
 import {
     PublishedWorkflowRuntimeTaskDto,
@@ -40,6 +41,7 @@ export class WorkflowRuntimeController {
         private readonly workflowMcpExecutorService: WorkflowMcpExecutorService,
         private readonly workflowEmbeddedExecutorService: WorkflowEmbeddedExecutorService,
         private readonly workflowLlmExecutorService: WorkflowLlmExecutorService,
+        private readonly workflowLuaExecutorService: WorkflowLuaExecutorService,
         private readonly workflowService: WorkflowService,
     ) {}
 
@@ -47,6 +49,7 @@ export class WorkflowRuntimeController {
         const runtime = await loadRuntimeJs();
         runtime.registerMCPExecutor((input) => this.workflowMcpExecutorService.execute(input));
         runtime.registerLLMExecutor((input) => this.workflowLlmExecutorService.execute(input));
+        runtime.registerLuaExecutor((input) => this.workflowLuaExecutorService.execute(input));
         return runtime;
     }
 

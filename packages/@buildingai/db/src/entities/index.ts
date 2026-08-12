@@ -69,6 +69,7 @@ export { UserDict } from "./user-dict.entity";
 export { UserSubscription } from "./user-subscription.entity";
 export { UserToken } from "./user-token.entity";
 export { AiWorkflow } from "./ai-workflow.entity";
+export { LuaModule, type LuaModuleSchema } from "./lua-module.entity";
 export {
     XiaozhiAccount,
     XiaozhiAccountStatus,

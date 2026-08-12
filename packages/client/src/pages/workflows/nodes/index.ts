@@ -21,6 +21,7 @@ import { GroupNodeRegistry } from "./group";
 import { HTTPNodeRegistry } from "./http";
 import { LLMNodeRegistry } from "./llm";
 import { LoopNodeRegistry } from "./loop";
+import { LuaNodeRegistry } from "./lua";
 import { MCPNodeRegistry } from "./mcp";
 import { EmbeddedNodeRegistries } from "./embedded";
 import { MultiConditionNodeRegistry } from "./multi-condition";
@@ -41,6 +42,7 @@ export const nodeRegistries: FlowNodeRegistry[] = [
   BlockEndNodeRegistry,
   HTTPNodeRegistry,
   CodeNodeRegistry,
+  LuaNodeRegistry,
   ContinueNodeRegistry,
   BreakNodeRegistry,
   VariableNodeRegistry,

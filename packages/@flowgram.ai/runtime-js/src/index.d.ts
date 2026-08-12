@@ -66,3 +66,15 @@ export type MCPExecutorHandler = (
 ) => Promise<Record<string, unknown>> | Record<string, unknown>;
 
 export declare const registerMCPExecutor: (executor: MCPExecutorHandler) => void;
+
+export type LuaExecutorInput = {
+    userId?: string;
+    node: { id: string; type: string; data?: Record<string, unknown> };
+    inputs: Record<string, unknown>;
+};
+
+export type LuaExecutorHandler = (
+    input: LuaExecutorInput,
+) => Promise<Record<string, unknown>> | Record<string, unknown>;
+
+export declare const registerLuaExecutor: (executor: LuaExecutorHandler) => void;

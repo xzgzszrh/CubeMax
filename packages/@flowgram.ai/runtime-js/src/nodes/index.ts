@@ -10,6 +10,7 @@ import { ContinueExecutor } from "./continue/index.ts";
 import { ConditionExecutor } from "./condition/index.ts";
 import { CodeExecutor } from "./code/index.ts";
 import { BreakExecutor } from "./break/index.ts";
+import { LuaExecutor } from "./lua/index.ts";
 
 export const WorkflowRuntimeNodeExecutors: INodeExecutorFactory[] = [
     StartExecutor,
@@ -22,6 +23,7 @@ export const WorkflowRuntimeNodeExecutors: INodeExecutorFactory[] = [
     BlockEndExecutor,
     HTTPExecutor,
     CodeExecutor,
+    LuaExecutor,
     BreakExecutor,
     ContinueExecutor,
 ];

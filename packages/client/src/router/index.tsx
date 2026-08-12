@@ -21,6 +21,7 @@ import DatasetsDetailPage from "@/pages/datasets/detail";
 import InstallPage from "@/pages/install";
 import WorkflowEditorApp from "@/pages/workflows/app";
 import WorkflowsIndexPage from "@/pages/workflows/index";
+import LuaModulesPage from "@/pages/lua";
 
 import ConsoleLayout from "../layouts/console";
 import DynamicHomePage from "../pages";
@@ -178,6 +179,14 @@ export const router = createBrowserRouter([
             element: (
               <AuthGuard>
                 <WorkflowsIndexPage />
+              </AuthGuard>
+            ),
+          },
+          {
+            path: "/lua",
+            element: (
+              <AuthGuard>
+                <LuaModulesPage />
               </AuthGuard>
             ),
           },
