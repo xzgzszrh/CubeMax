@@ -44,6 +44,35 @@ export interface LuaModuleDto {
     outputSchema: LuaModuleSchema;
 }
 
+export type LuaAssistantMessage = {
+    role: "user" | "assistant";
+    content: string;
+};
+
+export interface GenerateLuaModuleDto {
+    modelId: string;
+    message: string;
+    messages: LuaAssistantMessage[];
+    current: {
+        name: string;
+        description: string;
+        draftCode: string;
+        inputSchema: LuaModuleSchema;
+        outputSchema: LuaModuleSchema;
+        testParams: Record<string, unknown>;
+    };
+}
+
+export interface GeneratedLuaModule {
+    reply: string;
+    name: string;
+    description: string;
+    draftCode: string;
+    inputSchema: LuaModuleSchema;
+    outputSchema: LuaModuleSchema;
+    testParams: Record<string, unknown>;
+}
+
 export const luaModuleQueryKeys = {
     all: ["lua-modules"] as const,
     list: () => ["lua-modules", "list"] as const,
@@ -137,4 +166,8 @@ export function testLuaModule(
     code?: string,
 ): Promise<{ output: Record<string, unknown>; executionTime: number }> {
     return apiHttpClient.post(`${LUA_MODULES_PATH}/${id}/test`, { params, code });
+}
+
+export function generateLuaModule(dto: GenerateLuaModuleDto): Promise<GeneratedLuaModule> {
+    return apiHttpClient.post(`${LUA_MODULES_PATH}/generate`, dto);
 }

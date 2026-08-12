@@ -1,0 +1,119 @@
+import { getProvider, getReasoningOptions } from "@buildingai/ai-sdk";
+import { SecretService } from "@buildingai/core/modules";
+import { InjectRepository } from "@buildingai/db/@nestjs/typeorm";
+import { AiModel } from "@buildingai/db/entities";
+import { Repository } from "@buildingai/db/typeorm";
+import { HttpErrorFactory } from "@buildingai/errors";
+import { getProviderSecret } from "@buildingai/utils";
+import { Injectable } from "@nestjs/common";
+import { generateText, Output } from "ai";
+import { z } from "zod";
+
+import type { GenerateLuaModuleDto } from "./lua-module.dto";
+
+const jsonObjectSchema = z.record(z.string(), z.unknown());
+
+const generatedModuleSchema = z.object({
+    reply: z.string().describe("面向学生的简短中文回复，说明本轮完成了什么"),
+    name: z.string().min(1).max(100).describe("模块名称"),
+    description: z.string().max(500).describe("模块用途说明"),
+    draftCode: z.string().min(1).max(65536).describe("完整可执行的 Lua 5.4 代码"),
+    inputSchema: jsonObjectSchema.describe("完整的输入 JSON Schema，根类型必须是 object"),
+    outputSchema: jsonObjectSchema.describe("完整的输出 JSON Schema，根类型必须是 object"),
+    testParams: jsonObjectSchema.describe("一组与输入 Schema 匹配的测试参数"),
+});
+
+export type GeneratedLuaModule = z.infer<typeof generatedModuleSchema>;
+
+const SYSTEM_PROMPT = `你是面向学生的 Lua 模块编程助手。你需要根据对话和当前草稿，返回一份完整的模块快照。
+
+运行环境约束：
+- 使用 Lua 5.4 语法，必须定义 function main(params)，并返回一个 JSON 兼容的 table。
+- 仅能使用基础 Lua、string、table、math、utf8；不能使用 os、io、package、require、dofile、loadfile、load、debug、print、collectgarbage。
+- 输入输出只能包含字符串、有限数字、布尔值、数组、对象和 nil，不能返回函数、userdata、线程或循环引用。
+- 代码要简洁、适合初学者阅读；对缺失输入提供合理默认值，需要时用 error 给出清楚错误。
+- inputSchema 和 outputSchema 必须是根 type 为 object 的 JSON Schema，并与代码严格一致。
+- testParams 必须能够直接运行当前代码。
+
+编辑规则：
+- 用户要求修改时，在当前草稿上修改；未要求改变的行为应保留。
+- 用户只是询问或让你解释时，reply 回答问题，模块快照保持不变。
+- 不要在代码中访问网络、文件、系统命令或环境变量。
+- reply 使用简短中文，不要输出 Markdown 代码块；代码只放在 draftCode 字段。`;
+
+@Injectable()
+export class LuaCodeAssistantService {
+    constructor(
+        @InjectRepository(AiModel)
+        private readonly aiModelRepository: Repository<AiModel>,
+        private readonly secretService: SecretService,
+    ) {}
+
+    async generate(dto: GenerateLuaModuleDto): Promise<GeneratedLuaModule> {
+        const model = await this.aiModelRepository.findOne({
+            where: { id: dto.modelId, isActive: true, modelType: "llm" },
+            relations: ["provider"],
+        });
+
+        if (!model?.provider?.isActive) {
+            throw HttpErrorFactory.badRequest("选择的 LLM 模型不存在或未启用");
+        }
+        if (!model.provider.bindSecretId) {
+            throw HttpErrorFactory.badRequest("选择的模型供应商尚未配置密钥");
+        }
+
+        const secret = await this.secretService.getConfigKeyValuePairs(model.provider.bindSecretId);
+        const providerId = model.provider.provider;
+        const provider = getProvider(providerId, {
+            apiKey: getProviderSecret("apiKey", secret),
+            baseURL: getProviderSecret("baseUrl", secret) || undefined,
+        });
+
+        const current = this.normalizeCurrent(dto.current);
+        const history = (dto.messages ?? []).map(({ role, content }) => ({ role, content }));
+        const result = await generateText({
+            model: provider(model.model).model,
+            output: Output.object({ schema: generatedModuleSchema }),
+            system: SYSTEM_PROMPT,
+            prompt: `最近对话：\n${JSON.stringify(history)}\n\n当前模块：\n${JSON.stringify(current)}\n\n学生本轮要求：\n${dto.message.trim()}`,
+            temperature: 0.2,
+            providerOptions: getReasoningOptions(providerId, { thinking: false }),
+        });
+
+        if (!result.output) {
+            throw HttpErrorFactory.internal("模型没有返回可用的 Lua 模块");
+        }
+        this.assertGeneratedModule(result.output);
+        return result.output;
+    }
+
+    private normalizeCurrent(current: GenerateLuaModuleDto["current"]) {
+        return {
+            name: this.stringValue(current.name, 100),
+            description: this.stringValue(current.description, 500),
+            draftCode: this.stringValue(current.draftCode, 65536),
+            inputSchema: this.objectValue(current.inputSchema),
+            outputSchema: this.objectValue(current.outputSchema),
+            testParams: this.objectValue(current.testParams),
+        };
+    }
+
+    private stringValue(value: unknown, maxLength: number): string {
+        return typeof value === "string" ? value.slice(0, maxLength) : "";
+    }
+
+    private objectValue(value: unknown): Record<string, unknown> {
+        return value && typeof value === "object" && !Array.isArray(value)
+            ? (value as Record<string, unknown>)
+            : {};
+    }
+
+    private assertGeneratedModule(module: GeneratedLuaModule): void {
+        if (!/function\s+main\s*\(/.test(module.draftCode)) {
+            throw HttpErrorFactory.badRequest("模型生成的代码缺少 main(params) 函数，请重试");
+        }
+        if (module.inputSchema.type !== "object" || module.outputSchema.type !== "object") {
+            throw HttpErrorFactory.badRequest("模型生成的输入输出定义格式不正确，请重试");
+        }
+    }
+}

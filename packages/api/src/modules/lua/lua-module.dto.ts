@@ -1,6 +1,9 @@
 import { Transform, Type } from "class-transformer";
 import {
+    ArrayMaxSize,
+    IsArray,
     IsBoolean,
+    IsIn,
     IsInt,
     IsNotEmpty,
     IsObject,
@@ -9,6 +12,7 @@ import {
     Max,
     MaxLength,
     Min,
+    ValidateNested,
 } from "class-validator";
 
 export class QueryLuaModuleDto {
@@ -97,4 +101,42 @@ export class TestLuaModuleDto {
     @IsNotEmpty({ message: "Lua 脚本不能为空" })
     @MaxLength(65536)
     code?: string;
+}
+
+export class LuaAssistantMessageDto {
+    @IsIn(["user", "assistant"])
+    role: "user" | "assistant";
+
+    @IsString()
+    @IsNotEmpty()
+    @MaxLength(8000)
+    content: string;
+}
+
+export class GenerateLuaModuleDto {
+    @IsString()
+    @IsNotEmpty({ message: "请选择生成代码所使用的模型" })
+    modelId: string;
+
+    @IsString()
+    @IsNotEmpty({ message: "请输入对 Lua 模块的要求" })
+    @MaxLength(4000)
+    message: string;
+
+    @IsOptional()
+    @IsArray()
+    @ArrayMaxSize(12)
+    @ValidateNested({ each: true })
+    @Type(() => LuaAssistantMessageDto)
+    messages?: LuaAssistantMessageDto[];
+
+    @IsObject()
+    current: {
+        name?: unknown;
+        description?: unknown;
+        draftCode?: unknown;
+        inputSchema?: unknown;
+        outputSchema?: unknown;
+        testParams?: unknown;
+    };
 }

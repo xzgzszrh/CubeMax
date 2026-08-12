@@ -1,5 +1,7 @@
 import {
+  generateLuaModule,
   testLuaModule,
+  useAiProvidersQuery,
   useCreateLuaModuleMutation,
   useDeleteLuaModuleMutation,
   useLuaModulesQuery,
@@ -8,13 +10,35 @@ import {
   useUpdateLuaModuleMutation,
   type LuaModuleItem,
   type LuaModuleSchema,
+  type LuaAssistantMessage,
 } from "@buildingai/services/web";
 import { Badge } from "@buildingai/ui/components/ui/badge";
 import { Button } from "@buildingai/ui/components/ui/button";
 import { Input } from "@buildingai/ui/components/ui/input";
 import { Label } from "@buildingai/ui/components/ui/label";
+import { ScrollArea } from "@buildingai/ui/components/ui/scroll-area";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@buildingai/ui/components/ui/select";
 import { Textarea } from "@buildingai/ui/components/ui/textarea";
-import { Code2, Play, Plus, Rocket, Save, Trash2, Undo2 } from "lucide-react";
+import {
+  Bot,
+  Code2,
+  Loader2,
+  Play,
+  Plus,
+  Rocket,
+  Save,
+  Send,
+  Sparkles,
+  Trash2,
+  Undo2,
+  UserRound,
+} from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
@@ -84,11 +108,27 @@ function parseObject(value: string, label: string): Record<string, unknown> {
 export default function LuaModulesPage() {
   const navigate = useNavigate();
   const modulesQuery = useLuaModulesQuery();
+  const providersQuery = useAiProvidersQuery({ supportedModelTypes: "llm" });
   const modules = modulesQuery.data?.items ?? [];
   const [selectedId, setSelectedId] = useState<string>();
   const [editor, setEditor] = useState<EditorState>(emptyEditor);
   const [result, setResult] = useState<string>("");
   const [running, setRunning] = useState(false);
+  const [modelId, setModelId] = useState("");
+  const [prompt, setPrompt] = useState("");
+  const [generating, setGenerating] = useState(false);
+  const [messages, setMessages] = useState<LuaAssistantMessage[]>([]);
+
+  const models = useMemo(
+    () =>
+      (providersQuery.data ?? []).flatMap((provider) =>
+        provider.models.map((model) => ({
+          ...model,
+          providerName: provider.name,
+        })),
+      ),
+    [providersQuery.data],
+  );
 
   const selected = useMemo(
     () => modules.find((module) => module.id === selectedId),
@@ -98,6 +138,10 @@ export default function LuaModulesPage() {
   useEffect(() => {
     if (selected) setEditor(moduleToEditor(selected));
   }, [selected]);
+
+  useEffect(() => {
+    if (!modelId && models[0]) setModelId(models[0].id);
+  }, [modelId, models]);
 
   const createMutation = useCreateLuaModuleMutation({
     onSuccess: (module) => {
@@ -123,6 +167,7 @@ export default function LuaModulesPage() {
       setSelectedId(undefined);
       setEditor(emptyEditor());
       setResult("");
+      setMessages([]);
       toast.success("模块已删除");
     },
     onError: (error) => toast.error(error.message),
@@ -177,6 +222,57 @@ export default function LuaModulesPage() {
     }
   };
 
+  const generate = async () => {
+    const userMessage = prompt.trim();
+    if (!userMessage || generating) return;
+    if (!modelId) {
+      toast.error("请先选择一个可用的 LLM 模型");
+      return;
+    }
+
+    try {
+      const current = {
+        name: editor.name,
+        description: editor.description,
+        draftCode: editor.draftCode,
+        inputSchema: parseObject(editor.inputSchema, "输入定义") as LuaModuleSchema,
+        outputSchema: parseObject(editor.outputSchema, "输出定义") as LuaModuleSchema,
+        testParams: parseObject(editor.testParams, "测试参数"),
+      };
+      const history = messages.slice(-12);
+      setMessages([...messages, { role: "user", content: userMessage }]);
+      setPrompt("");
+      setGenerating(true);
+      const generated = await generateLuaModule({
+        modelId,
+        message: userMessage,
+        messages: history,
+        current,
+      });
+      setEditor({
+        name: generated.name,
+        description: generated.description,
+        draftCode: generated.draftCode,
+        inputSchema: JSON.stringify(generated.inputSchema, null, 2),
+        outputSchema: JSON.stringify(generated.outputSchema, null, 2),
+        testParams: JSON.stringify(generated.testParams, null, 2),
+      });
+      setMessages((currentMessages) => [
+        ...currentMessages,
+        { role: "assistant", content: generated.reply },
+      ]);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "生成失败";
+      setMessages((currentMessages) => [
+        ...currentMessages,
+        { role: "assistant", content: `生成失败：${message}` },
+      ]);
+      toast.error(message);
+    } finally {
+      setGenerating(false);
+    }
+  };
+
   return (
     <div className="bg-background flex min-h-[calc(100vh-64px)] flex-col">
       <header className="flex flex-wrap items-center gap-2 border-b px-4 py-3">
@@ -221,6 +317,7 @@ export default function LuaModulesPage() {
               setSelectedId(undefined);
               setEditor(emptyEditor());
               setResult("");
+              setMessages([]);
             }}
           >
             <Plus /> 新建模块
@@ -230,7 +327,13 @@ export default function LuaModulesPage() {
               <button
                 key={module.id}
                 type="button"
-                onClick={() => setSelectedId(module.id)}
+                onClick={() => {
+                  if (module.id !== selectedId) {
+                    setMessages([]);
+                    setResult("");
+                  }
+                  setSelectedId(module.id);
+                }}
                 className={`flex items-center gap-2 rounded-md px-2.5 py-2 text-left text-sm ${selectedId === module.id ? "bg-accent" : "hover:bg-muted"}`}
               >
                 <Code2 className="size-4 shrink-0" />
@@ -275,49 +378,147 @@ export default function LuaModulesPage() {
           </div>
         </main>
 
-        <aside className="space-y-4 border-t p-4 lg:border-t-0 lg:border-l">
-          <div className="space-y-1.5">
-            <Label>输入定义</Label>
-            <Textarea
-              value={editor.inputSchema}
-              onChange={(e) => setEditor({ ...editor, inputSchema: e.target.value })}
-              spellCheck={false}
-              className="min-h-36 font-mono text-xs"
-            />
+        <aside className="flex min-h-0 flex-col border-t lg:border-t-0 lg:border-l">
+          <div className="flex min-h-[390px] flex-1 flex-col border-b">
+            <div className="flex items-center gap-2 border-b px-4 py-3">
+              <Sparkles className="text-primary size-4" />
+              <h2 className="text-sm font-medium">AI 编程助手</h2>
+            </div>
+            <div className="border-b p-3">
+              <Select value={modelId} onValueChange={setModelId}>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="选择模型" />
+                </SelectTrigger>
+                <SelectContent>
+                  {models.map((model) => (
+                    <SelectItem key={model.id} value={model.id}>
+                      {model.name} · {model.providerName}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <ScrollArea className="min-h-0 flex-1">
+              <div className="space-y-3 p-4">
+                {messages.length === 0 ? (
+                  <div className="space-y-2">
+                    {[
+                      "生成一个成绩等级判断模块",
+                      "给输出增加一条友好的提示",
+                      "解释当前代码的运行过程",
+                    ].map((suggestion) => (
+                      <button
+                        key={suggestion}
+                        type="button"
+                        className="hover:bg-muted w-full rounded-md border px-3 py-2 text-left text-sm"
+                        onClick={() => setPrompt(suggestion)}
+                      >
+                        {suggestion}
+                      </button>
+                    ))}
+                  </div>
+                ) : (
+                  messages.map((message, index) => (
+                    <div
+                      key={`${message.role}-${index}`}
+                      className={`flex gap-2 ${message.role === "user" ? "flex-row-reverse" : ""}`}
+                    >
+                      <span className="bg-muted flex size-7 shrink-0 items-center justify-center rounded-full border">
+                        {message.role === "user" ? (
+                          <UserRound className="size-3.5" />
+                        ) : (
+                          <Bot className="size-3.5" />
+                        )}
+                      </span>
+                      <div
+                        className={`max-w-[85%] rounded-md px-3 py-2 text-sm whitespace-pre-wrap ${
+                          message.role === "user"
+                            ? "bg-primary text-primary-foreground"
+                            : "bg-muted"
+                        }`}
+                      >
+                        {message.content}
+                      </div>
+                    </div>
+                  ))
+                )}
+                {generating && (
+                  <div className="text-muted-foreground flex items-center gap-2 text-sm">
+                    <Loader2 className="size-4 animate-spin" /> 正在修改模块
+                  </div>
+                )}
+              </div>
+            </ScrollArea>
+            <div className="p-3">
+              <div className="focus-within:ring-ring flex items-end gap-2 rounded-md border p-2 focus-within:ring-1">
+                <Textarea
+                  value={prompt}
+                  onChange={(event) => setPrompt(event.target.value)}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter" && !event.shiftKey) {
+                      event.preventDefault();
+                      void generate();
+                    }
+                  }}
+                  placeholder="告诉 AI 你想实现什么"
+                  className="min-h-16 resize-none border-0 p-1 shadow-none focus-visible:ring-0"
+                />
+                <Button
+                  size="icon"
+                  onClick={() => void generate()}
+                  disabled={!prompt.trim() || generating || !modelId}
+                  title="发送"
+                >
+                  {generating ? <Loader2 className="animate-spin" /> : <Send />}
+                </Button>
+              </div>
+            </div>
           </div>
-          <div className="space-y-1.5">
-            <Label>输出定义</Label>
-            <Textarea
-              value={editor.outputSchema}
-              onChange={(e) => setEditor({ ...editor, outputSchema: e.target.value })}
-              spellCheck={false}
-              className="min-h-36 font-mono text-xs"
-            />
+
+          <div className="space-y-4 p-4">
+            <div className="space-y-1.5">
+              <Label>输入定义</Label>
+              <Textarea
+                value={editor.inputSchema}
+                onChange={(e) => setEditor({ ...editor, inputSchema: e.target.value })}
+                spellCheck={false}
+                className="min-h-36 font-mono text-xs"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label>输出定义</Label>
+              <Textarea
+                value={editor.outputSchema}
+                onChange={(e) => setEditor({ ...editor, outputSchema: e.target.value })}
+                spellCheck={false}
+                className="min-h-36 font-mono text-xs"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label>测试参数</Label>
+              <Textarea
+                value={editor.testParams}
+                onChange={(e) => setEditor({ ...editor, testParams: e.target.value })}
+                spellCheck={false}
+                className="min-h-24 font-mono text-xs"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label>运行结果</Label>
+              <pre className="bg-muted min-h-28 overflow-auto rounded-md border p-3 text-xs whitespace-pre-wrap">
+                {result || "尚未运行"}
+              </pre>
+            </div>
+            {selectedId && (
+              <Button
+                variant="ghost"
+                className="text-destructive w-full"
+                onClick={() => deleteMutation.mutate(selectedId)}
+              >
+                <Trash2 /> 删除模块
+              </Button>
+            )}
           </div>
-          <div className="space-y-1.5">
-            <Label>测试参数</Label>
-            <Textarea
-              value={editor.testParams}
-              onChange={(e) => setEditor({ ...editor, testParams: e.target.value })}
-              spellCheck={false}
-              className="min-h-24 font-mono text-xs"
-            />
-          </div>
-          <div className="space-y-1.5">
-            <Label>运行结果</Label>
-            <pre className="bg-muted min-h-28 overflow-auto rounded-md border p-3 text-xs whitespace-pre-wrap">
-              {result || "尚未运行"}
-            </pre>
-          </div>
-          {selectedId && (
-            <Button
-              variant="ghost"
-              className="text-destructive w-full"
-              onClick={() => deleteMutation.mutate(selectedId)}
-            >
-              <Trash2 /> 删除模块
-            </Button>
-          )}
         </aside>
       </div>
     </div>

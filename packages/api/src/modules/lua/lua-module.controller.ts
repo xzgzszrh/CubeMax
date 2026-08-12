@@ -5,15 +5,20 @@ import { Body, Delete, Get, Param, Patch, Post, Query } from "@nestjs/common";
 
 import {
     CreateLuaModuleDto,
+    GenerateLuaModuleDto,
     QueryLuaModuleDto,
     TestLuaModuleDto,
     UpdateLuaModuleDto,
 } from "./lua-module.dto";
+import { LuaCodeAssistantService } from "./lua-code-assistant.service";
 import { LuaModuleService } from "./lua-module.service";
 
 @WebController("lua-modules")
 export class LuaModuleController {
-    constructor(private readonly luaModuleService: LuaModuleService) {}
+    constructor(
+        private readonly luaModuleService: LuaModuleService,
+        private readonly luaCodeAssistantService: LuaCodeAssistantService,
+    ) {}
 
     @Get()
     findAll(@Playground() user: UserPlayground, @Query() query: QueryLuaModuleDto) {
@@ -23,6 +28,11 @@ export class LuaModuleController {
     @Post()
     create(@Playground() user: UserPlayground, @Body() dto: CreateLuaModuleDto) {
         return this.luaModuleService.create(user.id, dto);
+    }
+
+    @Post("generate")
+    generate(@Playground() _user: UserPlayground, @Body() dto: GenerateLuaModuleDto) {
+        return this.luaCodeAssistantService.generate(dto);
     }
 
     @Get(":id")
