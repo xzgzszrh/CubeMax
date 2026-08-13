@@ -1,5 +1,8 @@
 import {
   generateLuaModule,
+  type LuaAssistantMessage,
+  type LuaModuleItem,
+  type LuaModuleSchema,
   testLuaModule,
   useAiProvidersQuery,
   useCreateLuaModuleMutation,
@@ -8,9 +11,6 @@ import {
   usePublishLuaModuleMutation,
   useUnpublishLuaModuleMutation,
   useUpdateLuaModuleMutation,
-  type LuaModuleItem,
-  type LuaModuleSchema,
-  type LuaAssistantMessage,
 } from "@buildingai/services/web";
 import { Badge } from "@buildingai/ui/components/ui/badge";
 import { Button } from "@buildingai/ui/components/ui/button";
@@ -27,8 +27,14 @@ import {
 import { Textarea } from "@buildingai/ui/components/ui/textarea";
 import {
   Bot,
+  Braces,
+  ChevronLeft,
+  ChevronRight,
   Code2,
+  FileCode2,
   Loader2,
+  PanelLeftClose,
+  PanelLeftOpen,
   Play,
   Plus,
   Rocket,
@@ -36,11 +42,10 @@ import {
   Send,
   Sparkles,
   Trash2,
-  Undo2,
   UserRound,
+  X,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 
 const DEFAULT_CODE = `-- params 是工作流传入的参数表
@@ -106,7 +111,6 @@ function parseObject(value: string, label: string): Record<string, unknown> {
 }
 
 export default function LuaModulesPage() {
-  const navigate = useNavigate();
   const modulesQuery = useLuaModulesQuery();
   const providersQuery = useAiProvidersQuery({ supportedModelTypes: "llm" });
   const modules = modulesQuery.data?.items ?? [];
@@ -118,6 +122,8 @@ export default function LuaModulesPage() {
   const [prompt, setPrompt] = useState("");
   const [generating, setGenerating] = useState(false);
   const [messages, setMessages] = useState<LuaAssistantMessage[]>([]);
+  const [fileSidebarOpen, setFileSidebarOpen] = useState(true);
+  const [detailsOpen, setDetailsOpen] = useState(false);
 
   const models = useMemo(
     () =>
@@ -205,6 +211,7 @@ export default function LuaModulesPage() {
         editor.draftCode,
       );
       setResult(JSON.stringify(response, null, 2));
+      setDetailsOpen(true);
     } catch (error) {
       setResult(error instanceof Error ? error.message : String(error));
     } finally {
@@ -274,20 +281,26 @@ export default function LuaModulesPage() {
   };
 
   return (
-    <div className="bg-background flex min-h-[calc(100vh-64px)] flex-col">
-      <header className="flex flex-wrap items-center gap-2 border-b px-4 py-3">
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => navigate("/workflows")}
-          title="返回工作流"
-        >
-          <Undo2 />
-        </Button>
+    <div className="bg-background flex h-full min-h-0 flex-col overflow-hidden">
+      <header className="flex min-h-16 flex-wrap items-center gap-2 border-b px-4 py-2.5">
         <div className="mr-auto min-w-0">
-          <h1 className="truncate text-base font-semibold">Lua 创作</h1>
-          <p className="text-muted-foreground text-xs">编写模块，发布后在工作流中组合使用</p>
+          <div className="flex items-center gap-2">
+            <h1 className="truncate text-base font-semibold">{editor.name || "未命名模块"}</h1>
+            {selected && (
+              <Badge variant="outline">{selected.isPublished ? "已发布" : "草稿"}</Badge>
+            )}
+          </div>
+          <p className="text-muted-foreground truncate text-xs">
+            {editor.description || "Lua 创作"}
+          </p>
         </div>
+        <Button
+          variant={detailsOpen ? "secondary" : "outline"}
+          onClick={() => setDetailsOpen((open) => !open)}
+        >
+          <Braces /> 代码与配置
+          {detailsOpen ? <ChevronRight /> : <ChevronLeft />}
+        </Button>
         <Button
           variant="outline"
           onClick={save}
@@ -308,25 +321,52 @@ export default function LuaModulesPage() {
         </Button>
       </header>
 
-      <div className="grid min-h-0 flex-1 grid-cols-1 lg:grid-cols-[240px_minmax(0,1fr)_320px]">
-        <aside className="border-b p-3 lg:border-r lg:border-b-0">
-          <Button
-            className="w-full"
-            variant="outline"
-            onClick={() => {
-              setSelectedId(undefined);
-              setEditor(emptyEditor());
-              setResult("");
-              setMessages([]);
-            }}
+      <div className="relative flex min-h-0 flex-1 overflow-hidden">
+        <aside
+          className={`bg-background flex shrink-0 flex-col border-r shadow-sm transition-[width] duration-200 max-md:absolute max-md:inset-y-0 max-md:left-0 max-md:z-20 ${
+            fileSidebarOpen ? "w-60" : "w-14"
+          }`}
+        >
+          <div
+            className={`flex h-14 shrink-0 items-center border-b ${
+              fileSidebarOpen ? "justify-between px-3" : "justify-center"
+            }`}
           >
-            <Plus /> 新建模块
-          </Button>
-          <div className="mt-3 flex max-h-52 flex-col gap-1 overflow-auto lg:max-h-[calc(100vh-150px)]">
+            {fileSidebarOpen && <h2 className="text-sm font-medium">Lua 模块</h2>}
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              onClick={() => setFileSidebarOpen((open) => !open)}
+              title={fileSidebarOpen ? "收起模块列表" : "展开模块列表"}
+            >
+              {fileSidebarOpen ? <PanelLeftClose /> : <PanelLeftOpen />}
+            </Button>
+          </div>
+          <div className={fileSidebarOpen ? "p-3" : "flex justify-center py-3"}>
+            <Button
+              className={fileSidebarOpen ? "w-full" : undefined}
+              variant="outline"
+              size={fileSidebarOpen ? "default" : "icon"}
+              title="新建模块"
+              onClick={() => {
+                setSelectedId(undefined);
+                setEditor(emptyEditor());
+                setResult("");
+                setMessages([]);
+              }}
+            >
+              <Plus />
+              {fileSidebarOpen && "新建模块"}
+            </Button>
+          </div>
+          <div
+            className={`min-h-0 flex-1 space-y-1 overflow-y-auto ${fileSidebarOpen ? "px-3 pb-3" : "px-2 pb-3"}`}
+          >
             {modules.map((module) => (
               <button
                 key={module.id}
                 type="button"
+                title={module.name}
                 onClick={() => {
                   if (module.id !== selectedId) {
                     setMessages([]);
@@ -334,123 +374,118 @@ export default function LuaModulesPage() {
                   }
                   setSelectedId(module.id);
                 }}
-                className={`flex items-center gap-2 rounded-md px-2.5 py-2 text-left text-sm ${selectedId === module.id ? "bg-accent" : "hover:bg-muted"}`}
+                className={`relative flex h-10 w-full items-center rounded-md text-left text-sm ${
+                  fileSidebarOpen ? "gap-2 px-2.5" : "justify-center"
+                } ${selectedId === module.id ? "bg-accent" : "hover:bg-muted"}`}
               >
-                <Code2 className="size-4 shrink-0" />
-                <span className="min-w-0 flex-1 truncate">{module.name}</span>
-                {module.isPublished && <span className="size-2 rounded-full bg-emerald-500" />}
+                <FileCode2 className="size-4 shrink-0" />
+                {fileSidebarOpen && (
+                  <>
+                    <span className="min-w-0 flex-1 truncate">{module.name}</span>
+                    {module.isPublished && <span className="size-2 rounded-full bg-emerald-500" />}
+                  </>
+                )}
+                {!fileSidebarOpen && module.isPublished && (
+                  <span className="absolute top-1.5 right-1.5 size-1.5 rounded-full bg-emerald-500" />
+                )}
               </button>
             ))}
           </div>
         </aside>
 
-        <main className="min-w-0 space-y-4 p-4">
-          <div className="grid gap-3 sm:grid-cols-2">
-            <div className="space-y-1.5">
-              <Label>模块名称</Label>
-              <Input
-                value={editor.name}
-                onChange={(e) => setEditor({ ...editor, name: e.target.value })}
-              />
+        <main className="flex min-w-0 flex-1 flex-col">
+          <div className="flex h-14 shrink-0 items-center gap-3 border-b px-5">
+            <Sparkles className="text-primary size-5" />
+            <div className="mr-auto min-w-0">
+              <h2 className="text-sm font-semibold">AI 模块助手</h2>
             </div>
-            <div className="space-y-1.5">
-              <Label>说明</Label>
-              <Input
-                value={editor.description}
-                onChange={(e) => setEditor({ ...editor, description: e.target.value })}
-                placeholder="这个模块用来做什么"
-              />
-            </div>
+            <Select value={modelId} onValueChange={setModelId}>
+              <SelectTrigger className="w-56">
+                <SelectValue placeholder="选择模型" />
+              </SelectTrigger>
+              <SelectContent>
+                {models.map((model) => (
+                  <SelectItem key={model.id} value={model.id}>
+                    {model.name} · {model.providerName}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
-          <div className="space-y-1.5">
-            <div className="flex items-center justify-between">
-              <Label>Lua 代码</Label>
-              {selected && (
-                <Badge variant="outline">{selected.isPublished ? "已发布" : "草稿"}</Badge>
-              )}
-            </div>
-            <Textarea
-              value={editor.draftCode}
-              onChange={(e) => setEditor({ ...editor, draftCode: e.target.value })}
-              spellCheck={false}
-              className="min-h-[430px] resize-y font-mono text-[13px] leading-5"
-            />
-          </div>
-        </main>
 
-        <aside className="flex min-h-0 flex-col border-t lg:border-t-0 lg:border-l">
-          <div className="flex min-h-[390px] flex-1 flex-col border-b">
-            <div className="flex items-center gap-2 border-b px-4 py-3">
-              <Sparkles className="text-primary size-4" />
-              <h2 className="text-sm font-medium">AI 编程助手</h2>
-            </div>
-            <div className="border-b p-3">
-              <Select value={modelId} onValueChange={setModelId}>
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="选择模型" />
-                </SelectTrigger>
-                <SelectContent>
-                  {models.map((model) => (
-                    <SelectItem key={model.id} value={model.id}>
-                      {model.name} · {model.providerName}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <ScrollArea className="min-h-0 flex-1">
-              <div className="space-y-3 p-4">
-                {messages.length === 0 ? (
-                  <div className="space-y-2">
+          <ScrollArea className="min-h-0 flex-1">
+            <div className="mx-auto flex min-h-full w-full max-w-3xl flex-col px-5 py-8">
+              {messages.length === 0 ? (
+                <div className="flex flex-1 flex-col items-center justify-center py-10 text-center">
+                  <span className="bg-primary/10 text-primary mb-5 flex size-12 items-center justify-center rounded-lg">
+                    <Sparkles className="size-6" />
+                  </span>
+                  <h2 className="text-xl font-semibold">你想做一个什么模块？</h2>
+                  <p className="text-muted-foreground mt-2 max-w-md text-sm">
+                    用自己的话描述目标，AI 会完成 Lua 代码和输入输出配置。
+                  </p>
+                  <div className="mt-7 grid w-full max-w-2xl gap-2 sm:grid-cols-3">
                     {[
                       "生成一个成绩等级判断模块",
                       "给输出增加一条友好的提示",
-                      "解释当前代码的运行过程",
+                      "解释当前模块的运行过程",
                     ].map((suggestion) => (
                       <button
                         key={suggestion}
                         type="button"
-                        className="hover:bg-muted w-full rounded-md border px-3 py-2 text-left text-sm"
+                        className="hover:bg-muted min-h-20 rounded-md border px-3 py-3 text-left text-sm transition-colors"
                         onClick={() => setPrompt(suggestion)}
                       >
                         {suggestion}
                       </button>
                     ))}
                   </div>
-                ) : (
-                  messages.map((message, index) => (
+                </div>
+              ) : (
+                <div className="space-y-6">
+                  {messages.map((message, index) => (
                     <div
                       key={`${message.role}-${index}`}
-                      className={`flex gap-2 ${message.role === "user" ? "flex-row-reverse" : ""}`}
+                      className={`flex gap-3 ${message.role === "user" ? "flex-row-reverse" : ""}`}
                     >
-                      <span className="bg-muted flex size-7 shrink-0 items-center justify-center rounded-full border">
+                      <span
+                        className={`flex size-8 shrink-0 items-center justify-center rounded-md ${
+                          message.role === "user"
+                            ? "bg-foreground text-background"
+                            : "bg-primary/10 text-primary"
+                        }`}
+                      >
                         {message.role === "user" ? (
-                          <UserRound className="size-3.5" />
+                          <UserRound className="size-4" />
                         ) : (
-                          <Bot className="size-3.5" />
+                          <Bot className="size-4" />
                         )}
                       </span>
                       <div
-                        className={`max-w-[85%] rounded-md px-3 py-2 text-sm whitespace-pre-wrap ${
-                          message.role === "user"
-                            ? "bg-primary text-primary-foreground"
-                            : "bg-muted"
+                        className={`max-w-[82%] rounded-md px-4 py-3 text-sm leading-6 whitespace-pre-wrap ${
+                          message.role === "user" ? "bg-foreground text-background" : "bg-muted"
                         }`}
                       >
                         {message.content}
                       </div>
                     </div>
-                  ))
-                )}
-                {generating && (
-                  <div className="text-muted-foreground flex items-center gap-2 text-sm">
-                    <Loader2 className="size-4 animate-spin" /> 正在修改模块
-                  </div>
-                )}
-              </div>
-            </ScrollArea>
-            <div className="p-3">
-              <div className="focus-within:ring-ring flex items-end gap-2 rounded-md border p-2 focus-within:ring-1">
+                  ))}
+                  {generating && (
+                    <div className="text-muted-foreground flex items-center gap-3 text-sm">
+                      <span className="bg-primary/10 text-primary flex size-8 items-center justify-center rounded-md">
+                        <Loader2 className="size-4 animate-spin" />
+                      </span>
+                      正在生成模块
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          </ScrollArea>
+
+          <div className="shrink-0 px-5 pt-2 pb-5">
+            <div className="mx-auto w-full max-w-3xl">
+              <div className="focus-within:ring-ring bg-background flex items-end gap-2 rounded-lg border p-2 shadow-sm focus-within:ring-1">
                 <Textarea
                   value={prompt}
                   onChange={(event) => setPrompt(event.target.value)}
@@ -460,8 +495,8 @@ export default function LuaModulesPage() {
                       void generate();
                     }
                   }}
-                  placeholder="告诉 AI 你想实现什么"
-                  className="min-h-16 resize-none border-0 p-1 shadow-none focus-visible:ring-0"
+                  placeholder="描述你想让模块完成的任务"
+                  className="min-h-20 resize-none border-0 px-2 py-2 shadow-none focus-visible:ring-0"
                 />
                 <Button
                   size="icon"
@@ -474,52 +509,104 @@ export default function LuaModulesPage() {
               </div>
             </div>
           </div>
+        </main>
 
-          <div className="space-y-4 p-4">
-            <div className="space-y-1.5">
-              <Label>输入定义</Label>
-              <Textarea
-                value={editor.inputSchema}
-                onChange={(e) => setEditor({ ...editor, inputSchema: e.target.value })}
-                spellCheck={false}
-                className="min-h-36 font-mono text-xs"
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label>输出定义</Label>
-              <Textarea
-                value={editor.outputSchema}
-                onChange={(e) => setEditor({ ...editor, outputSchema: e.target.value })}
-                spellCheck={false}
-                className="min-h-36 font-mono text-xs"
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label>测试参数</Label>
-              <Textarea
-                value={editor.testParams}
-                onChange={(e) => setEditor({ ...editor, testParams: e.target.value })}
-                spellCheck={false}
-                className="min-h-24 font-mono text-xs"
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label>运行结果</Label>
-              <pre className="bg-muted min-h-28 overflow-auto rounded-md border p-3 text-xs whitespace-pre-wrap">
-                {result || "尚未运行"}
-              </pre>
-            </div>
-            {selectedId && (
+        {detailsOpen && (
+          <aside className="bg-background absolute inset-y-0 right-0 z-30 flex w-full max-w-[460px] flex-col border-l shadow-lg">
+            <div className="flex h-14 shrink-0 items-center gap-2 border-b px-4">
+              <Code2 className="size-4" />
+              <h2 className="mr-auto text-sm font-semibold">代码与配置</h2>
               <Button
                 variant="ghost"
-                className="text-destructive w-full"
-                onClick={() => deleteMutation.mutate(selectedId)}
+                size="icon-sm"
+                onClick={() => setDetailsOpen(false)}
+                title="收起代码与配置"
               >
-                <Trash2 /> 删除模块
+                <X />
               </Button>
-            )}
-          </div>
-        </aside>
+            </div>
+            <ScrollArea className="min-h-0 flex-1">
+              <div className="space-y-5 p-4">
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <div className="space-y-1.5">
+                    <Label>模块名称</Label>
+                    <Input
+                      value={editor.name}
+                      onChange={(event) => setEditor({ ...editor, name: event.target.value })}
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label>说明</Label>
+                    <Input
+                      value={editor.description}
+                      onChange={(event) =>
+                        setEditor({ ...editor, description: event.target.value })
+                      }
+                      placeholder="这个模块用来做什么"
+                    />
+                  </div>
+                </div>
+                <div className="space-y-1.5">
+                  <Label>Lua 代码</Label>
+                  <Textarea
+                    value={editor.draftCode}
+                    onChange={(event) => setEditor({ ...editor, draftCode: event.target.value })}
+                    spellCheck={false}
+                    className="min-h-72 resize-y font-mono text-[13px] leading-5"
+                  />
+                </div>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="space-y-1.5">
+                    <Label>输入定义</Label>
+                    <Textarea
+                      value={editor.inputSchema}
+                      onChange={(event) =>
+                        setEditor({ ...editor, inputSchema: event.target.value })
+                      }
+                      spellCheck={false}
+                      className="min-h-44 font-mono text-xs"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label>输出定义</Label>
+                    <Textarea
+                      value={editor.outputSchema}
+                      onChange={(event) =>
+                        setEditor({ ...editor, outputSchema: event.target.value })
+                      }
+                      spellCheck={false}
+                      className="min-h-44 font-mono text-xs"
+                    />
+                  </div>
+                </div>
+                <div className="space-y-1.5">
+                  <Label>测试参数</Label>
+                  <Textarea
+                    value={editor.testParams}
+                    onChange={(event) => setEditor({ ...editor, testParams: event.target.value })}
+                    spellCheck={false}
+                    className="min-h-28 font-mono text-xs"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label>运行结果</Label>
+                  <pre className="bg-muted min-h-28 overflow-auto rounded-md border p-3 text-xs whitespace-pre-wrap">
+                    {result || "尚未运行"}
+                  </pre>
+                </div>
+                {selectedId && (
+                  <Button
+                    variant="ghost"
+                    className="text-destructive w-full"
+                    onClick={() => deleteMutation.mutate(selectedId)}
+                  >
+                    <Trash2 /> 删除模块
+                  </Button>
+                )}
+              </div>
+            </ScrollArea>
+          </aside>
+        )}
       </div>
     </div>
   );

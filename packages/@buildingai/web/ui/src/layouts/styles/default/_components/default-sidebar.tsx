@@ -140,6 +140,28 @@ export function DefaultAppSidebar({ ...props }: React.ComponentProps<typeof Side
 
   const navMain = useMenuItems(menuConfig?.menus ?? [], conversationItems, homeAction);
 
+  // Lua 创作是工作流的配套开发入口。旧版本的菜单配置可能还没有该项，
+  // 因此在前台菜单缺失时补入固定入口，避免需要重新装修或重建数据库。
+  const navWithLua = useMemo<NavItem[]>(() => {
+    if (navMain.some((item) => item.path === "/lua" || item.id === "menu_lua")) {
+      return navMain;
+    }
+
+    const workflowIndex = navMain.findIndex(
+      (item) => item.path === "/workflows" || item.id === "menu_workflows",
+    );
+    const luaItem: NavItem = {
+      id: "menu_lua_fixed",
+      title: "Lua 创作",
+      icon: "code-2",
+      path: "/lua",
+    };
+
+    if (workflowIndex < 0) return [...navMain, luaItem];
+
+    return [...navMain.slice(0, workflowIndex + 1), luaItem, ...navMain.slice(workflowIndex + 1)];
+  }, [navMain]);
+
   // 老师/管理员在任一组织有教学身份时，课堂入口以底部「讲台」按钮呈现；
   // 学生和个人空间用户仍从主导航的「课堂」项进入。
   const { data: workspaceContext } = useWorkspaceContextQuery({ enabled: isLogin() });
@@ -161,7 +183,7 @@ export function DefaultAppSidebar({ ...props }: React.ComponentProps<typeof Side
     () =>
       isLogin() && !isTeacher
         ? [
-            ...navMain,
+            ...navWithLua,
             {
               id: "menu_classroom_fixed",
               title: "课堂",
@@ -169,8 +191,8 @@ export function DefaultAppSidebar({ ...props }: React.ComponentProps<typeof Side
               path: "/classroom",
             },
           ]
-        : navMain,
-    [navMain, isLogin, isTeacher],
+        : navWithLua,
+    [navWithLua, isLogin, isTeacher],
   );
 
   const consoleLink = useMemo(() => {
