@@ -14,6 +14,9 @@ export type SimulatorDraft = {
 
 type RuntimeStatus = "loading" | "ready" | "running" | "stopping" | "exited" | "error";
 
+const RUNTIME_FONT_PATH = "/storage/fonts/NotoSansSC-Regular-sub.ttf";
+const RUNTIME_FONT_URL = "/esp-claw-runtime/fonts/NotoSansSC-Regular-sub.ttf";
+
 function luaLiteral(value: unknown): string {
   if (value === null || value === undefined) return "nil";
   if (typeof value === "boolean") return value ? "true" : "false";
@@ -42,17 +45,22 @@ function executableLua(draft: SimulatorDraft): string {
     draft.code,
     "",
     'if type(main) == "function" then',
-    "  local __cubemax_result = main(__cubemax_params)",
-    "  if __cubemax_result ~= nil then",
-    '    print("[CubeMax] result: " .. tostring(__cubemax_result))',
-    "  end",
+    "  main(__cubemax_params)",
     "end",
   ].join("\n");
 }
 
-export function EspClawRuntime({ draft }: { draft?: SimulatorDraft }) {
+export function EspClawRuntime({
+  draft,
+  autoRun = false,
+}: {
+  draft?: SimulatorDraft;
+  autoRun?: boolean;
+}) {
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const pendingRunPathRef = useRef<string | undefined>(undefined);
+  const runRef = useRef<() => void>(() => undefined);
+  const autoRunRef = useRef(autoRun);
   const [status, setStatus] = useState<RuntimeStatus>("loading");
   const [logs, setLogs] = useState<string[]>([]);
   const [width, setWidth] = useState("800");
@@ -81,6 +89,10 @@ export function EspClawRuntime({ draft }: { draft?: SimulatorDraft }) {
           setStatus("ready");
           if (data.width) setWidth(String(data.width));
           if (data.height) setHeight(String(data.height));
+          if (autoRunRef.current) {
+            autoRunRef.current = false;
+            window.setTimeout(() => runRef.current(), 0);
+          }
           break;
         case "esp-claw-sim:mounted":
           if (pendingRunPathRef.current) {
@@ -90,7 +102,6 @@ export function EspClawRuntime({ draft }: { draft?: SimulatorDraft }) {
           break;
         case "esp-claw-sim:running":
           setStatus("running");
-          setLogs((current) => [...current, `[sim] running ${data.message ?? ""}`]);
           break;
         case "esp-claw-sim:stopping":
           setStatus("stopping");
@@ -100,7 +111,9 @@ export function EspClawRuntime({ draft }: { draft?: SimulatorDraft }) {
           setLogs((current) => [...current, `[sim] exited (${data.code ?? 0})`]);
           break;
         case "esp-claw-sim:log":
-          if (data.message) setLogs((current) => [...current, data.message!].slice(-300));
+          if (data.message && !data.message.includes("lv_timer_handler: It seems lv_tick_inc")) {
+            setLogs((current) => [...current, data.message!].slice(-300));
+          }
           break;
         case "esp-claw-sim:error":
           setStatus("error");
@@ -112,25 +125,41 @@ export function EspClawRuntime({ draft }: { draft?: SimulatorDraft }) {
     return () => window.removeEventListener("message", onMessage);
   }, [send]);
 
-  const run = () => {
+  const run = useCallback(async () => {
     if (!activeDraft?.code.trim()) return;
     const moduleId = activeDraft.moduleId || "cubemax-draft";
     const path = `/uploads/cubemax/${moduleId}/scripts/main.lua`;
     setLogs([]);
     pendingRunPathRef.current = path;
-    send({
-      type: "esp-claw-sim:mountSkill",
-      skill: {
-        id: moduleId,
-        root: `/uploads/cubemax/${moduleId}`,
-        entry: path,
-        files: [{ path, text: executableLua(activeDraft) }],
-        peripherals: ["display", "touch"],
-        capabilityMocks: {},
-        simulatorMocks: {},
-      },
-    });
-  };
+    try {
+      const response = await fetch(RUNTIME_FONT_URL);
+      if (!response.ok) throw new Error(`字体资源加载失败（HTTP ${response.status}）`);
+      const fontBytes = Array.from(new Uint8Array(await response.arrayBuffer()));
+      send({
+        type: "esp-claw-sim:mountSkill",
+        skill: {
+          id: moduleId,
+          root: `/uploads/cubemax/${moduleId}`,
+          entry: path,
+          files: [
+            { path, text: executableLua(activeDraft) },
+            { path: RUNTIME_FONT_PATH, bytes: fontBytes },
+          ],
+          peripherals: ["display", "touch"],
+          capabilityMocks: {},
+          simulatorMocks: {},
+        },
+      });
+    } catch (error) {
+      pendingRunPathRef.current = undefined;
+      setStatus("error");
+      setLogs([`[error] ${error instanceof Error ? error.message : "无法加载虚拟屏幕字体"}`]);
+    }
+  }, [activeDraft, send]);
+
+  useEffect(() => {
+    runRef.current = run;
+  }, [run]);
 
   const applyResolution = () => {
     const nextWidth = Math.max(64, Math.min(2048, Number.parseInt(width, 10) || 800));
@@ -141,7 +170,7 @@ export function EspClawRuntime({ draft }: { draft?: SimulatorDraft }) {
   };
 
   return (
-    <section className="bg-background flex min-h-[520px] min-w-0 flex-1 flex-col overflow-hidden rounded-md border shadow-sm">
+    <section className="bg-background flex h-[min(700px,calc(100dvh-8.5rem))] min-h-[460px] min-w-0 flex-1 flex-col overflow-hidden rounded-md border shadow-sm">
       <div className="flex min-h-14 flex-wrap items-center gap-2 border-b px-4 py-2">
         <div className="mr-auto flex min-w-0 items-center gap-2">
           <span className="size-2 rounded-full bg-emerald-400" />
@@ -196,13 +225,13 @@ export function EspClawRuntime({ draft }: { draft?: SimulatorDraft }) {
           </Button>
         </div>
       </div>
-      <div className="grid min-h-0 flex-1 grid-cols-1 lg:grid-cols-[minmax(0,1fr)_260px]">
-        <div className="grid min-h-[360px] place-items-center bg-black p-3">
+      <div className="grid min-h-0 flex-1 grid-cols-1 grid-rows-[minmax(280px,1fr)_180px] lg:grid-cols-[minmax(0,1fr)_260px] lg:grid-rows-1">
+        <div className="grid min-h-0 place-items-center bg-black p-3">
           <iframe
             ref={iframeRef}
             title="ESP-Claw Lua 虚拟屏幕"
             src="/esp-claw-runtime/esp_claw_sim.html?embedded=1"
-            className="h-full min-h-[360px] w-full border-0"
+            className="size-full min-h-0 border-0"
           />
         </div>
         <aside className="bg-muted/20 flex min-h-0 flex-col border-t lg:border-t-0 lg:border-l">
@@ -210,7 +239,7 @@ export function EspClawRuntime({ draft }: { draft?: SimulatorDraft }) {
             <Terminal className="size-3.5" />
             运行日志
           </div>
-          <ScrollArea className="min-h-0 flex-1">
+          <ScrollArea className="min-h-0 flex-1" viewportClassName="overflow-y-auto">
             <pre className="text-foreground p-3 font-mono text-[11px] leading-5 whitespace-pre-wrap">
               {logs.length ? logs.join("\n") : "等待运行 Lua 脚本…"}
             </pre>

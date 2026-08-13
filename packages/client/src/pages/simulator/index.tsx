@@ -43,14 +43,14 @@ local lvgl = require("lvgl")
 function main(params)
   local panel, io, width, height, panel_if =
     board_manager.get_display_lcd_params("display_lcd")
+
   lvgl.init(panel, io, width, height, panel_if, {
     buffer_lines = 10,
     tick_ms = 5,
     task_period_ms = 10,
+    font_path = "fonts/NotoSansSC-Regular-sub.ttf",
+    font_size = 24,
   })
-
-  local touch = board_manager.get_lcd_touch_handle("lcd_touch")
-  if touch then lvgl.indev_register("touch", touch) end
 
   local screen = lvgl.create_screen()
   screen:set_style({ bg_color = "#f8fafc" })
@@ -60,8 +60,7 @@ function main(params)
     text_color = "#0f172a",
   })
   screen:load()
-  lvgl.run()
-  return { shown = true }
+  lvgl.run({ period_ms = 50 })
 end`,
   params: { message: "你好，CubeMax！" },
 };
@@ -237,6 +236,7 @@ export default function SimulatorPage() {
   const [serialInput, setSerialInput] = useState("");
   const [view, setView] = useState<"display" | "peripherals">("display");
   const [simulatorDraft, setSimulatorDraft] = useState<SimulatorDraft>(DEFAULT_DISPLAY_DRAFT);
+  const [runtimeVersion, setRuntimeVersion] = useState(0);
   const didCreateDefault = useRef(false);
 
   const sessionQuery = useSimulatorSessionQuery(selectedId, { refetchInterval: 1000 });
@@ -312,6 +312,11 @@ export default function SimulatorPage() {
     if (session && text) serialMutation.mutate({ id: session.id, text });
   };
 
+  const runExample = () => {
+    setSimulatorDraft({ ...DEFAULT_DISPLAY_DRAFT, params: { ...DEFAULT_DISPLAY_DRAFT.params } });
+    setRuntimeVersion((version) => version + 1);
+  };
+
   return (
     <div className="bg-background flex h-full min-h-0 flex-col overflow-hidden">
       <header className="flex min-h-16 items-center gap-3 border-b px-4 py-2.5">
@@ -372,15 +377,15 @@ export default function SimulatorPage() {
                   浏览器直接运行 Lua 5.4 和 LVGL，屏幕支持点击与拖动触摸。
                 </p>
               </div>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setSimulatorDraft(DEFAULT_DISPLAY_DRAFT)}
-              >
-                加载示例
+              <Button variant="outline" size="sm" onClick={runExample}>
+                <Code2 /> 运行示例
               </Button>
             </div>
-            <EspClawRuntime draft={simulatorDraft} />
+            <EspClawRuntime
+              key={runtimeVersion}
+              draft={simulatorDraft}
+              autoRun={runtimeVersion > 0}
+            />
           </div>
         </div>
       ) : (
