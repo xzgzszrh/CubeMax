@@ -11,6 +11,7 @@ import {
   usePublishLuaModuleMutation,
   useUnpublishLuaModuleMutation,
   useUpdateLuaModuleMutation,
+  useSimulatorSessionsQuery,
 } from "@buildingai/services/web";
 import { Badge } from "@buildingai/ui/components/ui/badge";
 import { Button } from "@buildingai/ui/components/ui/button";
@@ -31,6 +32,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Code2,
+  Cpu,
   FileCode2,
   Loader2,
   PanelLeftClose,
@@ -46,6 +48,7 @@ import {
   X,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 
 const DEFAULT_CODE = `-- params 是工作流传入的参数表
@@ -112,6 +115,8 @@ function parseObject(value: string, label: string): Record<string, unknown> {
 
 export default function LuaModulesPage() {
   const modulesQuery = useLuaModulesQuery();
+  const simulatorSessionsQuery = useSimulatorSessionsQuery();
+  const navigate = useNavigate();
   const providersQuery = useAiProvidersQuery({ supportedModelTypes: "llm" });
   const modules = modulesQuery.data?.items ?? [];
   const [selectedId, setSelectedId] = useState<string>();
@@ -124,6 +129,7 @@ export default function LuaModulesPage() {
   const [messages, setMessages] = useState<LuaAssistantMessage[]>([]);
   const [fileSidebarOpen, setFileSidebarOpen] = useState(true);
   const [detailsOpen, setDetailsOpen] = useState(false);
+  const [simulatorSessionId, setSimulatorSessionId] = useState<string>("none");
 
   const models = useMemo(
     () =>
@@ -209,6 +215,7 @@ export default function LuaModulesPage() {
         selectedId,
         parseObject(editor.testParams, "测试参数"),
         editor.draftCode,
+        simulatorSessionId === "none" ? undefined : simulatorSessionId,
       );
       setResult(JSON.stringify(response, null, 2));
       setDetailsOpen(true);
@@ -578,6 +585,35 @@ export default function LuaModulesPage() {
                       className="min-h-44 font-mono text-xs"
                     />
                   </div>
+                </div>
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between gap-2">
+                    <Label>仿真设备</Label>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-6 px-1.5 text-xs"
+                      onClick={() => navigate("/simulator")}
+                    >
+                      <Cpu className="size-3" /> 打开硬件仿真
+                    </Button>
+                  </div>
+                  <Select value={simulatorSessionId} onValueChange={setSimulatorSessionId}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="不使用仿真设备" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">不使用仿真设备</SelectItem>
+                      {(simulatorSessionsQuery.data ?? []).map((session) => (
+                        <SelectItem key={session.id} value={session.id}>
+                          {session.name} · {session.id.slice(0, 8)}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-muted-foreground text-xs">
+                    选择后，AI 生成的代码可以通过 device.* 控制虚拟开发板。
+                  </p>
                 </div>
                 <div className="space-y-1.5">
                   <Label>测试参数</Label>

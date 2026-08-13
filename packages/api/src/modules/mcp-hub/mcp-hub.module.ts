@@ -1,5 +1,6 @@
 import { Module } from "@nestjs/common";
 
+import { SimulatorModule } from "../simulator/simulator.module";
 import { McpHubController } from "./controllers/mcp-hub.controller";
 import { McpHubService } from "./services/mcp-hub.service";
 
@@ -11,6 +12,7 @@ import { McpHubService } from "./services/mcp-hub.service";
  * 并导出 McpHubService 供内置 MCP 注册表进程内直读服务目录。
  */
 @Module({
+    imports: [SimulatorModule],
     controllers: [McpHubController],
     providers: [McpHubService],
     exports: [McpHubService],

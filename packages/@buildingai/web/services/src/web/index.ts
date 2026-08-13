@@ -27,3 +27,4 @@ export * from "./user";
 export * from "./user-memory";
 export * from "./workflow";
 export * from "./lua-module";
+export * from "./simulator";

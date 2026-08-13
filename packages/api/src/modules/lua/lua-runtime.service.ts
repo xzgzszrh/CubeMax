@@ -4,7 +4,12 @@ import { existsSync } from "fs";
 import { join } from "path";
 import { Worker } from "worker_threads";
 
-type LuaWorkerResult = { ok: true; result: unknown } | { ok: false; error: string };
+import { SimulatorService } from "../simulator/simulator.service";
+import type { SimulatorOperation } from "../simulator/simulator.types";
+
+type LuaWorkerResult =
+    | { ok: true; result: unknown; deviceOperations: SimulatorOperation[] }
+    | { ok: false; error: string };
 
 export interface LuaExecutionResult {
     output: Record<string, unknown>;
@@ -16,10 +21,19 @@ export class LuaRuntimeService {
     private readonly timeoutMs = 3_000;
     private readonly maxPayloadBytes = 256 * 1024;
 
-    async execute(code: string, params: Record<string, unknown> = {}): Promise<LuaExecutionResult> {
+    constructor(private readonly simulatorService: SimulatorService) {}
+
+    async execute(
+        code: string,
+        params: Record<string, unknown> = {},
+        simulatorSessionId?: string,
+    ): Promise<LuaExecutionResult> {
         this.assertPayloadSize(params, "输入参数");
         const startedAt = Date.now();
-        const result = await this.runWorker(code, params);
+        const deviceSnapshot = simulatorSessionId
+            ? { available: true, ...this.simulatorService.getLuaSnapshot(simulatorSessionId) }
+            : { available: false };
+        const result = await this.runWorker(code, params, false, deviceSnapshot);
 
         if (result.ok === false) {
             throw HttpErrorFactory.badRequest(`Lua 执行失败：${result.error}`);
@@ -27,6 +41,9 @@ export class LuaRuntimeService {
 
         const output = this.normalizeOutput(result.result);
         this.assertPayloadSize(output, "输出结果");
+        if (simulatorSessionId && result.deviceOperations.length > 0) {
+            this.simulatorService.applyOperations(simulatorSessionId, result.deviceOperations);
+        }
         return { output, executionTime: Date.now() - startedAt };
     }
 
@@ -41,6 +58,7 @@ export class LuaRuntimeService {
         code: string,
         params: Record<string, unknown>,
         validateOnly = false,
+        deviceSnapshot: Record<string, unknown> = { available: false },
     ): Promise<LuaWorkerResult> {
         const workerPath = this.resolveWorkerPath();
 
@@ -79,7 +97,7 @@ export class LuaRuntimeService {
                     finish(() => reject(HttpErrorFactory.badRequest("Lua 运行时意外退出")));
                 }
             });
-            worker.postMessage({ code, params, validateOnly });
+            worker.postMessage({ code, params, validateOnly, deviceSnapshot });
         });
     }
 

@@ -22,6 +22,7 @@ import InstallPage from "@/pages/install";
 import WorkflowEditorApp from "@/pages/workflows/app";
 import WorkflowsIndexPage from "@/pages/workflows/index";
 import LuaModulesPage from "@/pages/lua";
+import SimulatorPage from "@/pages/simulator";
 
 import ConsoleLayout from "../layouts/console";
 import DynamicHomePage from "../pages";
@@ -187,6 +188,14 @@ export const router = createBrowserRouter([
             element: (
               <AuthGuard>
                 <LuaModulesPage />
+              </AuthGuard>
+            ),
+          },
+          {
+            path: "/simulator",
+            element: (
+              <AuthGuard>
+                <SimulatorPage />
               </AuthGuard>
             ),
           },

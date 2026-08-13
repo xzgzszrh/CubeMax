@@ -1,8 +1,17 @@
-import { createMcpClient, type McpClient } from "@buildingai/ai-sdk";
 import { createServer, type Server } from "node:http";
 import type { AddressInfo } from "node:net";
 
+import { createMcpClient, type McpClient } from "@buildingai/ai-sdk";
+
+import { SimulatorService } from "../../simulator/simulator.service";
 import { McpHubService } from "./mcp-hub.service";
+
+jest.mock("@buildingai/errors", () => ({
+    HttpErrorFactory: {
+        badRequest: (message: string) => new Error(message),
+        notFound: (message: string) => new Error(message),
+    },
+}));
 
 /**
  * 协议兼容性测试：用真实的 @ai-sdk/mcp streamable HTTP 客户端
@@ -16,7 +25,7 @@ describe("McpHubService streamable HTTP 协议兼容性", () => {
     const clients: McpClient[] = [];
 
     beforeAll(async () => {
-        hub = new McpHubService();
+        hub = new McpHubService(new SimulatorService());
 
         // 模拟控制器行为的最小 HTTP 包装：POST 转交协议处理器，GET/DELETE 返回 405
         server = createServer((req, res) => {

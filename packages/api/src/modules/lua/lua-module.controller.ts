@@ -3,6 +3,7 @@ import { Playground } from "@buildingai/decorators/playground.decorator";
 import { WebController } from "@common/decorators/controller.decorator";
 import { Body, Delete, Get, Param, Patch, Post, Query } from "@nestjs/common";
 
+import { LuaCodeAssistantService } from "./lua-code-assistant.service";
 import {
     CreateLuaModuleDto,
     GenerateLuaModuleDto,
@@ -10,7 +11,6 @@ import {
     TestLuaModuleDto,
     UpdateLuaModuleDto,
 } from "./lua-module.dto";
-import { LuaCodeAssistantService } from "./lua-code-assistant.service";
 import { LuaModuleService } from "./lua-module.service";
 
 @WebController("lua-modules")
@@ -55,7 +55,13 @@ export class LuaModuleController {
         @Param("id") id: string,
         @Body() dto: TestLuaModuleDto,
     ) {
-        return this.luaModuleService.test(id, user.id, dto.params ?? {}, dto.code);
+        return this.luaModuleService.test(
+            id,
+            user.id,
+            dto.params ?? {},
+            dto.code,
+            dto.simulatorSessionId,
+        );
     }
 
     @Post(":id/publish")

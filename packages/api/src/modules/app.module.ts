@@ -28,9 +28,10 @@ import { CDKModule } from "@modules/cdk/cdk.module";
 import { ChannelModule } from "@modules/channel/channel.module";
 import { ExtensionCoreModule } from "@modules/extension/extension.module";
 import { HealthModule } from "@modules/health/health.module";
-import { MembershipModule } from "@modules/membership/membership.module";
 import { LuaModuleModule } from "@modules/lua/lua.module";
+import { MembershipModule } from "@modules/membership/membership.module";
 import { NotificationModule } from "@modules/notification/notification.module";
+import { SimulatorModule } from "@modules/simulator/simulator.module";
 import { DynamicModule, Module } from "@nestjs/common";
 import { ConfigModule } from "@nestjs/config";
 import { APP_GUARD } from "@nestjs/core";
@@ -143,6 +144,7 @@ export class AppModule {
                 NoticeModule,
                 OrganizationModule,
                 NotificationModule,
+                SimulatorModule,
                 WorkflowModule,
                 await ExtensionCoreModule.register(),
             ],

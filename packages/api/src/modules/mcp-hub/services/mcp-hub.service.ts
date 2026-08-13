@@ -1,5 +1,6 @@
 import { Injectable, Logger } from "@nestjs/common";
 
+import { SimulatorService } from "../../simulator/simulator.service";
 import type {
     BuildingAiMcpService,
     JsonRpcId,
@@ -8,7 +9,7 @@ import type {
     McpToolCallResult,
 } from "../mcp-hub.types";
 import { calculatorService } from "../tools/calculator";
-import { embeddedService } from "../tools/embedded";
+import { createEmbeddedService } from "../tools/embedded";
 import { tavilyService } from "../tools/tavily";
 import { textService } from "../tools/text";
 
@@ -39,12 +40,14 @@ export class McpHubService {
     /** 已注册的内置 MCP 服务（Tavily 服务仅在配置了 TAVILY_API_KEY 时注册） */
     private services: BuildingAiMcpService[] | null = null;
 
+    constructor(private readonly simulatorService: SimulatorService) {}
+
     private getServices(): BuildingAiMcpService[] {
         if (!this.services) {
             this.services = [
                 calculatorService,
                 textService,
-                embeddedService,
+                createEmbeddedService(this.simulatorService),
                 ...(process.env.TAVILY_API_KEY ? [tavilyService] : []),
             ];
         }

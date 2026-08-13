@@ -1,3 +1,4 @@
+import type { SimulatorService } from "../../simulator/simulator.service";
 import type {
     BuildingAiMcpService,
     JsonSchemaObject,
@@ -9,7 +10,11 @@ const stubOutputSchema: JsonSchemaObject = {
     type: "object",
     properties: {
         ok: { type: "boolean", title: "执行成功", description: "占位工具固定返回 false。" },
-        notImplemented: { type: "boolean", title: "尚未实现", description: "工具是否仅为占位实现。" },
+        notImplemented: {
+            type: "boolean",
+            title: "尚未实现",
+            description: "工具是否仅为占位实现。",
+        },
         tool: { type: "string", title: "工具名称", description: "MCP 工具的协议名称。" },
         message: { type: "string", title: "提示信息", description: "供用户阅读的占位提示。" },
         receivedArgs: { type: "object", title: "接收参数", description: "占位工具接收到的参数。" },
@@ -89,8 +94,16 @@ export const embeddedService: BuildingAiMcpService = {
                 properties: {
                     port: { type: "string", title: "端口", description: "串口路径或名称。" },
                     baudRate: { type: "number", title: "波特率", description: "串口通信波特率。" },
-                    dataBits: { type: "number", title: "数据位", description: "串口数据位，通常为 8。" },
-                    stopBits: { type: "number", title: "停止位", description: "串口停止位，通常为 1。" },
+                    dataBits: {
+                        type: "number",
+                        title: "数据位",
+                        description: "串口数据位，通常为 8。",
+                    },
+                    stopBits: {
+                        type: "number",
+                        title: "停止位",
+                        description: "串口停止位，通常为 1。",
+                    },
                     parity: {
                         type: "string",
                         title: "校验位",
@@ -158,9 +171,21 @@ export const embeddedService: BuildingAiMcpService = {
                 type: "object",
                 properties: {
                     sessionId: sessionProperty,
-                    firmwarePath: { type: "string", title: "固件路径", description: "固件产物的文件路径。" },
-                    target: { type: "string", title: "目标", description: "目标开发板或芯片标识。" },
-                    verify: { type: "boolean", title: "烧录后校验", description: "是否在烧录后进行校验。" },
+                    firmwarePath: {
+                        type: "string",
+                        title: "固件路径",
+                        description: "固件产物的文件路径。",
+                    },
+                    target: {
+                        type: "string",
+                        title: "目标",
+                        description: "目标开发板或芯片标识。",
+                    },
+                    verify: {
+                        type: "boolean",
+                        title: "烧录后校验",
+                        description: "是否在烧录后进行校验。",
+                    },
                     timeoutMs: timeoutProperty,
                 },
                 required: ["sessionId", "firmwarePath"],
@@ -270,7 +295,14 @@ export const embeddedService: BuildingAiMcpService = {
                         type: "string",
                         title: "模式",
                         description: "引脚工作模式。",
-                        enum: ["input", "output", "input_pullup", "input_pulldown", "analog", "pwm"],
+                        enum: [
+                            "input",
+                            "output",
+                            "input_pullup",
+                            "input_pulldown",
+                            "analog",
+                            "pwm",
+                        ],
                     },
                 },
                 required: ["sessionId", "pin", "mode"],
@@ -286,7 +318,11 @@ export const embeddedService: BuildingAiMcpService = {
                 properties: {
                     sessionId: sessionProperty,
                     pin: { type: "string", title: "引脚", description: "开发板引脚名称或编号。" },
-                    value: { type: "boolean", title: "电平", description: "是表示高电平，否表示低电平。" },
+                    value: {
+                        type: "boolean",
+                        title: "电平",
+                        description: "是表示高电平，否表示低电平。",
+                    },
                 },
                 required: ["sessionId", "pin", "value"],
                 additionalProperties: false,
@@ -314,7 +350,11 @@ export const embeddedService: BuildingAiMcpService = {
                 type: "object",
                 properties: {
                     sessionId: sessionProperty,
-                    pin: { type: "string", title: "引脚", description: "模拟引脚名称或 ADC 通道。" },
+                    pin: {
+                        type: "string",
+                        title: "引脚",
+                        description: "模拟引脚名称或 ADC 通道。",
+                    },
                     referenceVoltage: {
                         type: "number",
                         title: "参考电压",
@@ -425,7 +465,11 @@ export const embeddedService: BuildingAiMcpService = {
             inputSchema: {
                 type: "object",
                 properties: {
-                    durationMs: { type: "number", title: "时长（毫秒）", description: "延时时长，单位为毫秒。" },
+                    durationMs: {
+                        type: "number",
+                        title: "时长（毫秒）",
+                        description: "延时时长，单位为毫秒。",
+                    },
                 },
                 required: ["durationMs"],
                 additionalProperties: false,
@@ -453,3 +497,32 @@ export const embeddedService: BuildingAiMcpService = {
         }),
     ],
 };
+
+export function createEmbeddedService(simulatorService: SimulatorService): BuildingAiMcpService {
+    return {
+        ...embeddedService,
+        description: "面向虚拟 ESP32 的积木式工具，支持 GPIO、ADC、PWM、舵机、I2C 和串口仿真。",
+        tools: embeddedService.tools.map((descriptor) => ({
+            ...descriptor,
+            outputSchema: undefined,
+            async execute(args) {
+                if (descriptor.name === "scan_serial_ports") {
+                    return {
+                        content: [
+                            {
+                                type: "text",
+                                text: "虚拟设备请从硬件仿真页面创建并复制会话 ID。",
+                            },
+                        ],
+                        structuredContent: { ports: [] },
+                    };
+                }
+                const output = await simulatorService.executeTool(descriptor.name, args);
+                return {
+                    content: [{ type: "text", text: JSON.stringify(output) }],
+                    structuredContent: output,
+                };
+            },
+        })),
+    };
+}

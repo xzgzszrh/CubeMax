@@ -1,11 +1,12 @@
 import { InjectRepository } from "@buildingai/db/@nestjs/typeorm";
-import { LuaModule, type LuaModuleSchema } from "@buildingai/db/entities";
+import { LuaModule } from "@buildingai/db/entities";
 import { Repository } from "@buildingai/db/typeorm";
 import { HttpErrorFactory } from "@buildingai/errors";
 import { Injectable } from "@nestjs/common";
 
+import { SimulatorService } from "../simulator/simulator.service";
 import { CreateLuaModuleDto, QueryLuaModuleDto, UpdateLuaModuleDto } from "./lua-module.dto";
-import { LuaRuntimeService, type LuaExecutionResult } from "./lua-runtime.service";
+import { type LuaExecutionResult, LuaRuntimeService } from "./lua-runtime.service";
 
 export interface LuaModuleListResult {
     items: LuaModule[];
@@ -21,6 +22,7 @@ export class LuaModuleService {
         @InjectRepository(LuaModule)
         private readonly luaModuleRepository: Repository<LuaModule>,
         private readonly luaRuntimeService: LuaRuntimeService,
+        private readonly simulatorService: SimulatorService,
     ) {}
 
     async findAll(userId: string, query: QueryLuaModuleDto): Promise<LuaModuleListResult> {
@@ -76,9 +78,15 @@ export class LuaModuleService {
         userId: string,
         params: Record<string, unknown>,
         code?: string,
+        simulatorSessionId?: string,
     ): Promise<LuaExecutionResult> {
         const luaModule = await this.findOne(id, userId);
-        return this.luaRuntimeService.execute(code ?? luaModule.draftCode, params);
+        if (simulatorSessionId) this.simulatorService.getForUser(simulatorSessionId, userId);
+        return this.luaRuntimeService.execute(
+            code ?? luaModule.draftCode,
+            params,
+            simulatorSessionId,
+        );
     }
 
     async publish(id: string, userId: string): Promise<LuaModule> {
@@ -113,7 +121,15 @@ export class LuaModuleService {
         if (!luaModule.isPublished || !luaModule.publishedCode) {
             throw HttpErrorFactory.badRequest("Lua 模块尚未发布");
         }
-        return this.luaRuntimeService.execute(luaModule.publishedCode, params);
+        const simulatorSessionId =
+            typeof params.simulatorSessionId === "string" ? params.simulatorSessionId : undefined;
+        if (simulatorSessionId) this.simulatorService.getForUser(simulatorSessionId, userId);
+        const { simulatorSessionId: _simulatorSessionId, ...luaParams } = params;
+        return this.luaRuntimeService.execute(
+            luaModule.publishedCode,
+            luaParams,
+            simulatorSessionId,
+        );
     }
 
     private assertSchema(schema: Record<string, unknown>, label: string): void {

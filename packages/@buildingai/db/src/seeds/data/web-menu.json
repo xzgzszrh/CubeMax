@@ -66,6 +66,19 @@
             }
         },
         {
+            "id": "menu_simulator",
+            "icon": "microchip",
+            "title": "硬件仿真",
+            "link": {
+                "label": "硬件仿真",
+                "path": "/simulator",
+                "type": "system",
+                "query": {},
+                "component": "/src/pages/simulator/index.tsx",
+                "target": "_self"
+            }
+        },
+        {
             "id": "menu_datasets",
             "icon": "book-search",
             "title": "知识库",

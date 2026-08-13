@@ -1,16 +1,30 @@
+import { SimulatorService } from "../../simulator/simulator.service";
 import { McpHubService } from "./mcp-hub.service";
+
+jest.mock("@buildingai/errors", () => ({
+    HttpErrorFactory: {
+        badRequest: (message: string) => new Error(message),
+        notFound: (message: string) => new Error(message),
+    },
+}));
 
 /**
  * 内置 MCP Hub 无状态 streamable HTTP 协议处理器的纯逻辑测试（不依赖数据库）
  */
 describe("McpHubService", () => {
     let service: McpHubService;
+    let simulatorService: SimulatorService;
 
     beforeEach(() => {
-        service = new McpHubService();
+        simulatorService = new SimulatorService();
+        service = new McpHubService(simulatorService);
     });
 
-    const request = (method: string, params?: Record<string, unknown>, id: number | string = 1) => ({
+    const request = (
+        method: string,
+        params?: Record<string, unknown>,
+        id: number | string = 1,
+    ) => ({
         jsonrpc: "2.0",
         id,
         method,
@@ -127,20 +141,21 @@ describe("McpHubService", () => {
             expect((result.body as any).result.isError).toBe(true);
         });
 
-        it("嵌入式占位工具返回 notImplemented 标记", async () => {
+        it("嵌入式工具会修改虚拟设备状态", async () => {
+            const session = simulatorService.create("student");
             const result = await service.handleMcpPost(
                 "embedded",
                 request("tools/call", {
                     name: "gpio_write",
-                    arguments: { sessionId: "s1", pin: "D1", value: true },
+                    arguments: { sessionId: session.id, pin: "2", value: true },
                 }),
             );
 
-            expect((result.body as any).result.structuredContent).toMatchObject({
-                ok: false,
-                notImplemented: true,
-                tool: "gpio_write",
+            expect((result.body as any).result.structuredContent).toEqual({
+                pin: "2",
+                value: true,
             });
+            expect(simulatorService.get(session.id).peripherals.led.on).toBe(true);
         });
     });
 

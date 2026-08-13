@@ -101,6 +101,11 @@ export class TestLuaModuleDto {
     @IsNotEmpty({ message: "Lua 脚本不能为空" })
     @MaxLength(65536)
     code?: string;
+
+    @IsOptional()
+    @IsString()
+    @IsNotEmpty()
+    simulatorSessionId?: string;
 }
 
 export class LuaAssistantMessageDto {

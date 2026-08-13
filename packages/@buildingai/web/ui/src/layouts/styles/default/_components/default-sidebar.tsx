@@ -179,11 +179,29 @@ export function DefaultAppSidebar({ ...props }: React.ComponentProps<typeof Side
   );
 
   // 课堂（方糖猫设备与课堂互动）是固定入口，不走后台装修菜单配置。
+  const navWithSimulator = useMemo<NavItem[]>(() => {
+    if (navWithLua.some((item) => item.path === "/simulator" || item.id === "menu_simulator")) {
+      return navWithLua;
+    }
+
+    const luaIndex = navWithLua.findIndex(
+      (item) => item.path === "/lua" || item.id === "menu_lua_fixed",
+    );
+    const simulatorItem: NavItem = {
+      id: "menu_simulator_fixed",
+      title: "硬件仿真",
+      icon: "microchip",
+      path: "/simulator",
+    };
+    if (luaIndex < 0) return [...navWithLua, simulatorItem];
+    return [...navWithLua.slice(0, luaIndex + 1), simulatorItem, ...navWithLua.slice(luaIndex + 1)];
+  }, [navWithLua]);
+
   const navWithClassroom = useMemo<NavItem[]>(
     () =>
       isLogin() && !isTeacher
         ? [
-            ...navWithLua,
+            ...navWithSimulator,
             {
               id: "menu_classroom_fixed",
               title: "课堂",
@@ -191,8 +209,8 @@ export function DefaultAppSidebar({ ...props }: React.ComponentProps<typeof Side
               path: "/classroom",
             },
           ]
-        : navWithLua,
-    [navWithLua, isLogin, isTeacher],
+        : navWithSimulator,
+    [navWithSimulator, isLogin, isTeacher],
   );
 
   const consoleLink = useMemo(() => {

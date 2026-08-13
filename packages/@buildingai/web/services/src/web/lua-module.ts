@@ -164,8 +164,13 @@ export function testLuaModule(
     id: string,
     params: Record<string, unknown>,
     code?: string,
+    simulatorSessionId?: string,
 ): Promise<{ output: Record<string, unknown>; executionTime: number }> {
-    return apiHttpClient.post(`${LUA_MODULES_PATH}/${id}/test`, { params, code });
+    return apiHttpClient.post(`${LUA_MODULES_PATH}/${id}/test`, {
+        params,
+        code,
+        simulatorSessionId,
+    });
 }
 
 export function generateLuaModule(dto: GenerateLuaModuleDto): Promise<GeneratedLuaModule> {
