@@ -17,6 +17,7 @@ import {
   Activity,
   Box,
   CircleGauge,
+  Code2,
   Copy,
   Cpu,
   Lightbulb,
@@ -29,6 +30,41 @@ import {
 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
+
+import { EspClawRuntime, type SimulatorDraft } from "./esp-claw-runtime";
+
+const SIMULATOR_DRAFT_KEY = "cubemax:simulator-draft";
+
+const DEFAULT_DISPLAY_DRAFT: SimulatorDraft = {
+  name: "虚拟屏幕示例",
+  code: `local board_manager = require("board_manager")
+local lvgl = require("lvgl")
+
+function main(params)
+  local panel, io, width, height, panel_if =
+    board_manager.get_display_lcd_params("display_lcd")
+  lvgl.init(panel, io, width, height, panel_if, {
+    buffer_lines = 10,
+    tick_ms = 5,
+    task_period_ms = 10,
+  })
+
+  local touch = board_manager.get_lcd_touch_handle("lcd_touch")
+  if touch then lvgl.indev_register("touch", touch) end
+
+  local screen = lvgl.create_screen()
+  screen:set_style({ bg_color = "#f8fafc" })
+  lvgl.label(screen, {
+    text = params.message or "你好，CubeMax！",
+    align = "center",
+    text_color = "#0f172a",
+  })
+  screen:load()
+  lvgl.run()
+  return { shown = true }
+end`,
+  params: { message: "你好，CubeMax！" },
+};
 
 const LEFT_PINS = [
   "3V3",
@@ -199,6 +235,8 @@ export default function SimulatorPage() {
   const [selectedId, setSelectedId] = useState<string>();
   const [potentiometer, setPotentiometer] = useState(2048);
   const [serialInput, setSerialInput] = useState("");
+  const [view, setView] = useState<"display" | "peripherals">("display");
+  const [simulatorDraft, setSimulatorDraft] = useState<SimulatorDraft>(DEFAULT_DISPLAY_DRAFT);
   const didCreateDefault = useRef(false);
 
   const sessionQuery = useSimulatorSessionQuery(selectedId, { refetchInterval: 1000 });
@@ -229,6 +267,18 @@ export default function SimulatorPage() {
     },
     onError: (error) => toast.error(error.message),
   });
+
+  useEffect(() => {
+    try {
+      const stored = sessionStorage.getItem(SIMULATOR_DRAFT_KEY);
+      if (stored) {
+        const parsed = JSON.parse(stored) as SimulatorDraft;
+        if (parsed.code && parsed.name) setSimulatorDraft(parsed);
+      }
+    } catch {
+      toast.error("无法读取 Lua 仿真草稿");
+    }
+  }, []);
 
   useEffect(() => {
     if (sessionsQuery.isSuccess && sessions.length > 0 && !selectedId) {
@@ -268,9 +318,26 @@ export default function SimulatorPage() {
         <Cpu className="text-primary size-5" />
         <div className="mr-auto min-w-0">
           <h1 className="truncate text-base font-semibold">硬件仿真</h1>
-          <p className="text-muted-foreground truncate text-xs">ESP32 教学型虚拟开发板</p>
+          <p className="text-muted-foreground truncate text-xs">Lua + LVGL 应用层仿真</p>
         </div>
-        {session && <Badge variant="outline">运行中</Badge>}
+        <div className="bg-muted flex h-9 items-center rounded-md p-1">
+          <Button
+            variant={view === "display" ? "secondary" : "ghost"}
+            size="sm"
+            className="h-7"
+            onClick={() => setView("display")}
+          >
+            <Code2 /> 虚拟屏幕
+          </Button>
+          <Button
+            variant={view === "peripherals" ? "secondary" : "ghost"}
+            size="sm"
+            className="h-7"
+            onClick={() => setView("peripherals")}
+          >
+            <Cpu /> 外设状态
+          </Button>
+        </div>
         <Button
           variant="outline"
           size="icon"
@@ -295,198 +362,225 @@ export default function SimulatorPage() {
         </Button>
       </header>
 
-      <div className="grid min-h-0 flex-1 grid-cols-1 overflow-hidden lg:grid-cols-[220px_minmax(420px,1fr)_320px]">
-        <aside className="flex min-h-0 flex-col border-r max-lg:hidden">
-          <div className="flex h-14 items-center justify-between border-b px-3">
-            <h2 className="text-sm font-medium">虚拟开发板</h2>
-            <Button
-              variant="ghost"
-              size="icon-sm"
-              title="新建开发板"
-              onClick={() => createMutation.mutate(undefined)}
-              disabled={createMutation.isPending}
-            >
-              <Plus />
-            </Button>
-          </div>
-          <ScrollArea className="min-h-0 flex-1">
-            <div className="space-y-1 p-2">
-              {sessions.map((item) => (
-                <button
-                  key={item.id}
-                  type="button"
-                  onClick={() => setSelectedId(item.id)}
-                  className={`flex w-full items-center gap-2 rounded-md px-2.5 py-2.5 text-left ${item.id === selectedId ? "bg-accent" : "hover:bg-muted"}`}
-                >
-                  <Cpu className="size-4 shrink-0" />
-                  <div className="min-w-0 flex-1">
-                    <div className="truncate text-sm font-medium">{item.name}</div>
-                    <div className="text-muted-foreground truncate text-[11px]">
-                      {item.id.slice(0, 8)}
-                    </div>
-                  </div>
-                </button>
-              ))}
+      {view === "display" ? (
+        <div className="min-h-0 flex-1 overflow-auto p-4">
+          <div className="mx-auto flex min-h-full max-w-[1400px] flex-col gap-3">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div>
+                <h2 className="text-sm font-semibold">{simulatorDraft.name}</h2>
+                <p className="text-muted-foreground text-xs">
+                  浏览器直接运行 Lua 5.4 和 LVGL，屏幕支持点击与拖动触摸。
+                </p>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setSimulatorDraft(DEFAULT_DISPLAY_DRAFT)}
+              >
+                加载示例
+              </Button>
             </div>
-          </ScrollArea>
-          <div className="border-t p-2">
-            <Button
-              variant="ghost"
-              className="text-destructive w-full justify-start"
-              disabled={!session || deleteMutation.isPending}
-              onClick={() => session && deleteMutation.mutate(session.id)}
-            >
-              <Trash2 /> 删除当前会话
-            </Button>
+            <EspClawRuntime draft={simulatorDraft} />
           </div>
-        </aside>
-
-        <main className="min-h-0 overflow-y-auto">
-          {session ? (
-            <div className="mx-auto flex min-h-full max-w-4xl flex-col px-4 py-5 sm:px-8">
-              <DevBoard session={session} />
-              <section className="mt-auto grid gap-5 border-t pt-5 sm:grid-cols-2">
-                <div>
-                  <div className="mb-3 flex items-center justify-between">
-                    <div>
-                      <h2 className="text-sm font-semibold">板载按键</h2>
-                      <p className="text-muted-foreground text-xs">
-                        GPIO {session.peripherals.button.pin}
-                      </p>
-                    </div>
-                    <Badge variant={session.peripherals.button.pressed ? "default" : "outline"}>
-                      {session.peripherals.button.pressed ? "已按下" : "松开"}
-                    </Badge>
-                  </div>
-                  <Button
-                    variant="outline"
-                    className="h-12 w-full"
-                    onPointerDown={() =>
-                      inputMutation.mutate({
-                        id: session.id,
-                        input: { type: "button", pressed: true },
-                      })
-                    }
-                    onPointerUp={() =>
-                      inputMutation.mutate({
-                        id: session.id,
-                        input: { type: "button", pressed: false },
-                      })
-                    }
-                    onPointerLeave={() =>
-                      inputMutation.mutate({
-                        id: session.id,
-                        input: { type: "button", pressed: false },
-                      })
-                    }
-                    onPointerCancel={() =>
-                      inputMutation.mutate({
-                        id: session.id,
-                        input: { type: "button", pressed: false },
-                      })
-                    }
+        </div>
+      ) : (
+        <div className="grid min-h-0 flex-1 grid-cols-1 overflow-hidden lg:grid-cols-[220px_minmax(420px,1fr)_320px]">
+          <aside className="flex min-h-0 flex-col border-r max-lg:hidden">
+            <div className="flex h-14 items-center justify-between border-b px-3">
+              <h2 className="text-sm font-medium">虚拟开发板</h2>
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                title="新建开发板"
+                onClick={() => createMutation.mutate(undefined)}
+                disabled={createMutation.isPending}
+              >
+                <Plus />
+              </Button>
+            </div>
+            <ScrollArea className="min-h-0 flex-1">
+              <div className="space-y-1 p-2">
+                {sessions.map((item) => (
+                  <button
+                    key={item.id}
+                    type="button"
+                    onClick={() => setSelectedId(item.id)}
+                    className={`flex w-full items-center gap-2 rounded-md px-2.5 py-2.5 text-left ${item.id === selectedId ? "bg-accent" : "hover:bg-muted"}`}
                   >
-                    按住 BOOT
-                  </Button>
-                </div>
-                <div>
-                  <div className="mb-5 flex items-center justify-between">
-                    <div>
-                      <h2 className="text-sm font-semibold">电位器</h2>
-                      <p className="text-muted-foreground text-xs">
-                        ADC · GPIO {session.peripherals.potentiometer.pin}
-                      </p>
+                    <Cpu className="size-4 shrink-0" />
+                    <div className="min-w-0 flex-1">
+                      <div className="truncate text-sm font-medium">{item.name}</div>
+                      <div className="text-muted-foreground truncate text-[11px]">
+                        {item.id.slice(0, 8)}
+                      </div>
                     </div>
-                    <span className="font-mono text-sm tabular-nums">{potentiometer}</span>
-                  </div>
-                  <Slider
-                    min={0}
-                    max={4095}
-                    step={1}
-                    value={[potentiometer]}
-                    onValueChange={([value]) => setPotentiometer(value)}
-                    onValueCommit={([value]) =>
-                      inputMutation.mutate({
-                        id: session.id,
-                        input: { type: "potentiometer", value },
-                      })
-                    }
-                  />
-                </div>
-              </section>
-            </div>
-          ) : (
-            <div className="text-muted-foreground flex h-full items-center justify-center text-sm">
-              正在准备虚拟开发板
-            </div>
-          )}
-        </main>
-
-        <aside className="flex min-h-0 flex-col border-l max-lg:hidden">
-          <div className="flex h-14 items-center gap-2 border-b px-4">
-            <Activity className="size-4" />
-            <h2 className="text-sm font-semibold">器件状态</h2>
-          </div>
-          {session && <PeripheralStatus session={session} />}
-
-          <div className="flex min-h-0 flex-1 flex-col">
-            <div className="flex h-12 shrink-0 items-center gap-2 border-b px-4">
-              <Terminal className="size-4" />
-              <h2 className="text-sm font-semibold">串口监视器</h2>
-            </div>
-            <ScrollArea className="bg-muted/20 min-h-0 flex-1">
-              <div className="text-foreground space-y-1 p-3 font-mono text-xs leading-5">
-                {session?.serialLog.map((entry) => (
-                  <div
-                    key={entry.id}
-                    className={
-                      entry.direction === "input"
-                        ? "text-sky-700"
-                        : entry.direction === "system"
-                          ? "text-muted-foreground"
-                          : "text-emerald-700"
-                    }
-                  >
-                    <span className="text-muted-foreground/70 mr-2">
-                      {entry.direction === "input" ? ">" : entry.direction === "output" ? "<" : "#"}
-                    </span>
-                    <span className="break-all">{entry.text}</span>
-                  </div>
+                  </button>
                 ))}
               </div>
             </ScrollArea>
-            <div className="flex gap-2 border-t p-3">
-              <Input
-                value={serialInput}
-                onChange={(event) => setSerialInput(event.target.value)}
-                onKeyDown={(event) => event.key === "Enter" && sendSerial()}
-                placeholder="发送串口数据"
-              />
+            <div className="border-t p-2">
               <Button
-                size="icon"
-                title="发送"
-                disabled={!session || !serialInput.trim()}
-                onClick={sendSerial}
+                variant="ghost"
+                className="text-destructive w-full justify-start"
+                disabled={!session || deleteMutation.isPending}
+                onClick={() => session && deleteMutation.mutate(session.id)}
               >
-                <Send />
+                <Trash2 /> 删除当前会话
               </Button>
             </div>
-          </div>
+          </aside>
 
-          {activePins.length > 0 && (
-            <div className="max-h-32 overflow-y-auto border-t p-3">
-              <div className="mb-2 text-xs font-medium">活动引脚</div>
-              <div className="flex flex-wrap gap-1.5">
-                {activePins.map(([pin, state]) => (
-                  <Badge key={pin} variant="outline" className="font-mono text-[10px]">
-                    {pin} · {state.mode} · {state.digitalValue ? "HIGH" : "LOW"}
-                  </Badge>
-                ))}
+          <main className="min-h-0 overflow-y-auto">
+            {session ? (
+              <div className="mx-auto flex min-h-full max-w-4xl flex-col px-4 py-5 sm:px-8">
+                <DevBoard session={session} />
+                <section className="mt-auto grid gap-5 border-t pt-5 sm:grid-cols-2">
+                  <div>
+                    <div className="mb-3 flex items-center justify-between">
+                      <div>
+                        <h2 className="text-sm font-semibold">板载按键</h2>
+                        <p className="text-muted-foreground text-xs">
+                          GPIO {session.peripherals.button.pin}
+                        </p>
+                      </div>
+                      <Badge variant={session.peripherals.button.pressed ? "default" : "outline"}>
+                        {session.peripherals.button.pressed ? "已按下" : "松开"}
+                      </Badge>
+                    </div>
+                    <Button
+                      variant="outline"
+                      className="h-12 w-full"
+                      onPointerDown={() =>
+                        inputMutation.mutate({
+                          id: session.id,
+                          input: { type: "button", pressed: true },
+                        })
+                      }
+                      onPointerUp={() =>
+                        inputMutation.mutate({
+                          id: session.id,
+                          input: { type: "button", pressed: false },
+                        })
+                      }
+                      onPointerLeave={() =>
+                        inputMutation.mutate({
+                          id: session.id,
+                          input: { type: "button", pressed: false },
+                        })
+                      }
+                      onPointerCancel={() =>
+                        inputMutation.mutate({
+                          id: session.id,
+                          input: { type: "button", pressed: false },
+                        })
+                      }
+                    >
+                      按住 BOOT
+                    </Button>
+                  </div>
+                  <div>
+                    <div className="mb-5 flex items-center justify-between">
+                      <div>
+                        <h2 className="text-sm font-semibold">电位器</h2>
+                        <p className="text-muted-foreground text-xs">
+                          ADC · GPIO {session.peripherals.potentiometer.pin}
+                        </p>
+                      </div>
+                      <span className="font-mono text-sm tabular-nums">{potentiometer}</span>
+                    </div>
+                    <Slider
+                      min={0}
+                      max={4095}
+                      step={1}
+                      value={[potentiometer]}
+                      onValueChange={([value]) => setPotentiometer(value)}
+                      onValueCommit={([value]) =>
+                        inputMutation.mutate({
+                          id: session.id,
+                          input: { type: "potentiometer", value },
+                        })
+                      }
+                    />
+                  </div>
+                </section>
+              </div>
+            ) : (
+              <div className="text-muted-foreground flex h-full items-center justify-center text-sm">
+                正在准备虚拟开发板
+              </div>
+            )}
+          </main>
+
+          <aside className="flex min-h-0 flex-col border-l max-lg:hidden">
+            <div className="flex h-14 items-center gap-2 border-b px-4">
+              <Activity className="size-4" />
+              <h2 className="text-sm font-semibold">器件状态</h2>
+            </div>
+            {session && <PeripheralStatus session={session} />}
+
+            <div className="flex min-h-0 flex-1 flex-col">
+              <div className="flex h-12 shrink-0 items-center gap-2 border-b px-4">
+                <Terminal className="size-4" />
+                <h2 className="text-sm font-semibold">串口监视器</h2>
+              </div>
+              <ScrollArea className="bg-muted/20 min-h-0 flex-1">
+                <div className="text-foreground space-y-1 p-3 font-mono text-xs leading-5">
+                  {session?.serialLog.map((entry) => (
+                    <div
+                      key={entry.id}
+                      className={
+                        entry.direction === "input"
+                          ? "text-sky-700"
+                          : entry.direction === "system"
+                            ? "text-muted-foreground"
+                            : "text-emerald-700"
+                      }
+                    >
+                      <span className="text-muted-foreground/70 mr-2">
+                        {entry.direction === "input"
+                          ? ">"
+                          : entry.direction === "output"
+                            ? "<"
+                            : "#"}
+                      </span>
+                      <span className="break-all">{entry.text}</span>
+                    </div>
+                  ))}
+                </div>
+              </ScrollArea>
+              <div className="flex gap-2 border-t p-3">
+                <Input
+                  value={serialInput}
+                  onChange={(event) => setSerialInput(event.target.value)}
+                  onKeyDown={(event) => event.key === "Enter" && sendSerial()}
+                  placeholder="发送串口数据"
+                />
+                <Button
+                  size="icon"
+                  title="发送"
+                  disabled={!session || !serialInput.trim()}
+                  onClick={sendSerial}
+                >
+                  <Send />
+                </Button>
               </div>
             </div>
-          )}
-        </aside>
-      </div>
+
+            {activePins.length > 0 && (
+              <div className="max-h-32 overflow-y-auto border-t p-3">
+                <div className="mb-2 text-xs font-medium">活动引脚</div>
+                <div className="flex flex-wrap gap-1.5">
+                  {activePins.map(([pin, state]) => (
+                    <Badge key={pin} variant="outline" className="font-mono text-[10px]">
+                      {pin} · {state.mode} · {state.digitalValue ? "HIGH" : "LOW"}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+            )}
+          </aside>
+        </div>
+      )}
     </div>
   );
 }

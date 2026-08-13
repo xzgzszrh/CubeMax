@@ -10,6 +10,7 @@
         "build:desktop": "tauri build",
         "lint": "eslint .",
         "lint:fix": "eslint . --fix",
+        "simulator:runtime:update": "node scripts/update-esp-claw-runtime.mjs",
         "preview": "vite preview",
         "tauri": "tauri"
     },

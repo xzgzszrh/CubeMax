@@ -9,9 +9,9 @@ import {
   useDeleteLuaModuleMutation,
   useLuaModulesQuery,
   usePublishLuaModuleMutation,
+  useSimulatorSessionsQuery,
   useUnpublishLuaModuleMutation,
   useUpdateLuaModuleMutation,
-  useSimulatorSessionsQuery,
 } from "@buildingai/services/web";
 import { Badge } from "@buildingai/ui/components/ui/badge";
 import { Button } from "@buildingai/ui/components/ui/button";
@@ -226,6 +226,24 @@ export default function LuaModulesPage() {
     }
   };
 
+  const runInVirtualScreen = () => {
+    try {
+      const params = parseObject(editor.testParams, "测试参数");
+      sessionStorage.setItem(
+        "cubemax:simulator-draft",
+        JSON.stringify({
+          name: editor.name.trim() || "未命名 Lua 模块",
+          moduleId: selectedId,
+          code: editor.draftCode,
+          params,
+        }),
+      );
+      navigate("/simulator?source=lua");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "测试参数格式错误");
+    }
+  };
+
   const publish = async () => {
     if (!selectedId) return;
     try {
@@ -317,6 +335,9 @@ export default function LuaModulesPage() {
         </Button>
         <Button variant="outline" onClick={run} disabled={running || !selectedId}>
           <Play /> {running ? "运行中" : "运行"}
+        </Button>
+        <Button variant="outline" onClick={runInVirtualScreen} disabled={!editor.draftCode.trim()}>
+          <Cpu /> 虚拟屏幕运行
         </Button>
         {selected?.isPublished && (
           <Button variant="outline" onClick={() => unpublishMutation.mutate(selected.id)}>
