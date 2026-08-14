@@ -492,24 +492,6 @@ export default function LuaModulesPage() {
     }
   };
 
-  const runInVirtualScreen = () => {
-    try {
-      const params = parseObject(editor.testParams, "测试参数");
-      sessionStorage.setItem(
-        "cubemax:simulator-draft",
-        JSON.stringify({
-          name: editor.name.trim() || "未命名 Lua 模块",
-          moduleId: selectedId,
-          code: editor.draftCode,
-          params,
-        }),
-      );
-      navigate("/simulator?source=lua");
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : "测试参数格式错误");
-    }
-  };
-
   const runOnPhysicalDevice = () => {
     if (physicalDeviceId === "none") {
       toast.error("请选择物理设备");
@@ -589,7 +571,7 @@ export default function LuaModulesPage() {
       setPrompt("");
       setGenerating(true);
       const generated = await generateLuaModule({
-        target: physicalDeviceId !== "none" ? "device" : "simulator",
+        target: "device",
         modelId,
         message: userMessage,
         messages: history,
@@ -660,9 +642,6 @@ export default function LuaModulesPage() {
         </Button>
         <Button variant="outline" onClick={run} disabled={running || !selectedId}>
           <Play /> {running ? "运行中" : "运行"}
-        </Button>
-        <Button variant="outline" onClick={runInVirtualScreen} disabled={!editor.draftCode.trim()}>
-          <Cpu /> 虚拟屏幕运行
         </Button>
         <Select
           value={physicalDeviceId}

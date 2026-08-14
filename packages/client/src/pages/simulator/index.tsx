@@ -4,7 +4,6 @@ import {
   useApplySimulatorOperationsMutation,
   useCreateSimulatorSessionMutation,
   useDeleteSimulatorSessionMutation,
-  useLuaModulesQuery,
   useResetSimulatorSessionMutation,
   useSimulatorSessionQuery,
   useSimulatorSessionsQuery,
@@ -31,7 +30,6 @@ import {
   Copy,
   Cpu,
   FileCode2,
-  FileUp,
   Lightbulb,
   Plus,
   RotateCcw,
@@ -40,15 +38,12 @@ import {
   Trash2,
   Volume2,
 } from "lucide-react";
-import { type ChangeEvent, useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
 import { EspClawRuntime, type SimulatorDraft } from "./esp-claw-runtime";
 
-const SIMULATOR_DRAFT_KEY = "cubemax:simulator-draft";
 const EXAMPLE_LUA_SOURCE = "example";
-const TRANSFERRED_DRAFT_SOURCE = "transferred-draft";
-const LOCAL_FILE_SOURCE = "local-file";
 
 const SIMULATOR_BOARDS: Array<{
   type: SimulatorBoardType;
@@ -197,20 +192,16 @@ function PeripheralStatus({ session }: { session: SimulatorSession }) {
 
 export default function SimulatorPage() {
   const sessionsQuery = useSimulatorSessionsQuery();
-  const luaModulesQuery = useLuaModulesQuery();
   const sessions = sessionsQuery.data ?? [];
-  const luaModules = luaModulesQuery.data?.items ?? [];
   const [selectedId, setSelectedId] = useState<string>();
   const [potentiometer, setPotentiometer] = useState(2048);
   const [serialInput, setSerialInput] = useState("");
   const [simulatorDraft, setSimulatorDraft] = useState<SimulatorDraft>(DEFAULT_DISPLAY_DRAFT);
   const [luaSource, setLuaSource] = useState(EXAMPLE_LUA_SOURCE);
-  const [localFileName, setLocalFileName] = useState<string>();
   const [preferredBoardType, setPreferredBoardType] =
     useState<SimulatorBoardType>("esp32-devkit-v1");
   const [runtimeResetVersion, setRuntimeResetVersion] = useState(0);
   const didCreateDefault = useRef(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const sessionQuery = useSimulatorSessionQuery(selectedId, { refetchInterval: 1000 });
   const session = sessionQuery.data;
@@ -254,21 +245,6 @@ export default function SimulatorPage() {
     },
     onError: (error) => toast.error(error.message),
   });
-
-  useEffect(() => {
-    try {
-      const stored = sessionStorage.getItem(SIMULATOR_DRAFT_KEY);
-      if (stored) {
-        const parsed = JSON.parse(stored) as SimulatorDraft;
-        if (parsed.code && parsed.name) {
-          setSimulatorDraft(parsed);
-          setLuaSource(TRANSFERRED_DRAFT_SOURCE);
-        }
-      }
-    } catch {
-      toast.error("无法读取 Lua 仿真草稿");
-    }
-  }, []);
 
   useEffect(() => {
     if (sessionsQuery.isSuccess && sessions.length > 0 && !selectedId) {
@@ -324,49 +300,7 @@ export default function SimulatorPage() {
   const selectLuaSource = (value: string) => {
     if (value === EXAMPLE_LUA_SOURCE) {
       setSimulatorDraft({ ...DEFAULT_DISPLAY_DRAFT, params: { ...DEFAULT_DISPLAY_DRAFT.params } });
-      setLocalFileName(undefined);
       setLuaSource(value);
-      return;
-    }
-
-    if (value === TRANSFERRED_DRAFT_SOURCE || value === LOCAL_FILE_SOURCE) return;
-
-    const module = luaModules.find((item) => `module:${item.id}` === value);
-    if (!module) return;
-    setSimulatorDraft({
-      name: module.name,
-      moduleId: module.id,
-      code: module.draftCode,
-      params: {},
-    });
-    setLocalFileName(undefined);
-    setLuaSource(value);
-  };
-
-  const loadLocalLuaFile = async (event: ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    event.target.value = "";
-    if (!file) return;
-
-    try {
-      const code = await file.text();
-      if (!code.trim()) {
-        toast.error("Lua 文件为空");
-        return;
-      }
-      const fileName = file.name.replace(/\.lua$/i, "") || "本地 Lua 文件";
-      const safeModuleId = `local-${
-        fileName
-          .toLowerCase()
-          .replace(/[^a-z0-9_-]+/g, "-")
-          .replace(/^-+|-+$/g, "") || "script"
-      }`;
-      setSimulatorDraft({ name: fileName, moduleId: safeModuleId, code, params: {} });
-      setLocalFileName(file.name);
-      setLuaSource(LOCAL_FILE_SOURCE);
-      toast.success(`已选择 ${file.name}`);
-    } catch {
-      toast.error("无法读取 Lua 文件");
     }
   };
 
@@ -389,41 +323,8 @@ export default function SimulatorPage() {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value={EXAMPLE_LUA_SOURCE}>虚拟屏幕示例</SelectItem>
-              {luaSource === TRANSFERRED_DRAFT_SOURCE && (
-                <SelectItem value={TRANSFERRED_DRAFT_SOURCE}>
-                  {simulatorDraft.name}（创作页草稿）
-                </SelectItem>
-              )}
-              {luaSource === LOCAL_FILE_SOURCE && localFileName && (
-                <SelectItem value={LOCAL_FILE_SOURCE}>{localFileName}（本地文件）</SelectItem>
-              )}
-              {luaModules.length > 0 && (
-                <>
-                  {luaModules.map((module) => (
-                    <SelectItem key={module.id} value={`module:${module.id}`}>
-                      {module.name}
-                      {module.isPublished ? "" : "（草稿）"}
-                    </SelectItem>
-                  ))}
-                </>
-              )}
             </SelectContent>
           </Select>
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept=".lua,text/x-lua,text/plain"
-            className="hidden"
-            onChange={loadLocalLuaFile}
-          />
-          <Button
-            variant="outline"
-            size="icon"
-            title="导入本地 Lua 文件"
-            onClick={() => fileInputRef.current?.click()}
-          >
-            <FileUp />
-          </Button>
         </div>
         <Button
           variant="outline"
