@@ -71,6 +71,15 @@ export { UserToken } from "./user-token.entity";
 export { AiWorkflow } from "./ai-workflow.entity";
 export { LuaModule, type LuaModuleSchema } from "./lua-module.entity";
 export {
+    LuaDeviceConnection,
+    type LuaDeviceLimits,
+    type LuaDeviceRunStatus,
+    type LuaDeviceRuntime,
+    LuaDeviceRun,
+    LuaDeviceRunLog,
+    LuaPhysicalDevice,
+} from "./lua-device.entity";
+export {
     XiaozhiAccount,
     XiaozhiAccountStatus,
     type XiaozhiAccountStatusType,
@@ -93,4 +102,7 @@ export {
     type ClassroomDisplayLayout,
     type ClassroomDisplaySortBy,
 } from "./classroom-interaction.entity";
-export { type XiaozhiQuickCommandTarget, XiaozhiQuickCommand } from "./xiaozhi-quick-command.entity";
+export {
+    type XiaozhiQuickCommandTarget,
+    XiaozhiQuickCommand,
+} from "./xiaozhi-quick-command.entity";

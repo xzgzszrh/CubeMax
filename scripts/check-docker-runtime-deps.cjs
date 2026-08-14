@@ -4,7 +4,90 @@ const Module = require("module");
 
 const appRoot = path.resolve(__dirname, "..");
 const builtins = new Set(Module.builtinModules.flatMap((name) => [name, name.replace(/^node:/, "")]));
-const importPattern = /(?:require\(|import\()\s*['"]([^'"]+)['"]\s*\)/g;
+
+function skipQuotedLiteral(source, start, quote) {
+    for (let index = start + 1; index < source.length; index += 1) {
+        if (source[index] === "\\") {
+            index += 1;
+        } else if (source[index] === quote) {
+            return index + 1;
+        }
+    }
+
+    return source.length;
+}
+
+function skipComment(source, start) {
+    if (source[start + 1] === "/") {
+        const lineEnd = source.indexOf("\n", start + 2);
+        return lineEnd === -1 ? source.length : lineEnd + 1;
+    }
+
+    const blockEnd = source.indexOf("*/", start + 2);
+    return blockEnd === -1 ? source.length : blockEnd + 2;
+}
+
+function isIdentifierCharacter(character) {
+    return Boolean(character) && /[A-Za-z0-9_$]/.test(character);
+}
+
+function readImportSpecifiers(source) {
+    const specifiers = [];
+
+    for (let index = 0; index < source.length; index += 1) {
+        const character = source[index];
+
+        // Import-like text in prompts, comments, and other string literals is not a dependency.
+        if (character === "\"" || character === "'") {
+            index = skipQuotedLiteral(source, index, character) - 1;
+            continue;
+        }
+        if (character === "`" || (character === "/" && (source[index + 1] === "/" || source[index + 1] === "*"))) {
+            index = character === "`" ? skipQuotedLiteral(source, index, "`") - 1 : skipComment(source, index) - 1;
+            continue;
+        }
+        if (!/[A-Za-z_$]/.test(character)) {
+            continue;
+        }
+
+        let end = index + 1;
+        while (isIdentifierCharacter(source[end])) {
+            end += 1;
+        }
+        const identifier = source.slice(index, end);
+        if (identifier !== "require" && identifier !== "import") {
+            index = end - 1;
+            continue;
+        }
+
+        let cursor = end;
+        while (/\s/.test(source[cursor] || "")) cursor += 1;
+        if (source[cursor] !== "(") {
+            index = end - 1;
+            continue;
+        }
+        cursor += 1;
+        while (/\s/.test(source[cursor] || "")) cursor += 1;
+        const quote = source[cursor];
+        if (quote !== "\"" && quote !== "'") {
+            index = end - 1;
+            continue;
+        }
+
+        const literalEnd = skipQuotedLiteral(source, cursor, quote);
+        const specifier = source.slice(cursor + 1, literalEnd - 1);
+        cursor = literalEnd;
+        while (/\s/.test(source[cursor] || "")) cursor += 1;
+        if (source[cursor] === ")") {
+            specifiers.push(specifier);
+            index = cursor;
+        } else {
+            index = end - 1;
+        }
+    }
+
+    return specifiers;
+}
 
 function walk(dir, files = []) {
     if (!fs.existsSync(dir)) {
@@ -61,11 +144,7 @@ const files = scanRoots.flatMap((dir) => walk(dir));
 
 for (const file of files) {
     const source = fs.readFileSync(file, "utf8");
-    let match;
-
-    while ((match = importPattern.exec(source))) {
-        const specifier = match[1];
-
+    for (const specifier of readImportSpecifiers(source)) {
         if (!isExternalSpecifier(specifier)) {
             continue;
         }

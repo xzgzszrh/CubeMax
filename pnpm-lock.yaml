@@ -448,7 +448,7 @@ importers:
         version: 5.1.7
       openai:
         specifier: ^5.23.2
-        version: 5.23.2(zod@4.3.6)
+        version: 5.23.2(ws@8.21.3)(zod@4.3.6)
       panzoom:
         specifier: catalog:web
         version: 9.4.3
@@ -1754,10 +1754,10 @@ importers:
         version: 1.0.11
       '@langchain/core':
         specifier: ^0.3.58
-        version: 0.3.80(@opentelemetry/api@1.9.0)(openai@5.23.2(zod@4.3.6))
+        version: 0.3.80(@opentelemetry/api@1.9.0)(openai@5.23.2(ws@8.21.3)(zod@4.3.6))
       '@langchain/openai':
         specifier: 0.5.18
-        version: 0.5.18(@langchain/core@0.3.80(@opentelemetry/api@1.9.0)(openai@5.23.2(zod@4.3.6)))
+        version: 0.5.18(@langchain/core@0.3.80(@opentelemetry/api@1.9.0)(openai@5.23.2(ws@8.21.3)(zod@4.3.6)))(ws@8.21.3)
       lodash-es:
         specifier: ^4.17.21
         version: 4.18.1
@@ -1900,12 +1900,12 @@ importers:
       adm-zip:
         specifier: catalog:api
         version: 0.5.16
-      ajv:
-        specifier: ^8.17.1
-        version: 8.18.0
       ai:
         specifier: ^6.0.138
         version: 6.0.138(zod@4.3.6)
+      ajv:
+        specifier: ^8.17.1
+        version: 8.18.0
       bcryptjs:
         specifier: ^3.0.2
         version: 3.0.3
@@ -1918,15 +1918,15 @@ importers:
       callsites:
         specifier: ^4.1.0
         version: 4.2.0
-      cli-table3:
-        specifier: 'catalog:'
-        version: 0.6.5
       class-transformer:
         specifier: catalog:api
         version: 0.5.1
       class-validator:
         specifier: catalog:api
         version: 0.14.4
+      cli-table3:
+        specifier: 'catalog:'
+        version: 0.6.5
       cookie-parser:
         specifier: ^1.4.7
         version: 1.4.7
@@ -1987,6 +1987,9 @@ importers:
       wasmoon:
         specifier: ^1.16.0
         version: 1.16.0
+      ws:
+        specifier: ^8.21.3
+        version: 8.21.3
       xlsx:
         specifier: ^0.18.5
         version: 0.18.5
@@ -2042,6 +2045,9 @@ importers:
       '@types/supertest':
         specifier: ^6.0.2
         version: 6.0.3
+      '@types/ws':
+        specifier: ^8.18.1
+        version: 8.18.1
       eslint-config-prettier:
         specifier: ^10.0.1
         version: 10.1.8(eslint@9.39.4(jiti@2.6.1))
@@ -7815,6 +7821,9 @@ packages:
 
   '@types/web-bluetooth@0.0.21':
     resolution: {integrity: sha512-oIQLCGWtcFZy2JW77j9k8nHzAOpqMHLQejDA48XXMWH6tjCQHz5RCFz1bzsmROyL6PUm+LLnUiI4BCn221inxA==}
+
+  '@types/ws@8.18.1':
+    resolution: {integrity: sha512-ThVF6DCVhA8kUGy+aazFQ4kXQ7E1Ty7A3ypFOe0IcJV8O/M511G99AW24irKrW56Wt44yG9+ij8FaqoBGkuBXg==}
 
   '@types/xml2js@0.4.14':
     resolution: {integrity: sha512-4YnrRemBShWRO2QjvUin8ESA41rH+9nQGLUGZV/1IDhi3SL9OhdpNC/MrulTWuptXKwhx/aDxE7toV0f/ypIXQ==}
@@ -15647,6 +15656,18 @@ packages:
       utf-8-validate:
         optional: true
 
+  ws@8.21.3:
+    resolution: {integrity: sha512-201TZ/kPWxoPr/OKWjquZR1SWKXcvxdH+e1xrx89b3YbmzLMFCLfnaG1HFIgWzJOEWZ7MvpK++odZufgYR50Rw==}
+    engines: {node: '>=10.0.0'}
+    peerDependencies:
+      bufferutil: ^4.0.1
+      utf-8-validate: '>=5.0.2'
+    peerDependenciesMeta:
+      bufferutil:
+        optional: true
+      utf-8-validate:
+        optional: true
+
   wsl-utils@0.3.1:
     resolution: {integrity: sha512-g/eziiSUNBSsdDJtCLB8bdYEUMj4jR7AGeUo96p/3dTafgjHhpF4RiCFPiRILwjQoDXx5MqkBr4fwWtR3Ky4Wg==}
     engines: {node: '>=20'}
@@ -18633,14 +18654,14 @@ snapshots:
 
   '@keyv/serialize@1.1.1': {}
 
-  '@langchain/core@0.3.80(@opentelemetry/api@1.9.0)(openai@5.23.2(zod@4.3.6))':
+  '@langchain/core@0.3.80(@opentelemetry/api@1.9.0)(openai@5.23.2(ws@8.21.3)(zod@4.3.6))':
     dependencies:
       '@cfworker/json-schema': 4.1.1
       ansi-styles: 5.2.0
       camelcase: 6.3.0
       decamelize: 1.2.0
       js-tiktoken: 1.0.21
-      langsmith: 0.3.87(@opentelemetry/api@1.9.0)(openai@5.23.2(zod@4.3.6))
+      langsmith: 0.3.87(@opentelemetry/api@1.9.0)(openai@5.23.2(ws@8.21.3)(zod@4.3.6))
       mustache: 4.2.0
       p-queue: 6.6.2
       p-retry: 4.6.2
@@ -18653,11 +18674,11 @@ snapshots:
       - '@opentelemetry/sdk-trace-base'
       - openai
 
-  '@langchain/openai@0.5.18(@langchain/core@0.3.80(@opentelemetry/api@1.9.0)(openai@5.23.2(zod@4.3.6)))':
+  '@langchain/openai@0.5.18(@langchain/core@0.3.80(@opentelemetry/api@1.9.0)(openai@5.23.2(ws@8.21.3)(zod@4.3.6)))(ws@8.21.3)':
     dependencies:
-      '@langchain/core': 0.3.80(@opentelemetry/api@1.9.0)(openai@5.23.2(zod@4.3.6))
+      '@langchain/core': 0.3.80(@opentelemetry/api@1.9.0)(openai@5.23.2(ws@8.21.3)(zod@4.3.6))
       js-tiktoken: 1.0.21
-      openai: 5.23.2(zod@4.3.6)
+      openai: 5.23.2(ws@8.21.3)(zod@4.3.6)
       zod: 4.3.6
     transitivePeerDependencies:
       - ws
@@ -22106,6 +22127,10 @@ snapshots:
   '@types/validator@13.15.10': {}
 
   '@types/web-bluetooth@0.0.21': {}
+
+  '@types/ws@8.18.1':
+    dependencies:
+      '@types/node': 24.12.0
 
   '@types/xml2js@0.4.14':
     dependencies:
@@ -26568,7 +26593,7 @@ snapshots:
       vscode-languageserver-textdocument: 1.0.12
       vscode-uri: 3.1.0
 
-  langsmith@0.3.87(@opentelemetry/api@1.9.0)(openai@5.23.2(zod@4.3.6)):
+  langsmith@0.3.87(@opentelemetry/api@1.9.0)(openai@5.23.2(ws@8.21.3)(zod@4.3.6)):
     dependencies:
       '@types/uuid': 10.0.0
       chalk: 4.1.2
@@ -26578,7 +26603,7 @@ snapshots:
       uuid: 10.0.0
     optionalDependencies:
       '@opentelemetry/api': 1.9.0
-      openai: 5.23.2(zod@4.3.6)
+      openai: 5.23.2(ws@8.21.3)(zod@4.3.6)
 
   layout-base@1.0.2: {}
 
@@ -28052,8 +28077,9 @@ snapshots:
       powershell-utils: 0.1.0
       wsl-utils: 0.3.1
 
-  openai@5.23.2(zod@4.3.6):
+  openai@5.23.2(ws@8.21.3)(zod@4.3.6):
     optionalDependencies:
+      ws: 8.21.3
       zod: 4.3.6
 
   optics-ts@2.4.1: {}
@@ -31337,6 +31363,8 @@ snapshots:
       signal-exit: 4.1.0
 
   ws@7.5.10: {}
+
+  ws@8.21.3: {}
 
   wsl-utils@0.3.1:
     dependencies:

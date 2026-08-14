@@ -95,6 +95,7 @@
         "stack-trace": "1.0.0-pre2",
         "typeorm-naming-strategies": "^4.1.0",
         "wasmoon": "^1.16.0",
+        "ws": "^8.21.3",
         "xlsx": "^0.18.5",
         "zod": "^4.3.6"
     },
@@ -115,6 +116,7 @@
         "@types/ms": "^2.1.0",
         "@types/pg": "^8.15.5",
         "@types/supertest": "^6.0.2",
+        "@types/ws": "^8.18.1",
         "eslint-config-prettier": "^10.0.1",
         "eslint-plugin-prettier": "^5.2.2",
         "globals": "catalog:",

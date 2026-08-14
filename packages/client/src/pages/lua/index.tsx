@@ -1,5 +1,9 @@
 import {
   generateLuaModule,
+  useCreateLuaDeviceRunMutation,
+  useLuaDeviceRunLogsQuery,
+  useLuaDeviceRunQuery,
+  useLuaDevicesQuery,
   type LuaAssistantMessage,
   type LuaModuleItem,
   type LuaModuleSchema,
@@ -9,7 +13,9 @@ import {
   useDeleteLuaModuleMutation,
   useLuaModulesQuery,
   usePublishLuaModuleMutation,
+  useRegisterLuaDeviceMutation,
   useSimulatorSessionsQuery,
+  useStopLuaDeviceRunMutation,
   useUnpublishLuaModuleMutation,
   useUpdateLuaModuleMutation,
 } from "@buildingai/services/web";
@@ -33,6 +39,7 @@ import {
   ChevronRight,
   Code2,
   Cpu,
+  Copy,
   FileCode2,
   Loader2,
   PanelLeftClose,
@@ -40,8 +47,10 @@ import {
   Play,
   Plus,
   Rocket,
+  RadioTower,
   Save,
   Send,
+  Square,
   Sparkles,
   Trash2,
   UserRound,
@@ -113,9 +122,25 @@ function parseObject(value: string, label: string): Record<string, unknown> {
   return parsed as Record<string, unknown>;
 }
 
+const DEVICE_RUN_STATUS_LABELS: Record<string, string> = {
+  queued: "排队中",
+  preparing: "准备传输",
+  transferring: "传输中",
+  running: "运行中",
+  stopping: "停止中",
+  waiting_for_device: "等待设备",
+  succeeded: "已成功",
+  failed: "失败",
+  stopped: "已停止",
+  timed_out: "已超时",
+};
+
+const DEVICE_RUN_TERMINAL = new Set(["succeeded", "failed", "stopped", "timed_out"]);
+
 export default function LuaModulesPage() {
   const modulesQuery = useLuaModulesQuery();
   const simulatorSessionsQuery = useSimulatorSessionsQuery();
+  const physicalDevicesQuery = useLuaDevicesQuery();
   const navigate = useNavigate();
   const providersQuery = useAiProvidersQuery({ supportedModelTypes: "llm" });
   const modules = modulesQuery.data?.items ?? [];
@@ -130,6 +155,20 @@ export default function LuaModulesPage() {
   const [fileSidebarOpen, setFileSidebarOpen] = useState(true);
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [simulatorSessionId, setSimulatorSessionId] = useState<string>("none");
+  const [physicalDeviceId, setPhysicalDeviceId] = useState<string>("none");
+  const [physicalRunId, setPhysicalRunId] = useState<string>();
+  const [registerDeviceId, setRegisterDeviceId] = useState("");
+  const [registerDeviceName, setRegisterDeviceName] = useState("");
+  const [otaConfig, setOtaConfig] = useState<string>();
+
+  const physicalRunQuery = useLuaDeviceRunQuery(
+    physicalDeviceId === "none" ? undefined : physicalDeviceId,
+    physicalRunId,
+  );
+  const physicalRunLogsQuery = useLuaDeviceRunLogsQuery(
+    physicalDeviceId === "none" ? undefined : physicalDeviceId,
+    physicalRunId,
+  );
 
   const models = useMemo(
     () =>
@@ -181,6 +220,28 @@ export default function LuaModulesPage() {
       setResult("");
       setMessages([]);
       toast.success("模块已删除");
+    },
+    onError: (error) => toast.error(error.message),
+  });
+  const createDeviceRunMutation = useCreateLuaDeviceRunMutation({
+    onSuccess: (run) => {
+      setPhysicalRunId(run.id);
+      setDetailsOpen(true);
+      toast.success("任务已提交到物理设备");
+    },
+    onError: (error) => toast.error(error.message),
+  });
+  const stopDeviceRunMutation = useStopLuaDeviceRunMutation({
+    onSuccess: () => toast.success("停止请求已发送"),
+    onError: (error) => toast.error(error.message),
+  });
+  const registerDeviceMutation = useRegisterLuaDeviceMutation({
+    onSuccess: (registered) => {
+      setPhysicalDeviceId(registered.device.deviceId);
+      setOtaConfig(JSON.stringify({ lua_gateway: registered.otaConfig }, null, 2));
+      setRegisterDeviceId("");
+      setRegisterDeviceName("");
+      toast.success("设备已注册");
     },
     onError: (error) => toast.error(error.message),
   });
@@ -242,6 +303,35 @@ export default function LuaModulesPage() {
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "测试参数格式错误");
     }
+  };
+
+  const runOnPhysicalDevice = () => {
+    if (physicalDeviceId === "none") {
+      toast.error("请选择物理设备");
+      return;
+    }
+    try {
+      createDeviceRunMutation.mutate({
+        deviceId: physicalDeviceId,
+        dto: {
+          name: editor.name.trim() || "未命名 Lua 模块",
+          moduleId: selectedId,
+          source: editor.draftCode,
+          params: parseObject(editor.testParams, "测试参数"),
+          requiredCapabilities: ["lua", "xiaozhi"],
+          timeoutMs: 10_000,
+        },
+      });
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "测试参数格式错误");
+    }
+  };
+
+  const registerPhysicalDevice = () => {
+    registerDeviceMutation.mutate({
+      deviceId: registerDeviceId.trim(),
+      displayName: registerDeviceName.trim(),
+    });
   };
 
   const publish = async () => {
@@ -338,6 +428,37 @@ export default function LuaModulesPage() {
         </Button>
         <Button variant="outline" onClick={runInVirtualScreen} disabled={!editor.draftCode.trim()}>
           <Cpu /> 虚拟屏幕运行
+        </Button>
+        <Select
+          value={physicalDeviceId}
+          onValueChange={(value) => {
+            setPhysicalDeviceId(value);
+            setPhysicalRunId(undefined);
+          }}
+        >
+          <SelectTrigger className="w-44">
+            <SelectValue placeholder="选择物理设备" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="none">选择物理设备</SelectItem>
+            {(physicalDevicesQuery.data ?? []).map((device) => (
+              <SelectItem key={device.deviceId} value={device.deviceId}>
+                {device.displayName} · {device.online ? "在线" : "离线"}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Button
+          variant="outline"
+          onClick={runOnPhysicalDevice}
+          disabled={
+            physicalDeviceId === "none" ||
+            !editor.draftCode.trim() ||
+            createDeviceRunMutation.isPending
+          }
+        >
+          <RadioTower />
+          {createDeviceRunMutation.isPending ? "发送中" : "发送并运行"}
         </Button>
         {selected?.isPublished && (
           <Button variant="outline" onClick={() => unpublishMutation.mutate(selected.id)}>
@@ -635,6 +756,116 @@ export default function LuaModulesPage() {
                   <p className="text-muted-foreground text-xs">
                     选择后，AI 生成的代码可以通过 device.* 控制虚拟开发板。
                   </p>
+                </div>
+                <div className="space-y-3 border-t pt-4">
+                  <div className="flex items-center justify-between gap-2">
+                    <Label>物理设备</Label>
+                    {physicalDeviceId !== "none" && (
+                      <Badge
+                        variant={
+                          physicalDevicesQuery.data?.find(
+                            (device) => device.deviceId === physicalDeviceId,
+                          )?.online
+                            ? "default"
+                            : "outline"
+                        }
+                      >
+                        {physicalDevicesQuery.data?.find(
+                          (device) => device.deviceId === physicalDeviceId,
+                        )?.online
+                          ? "在线"
+                          : "离线"}
+                      </Badge>
+                    )}
+                  </div>
+                  <div className="grid gap-2 sm:grid-cols-[1fr_10rem_auto]">
+                    <Input
+                      value={registerDeviceId}
+                      onChange={(event) => setRegisterDeviceId(event.target.value)}
+                      placeholder="设备 UUID"
+                    />
+                    <Input
+                      value={registerDeviceName}
+                      onChange={(event) => setRegisterDeviceName(event.target.value)}
+                      placeholder="设备名称"
+                    />
+                    <Button
+                      variant="outline"
+                      onClick={registerPhysicalDevice}
+                      disabled={
+                        !registerDeviceId.trim() ||
+                        !registerDeviceName.trim() ||
+                        registerDeviceMutation.isPending
+                      }
+                    >
+                      <Plus /> 注册
+                    </Button>
+                  </div>
+                  {otaConfig && (
+                    <div className="relative">
+                      <pre className="bg-muted max-h-48 overflow-auto rounded-md border p-3 pr-10 text-xs whitespace-pre-wrap">
+                        {otaConfig}
+                      </pre>
+                      <Button
+                        variant="ghost"
+                        size="icon-sm"
+                        className="absolute top-1.5 right-1.5"
+                        title="复制设备配置"
+                        onClick={() => {
+                          void navigator.clipboard.writeText(otaConfig);
+                          toast.success("设备配置已复制");
+                        }}
+                      >
+                        <Copy />
+                      </Button>
+                    </div>
+                  )}
+                  {physicalRunQuery.data && (
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2 text-sm">
+                        <RadioTower className="size-4" />
+                        <span className="font-medium">
+                          {DEVICE_RUN_STATUS_LABELS[physicalRunQuery.data.status] ??
+                            physicalRunQuery.data.status}
+                        </span>
+                        <span className="text-muted-foreground ml-auto font-mono text-xs">
+                          {physicalRunQuery.data.id.slice(0, 8)}
+                        </span>
+                        {!DEVICE_RUN_TERMINAL.has(physicalRunQuery.data.status) && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() =>
+                              stopDeviceRunMutation.mutate({
+                                deviceId: physicalRunQuery.data.deviceId,
+                                runId: physicalRunQuery.data.id,
+                              })
+                            }
+                            disabled={stopDeviceRunMutation.isPending}
+                          >
+                            <Square /> 停止
+                          </Button>
+                        )}
+                      </div>
+                      {(physicalRunQuery.data.result !== undefined ||
+                        physicalRunQuery.data.error) && (
+                        <pre className="bg-muted max-h-40 overflow-auto rounded-md border p-3 text-xs whitespace-pre-wrap">
+                          {JSON.stringify(
+                            physicalRunQuery.data.error ?? physicalRunQuery.data.result,
+                            null,
+                            2,
+                          )}
+                        </pre>
+                      )}
+                      {(physicalRunLogsQuery.data?.length ?? 0) > 0 && (
+                        <pre className="bg-muted max-h-40 overflow-auto rounded-md border p-3 text-xs whitespace-pre-wrap">
+                          {physicalRunLogsQuery.data
+                            ?.map((log) => `${log.sequence} [${log.level}] ${log.text}`)
+                            .join("\n")}
+                        </pre>
+                      )}
+                    </div>
+                  )}
                 </div>
                 <div className="space-y-1.5">
                   <Label>测试参数</Label>
