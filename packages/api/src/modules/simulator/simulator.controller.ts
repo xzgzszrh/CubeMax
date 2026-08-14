@@ -4,6 +4,7 @@ import { WebController } from "@common/decorators/controller.decorator";
 import { Body, Delete, Get, Param, Patch, Post } from "@nestjs/common";
 
 import {
+    ApplySimulatorOperationsDto,
     CreateSimulatorSessionDto,
     UpdateSimulatorInputDto,
     WriteSimulatorSerialDto,
@@ -50,6 +51,15 @@ export class SimulatorController {
         @Body() dto: WriteSimulatorSerialDto,
     ) {
         return this.simulatorService.writeSerialInput(id, user.id, dto.text);
+    }
+
+    @Post("sessions/:id/operations")
+    applyOperations(
+        @Playground() user: UserPlayground,
+        @Param("id") id: string,
+        @Body() dto: ApplySimulatorOperationsDto,
+    ) {
+        return this.simulatorService.applyOperationsForUser(id, user.id, dto.operations);
     }
 
     @Delete("sessions/:id")

@@ -149,10 +149,36 @@ export class SimulatorService {
 
     applyOperations(sessionId: string, operations: SimulatorOperation[]): SimulatorSession {
         const session = this.get(sessionId);
+        return this.applyOperationsToSession(session, operations);
+    }
+
+    applyOperationsForUser(
+        sessionId: string,
+        userId: string,
+        operations: SimulatorOperation[],
+    ): SimulatorSession {
+        const session = this.getForUser(sessionId, userId);
+        return this.applyOperationsToSession(session, operations);
+    }
+
+    private applyOperationsToSession(
+        session: SimulatorSession,
+        operations: SimulatorOperation[],
+    ): SimulatorSession {
         if (operations.length > 200) {
             throw HttpErrorFactory.badRequest("单次 Lua 执行的设备操作不能超过200次");
         }
         for (const operation of operations) {
+            if (
+                !operation ||
+                typeof operation !== "object" ||
+                typeof operation.action !== "string" ||
+                !operation.args ||
+                typeof operation.args !== "object" ||
+                Array.isArray(operation.args)
+            ) {
+                throw HttpErrorFactory.badRequest("虚拟设备操作格式不正确");
+            }
             this.applyOperation(session, operation);
         }
         this.touch(session);

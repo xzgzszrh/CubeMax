@@ -1,4 +1,6 @@
 import {
+    ArrayMaxSize,
+    IsArray,
     IsBoolean,
     IsIn,
     IsInt,
@@ -9,6 +11,8 @@ import {
     MaxLength,
     Min,
 } from "class-validator";
+
+import type { SimulatorOperation } from "./simulator.types";
 
 export class CreateSimulatorSessionDto {
     @IsOptional()
@@ -37,4 +41,10 @@ export class WriteSimulatorSerialDto {
     @IsNotEmpty()
     @MaxLength(2000)
     text: string;
+}
+
+export class ApplySimulatorOperationsDto {
+    @IsArray()
+    @ArrayMaxSize(200)
+    operations: SimulatorOperation[];
 }

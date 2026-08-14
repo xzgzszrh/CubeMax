@@ -12,10 +12,23 @@ export type SimulatorDraft = {
   params: Record<string, unknown>;
 };
 
+export type SimulatorDeviceSnapshot = {
+  digitalPins: Record<string, boolean>;
+  analogPins: Record<string, number>;
+  buttonPressed: boolean;
+  potentiometerValue: number;
+};
+
+export type SimulatorDeviceOperation = {
+  action: string;
+  args: Record<string, unknown>;
+};
+
 type RuntimeStatus = "loading" | "ready" | "running" | "stopping" | "exited" | "error";
 
 const RUNTIME_FONT_PATH = "/storage/fonts/NotoSansSC-Regular-sub.ttf";
 const RUNTIME_FONT_URL = "/esp-claw-runtime/fonts/NotoSansSC-Regular-sub.ttf";
+const DEVICE_LOG_PREFIX = "[CubeMax:device]";
 
 function luaLiteral(value: unknown): string {
   if (value === null || value === undefined) return "nil";
@@ -39,9 +52,45 @@ function luaLiteral(value: unknown): string {
   return "nil";
 }
 
-function executableLua(draft: SimulatorDraft): string {
+function executableLua(draft: SimulatorDraft, deviceSnapshot?: SimulatorDeviceSnapshot): string {
+  const snapshot = deviceSnapshot ?? {
+    digitalPins: {},
+    analogPins: {},
+    buttonPressed: false,
+    potentiometerValue: 0,
+  };
   return [
     `local __cubemax_params = ${luaLiteral(draft.params)}`,
+    `local __cubemax_device_snapshot = ${luaLiteral(snapshot)}`,
+    'local __cubemax_json = require("json")',
+    "local function __cubemax_device_operation(action, args)",
+    `  print("${DEVICE_LOG_PREFIX}" .. __cubemax_json.encode({ action = action, args = args }))`,
+    "end",
+    "device = {",
+    "  gpio_set_mode = function(pin, mode)",
+    '    __cubemax_device_operation("gpio_set_mode", { pin = tostring(pin), mode = mode })',
+    "  end,",
+    "  gpio_write = function(pin, value)",
+    '    __cubemax_device_operation("gpio_write", { pin = tostring(pin), value = value == true })',
+    "  end,",
+    "  gpio_read = function(pin)",
+    "    return __cubemax_device_snapshot.digitalPins[tostring(pin)] == true",
+    "  end,",
+    "  analog_read = function(pin)",
+    "    return __cubemax_device_snapshot.analogPins[tostring(pin)] or 0",
+    "  end,",
+    "  pwm_write = function(pin, duty_cycle, frequency_hz)",
+    '    __cubemax_device_operation("pwm_write", { pin = tostring(pin), dutyCycle = duty_cycle, frequencyHz = frequency_hz or 1000 })',
+    "  end,",
+    "  servo_write_angle = function(pin, angle)",
+    '    __cubemax_device_operation("servo_write_angle", { pin = tostring(pin), angle = angle })',
+    "  end,",
+    "  serial_write = function(text)",
+    '    __cubemax_device_operation("serial_write_text", { text = tostring(text) })',
+    "  end,",
+    "  button_pressed = function() return __cubemax_device_snapshot.buttonPressed == true end,",
+    "  potentiometer_value = function() return __cubemax_device_snapshot.potentiometerValue or 0 end,",
+    "}",
     draft.code,
     "",
     'if type(main) == "function" then',
@@ -53,14 +102,21 @@ function executableLua(draft: SimulatorDraft): string {
 export function EspClawRuntime({
   draft,
   autoRun = false,
+  deviceSnapshot,
+  onDeviceOperations,
 }: {
   draft?: SimulatorDraft;
   autoRun?: boolean;
+  deviceSnapshot?: SimulatorDeviceSnapshot;
+  onDeviceOperations?: (operations: SimulatorDeviceOperation[]) => void;
 }) {
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const pendingRunPathRef = useRef<string | undefined>(undefined);
   const runRef = useRef<() => void>(() => undefined);
   const autoRunRef = useRef(autoRun);
+  const onDeviceOperationsRef = useRef(onDeviceOperations);
+  const operationQueueRef = useRef<SimulatorDeviceOperation[]>([]);
+  const operationTimerRef = useRef<number>();
   const [status, setStatus] = useState<RuntimeStatus>("loading");
   const [logs, setLogs] = useState<string[]>([]);
   const [width, setWidth] = useState("800");
@@ -68,6 +124,33 @@ export function EspClawRuntime({
   const [activeDraft, setActiveDraft] = useState<SimulatorDraft | undefined>(draft);
 
   useEffect(() => setActiveDraft(draft), [draft]);
+  useEffect(() => {
+    onDeviceOperationsRef.current = onDeviceOperations;
+  }, [onDeviceOperations]);
+
+  const flushDeviceOperations = useCallback(() => {
+    if (operationTimerRef.current) window.clearTimeout(operationTimerRef.current);
+    operationTimerRef.current = undefined;
+    const operations = operationQueueRef.current.splice(0);
+    if (operations.length) onDeviceOperationsRef.current?.(operations);
+  }, []);
+
+  const queueDeviceOperation = useCallback(
+    (operation: SimulatorDeviceOperation) => {
+      operationQueueRef.current.push(operation);
+      if (!operationTimerRef.current) {
+        operationTimerRef.current = window.setTimeout(flushDeviceOperations, 20);
+      }
+    },
+    [flushDeviceOperations],
+  );
+
+  useEffect(
+    () => () => {
+      if (operationTimerRef.current) window.clearTimeout(operationTimerRef.current);
+    },
+    [],
+  );
 
   const send = useCallback((message: Record<string, unknown>) => {
     iframeRef.current?.contentWindow?.postMessage(message, "*");
@@ -107,11 +190,27 @@ export function EspClawRuntime({
           setStatus("stopping");
           break;
         case "esp-claw-sim:exited":
+          flushDeviceOperations();
           setStatus("exited");
           setLogs((current) => [...current, `[sim] exited (${data.code ?? 0})`]);
           break;
         case "esp-claw-sim:log":
-          if (data.message && !data.message.includes("lv_timer_handler: It seems lv_tick_inc")) {
+          if (data.message?.includes(DEVICE_LOG_PREFIX)) {
+            try {
+              const json = data.message.slice(
+                data.message.indexOf(DEVICE_LOG_PREFIX) + DEVICE_LOG_PREFIX.length,
+              );
+              const operation = JSON.parse(json) as SimulatorDeviceOperation;
+              if (operation.action && operation.args && typeof operation.args === "object") {
+                queueDeviceOperation(operation);
+              }
+            } catch {
+              setLogs((current) => [...current, "[error] 无法解析虚拟外设操作"]);
+            }
+          } else if (
+            data.message &&
+            !data.message.includes("lv_timer_handler: It seems lv_tick_inc")
+          ) {
             setLogs((current) => [...current, data.message!].slice(-300));
           }
           break;
@@ -123,7 +222,7 @@ export function EspClawRuntime({
     };
     window.addEventListener("message", onMessage);
     return () => window.removeEventListener("message", onMessage);
-  }, [send]);
+  }, [flushDeviceOperations, queueDeviceOperation, send]);
 
   const run = useCallback(async () => {
     if (!activeDraft?.code.trim()) return;
@@ -142,7 +241,7 @@ export function EspClawRuntime({
           root: `/uploads/cubemax/${moduleId}`,
           entry: path,
           files: [
-            { path, text: executableLua(activeDraft) },
+            { path, text: executableLua(activeDraft, deviceSnapshot) },
             { path: RUNTIME_FONT_PATH, bytes: fontBytes },
           ],
           peripherals: ["display", "touch"],
@@ -155,7 +254,7 @@ export function EspClawRuntime({
       setStatus("error");
       setLogs([`[error] ${error instanceof Error ? error.message : "无法加载虚拟屏幕字体"}`]);
     }
-  }, [activeDraft, send]);
+  }, [activeDraft, deviceSnapshot, send]);
 
   useEffect(() => {
     runRef.current = run;
@@ -170,7 +269,7 @@ export function EspClawRuntime({
   };
 
   return (
-    <section className="bg-background flex h-[min(700px,calc(100dvh-8.5rem))] min-h-[460px] min-w-0 flex-1 flex-col overflow-hidden rounded-md border shadow-sm">
+    <section className="bg-background flex h-[min(620px,calc(100dvh-8.5rem))] min-h-[440px] min-w-0 flex-1 flex-col overflow-hidden rounded-md border shadow-sm">
       <div className="flex min-h-14 flex-wrap items-center gap-2 border-b px-4 py-2">
         <div className="mr-auto flex min-w-0 items-center gap-2">
           <span className="size-2 rounded-full bg-emerald-400" />
@@ -225,7 +324,7 @@ export function EspClawRuntime({
           </Button>
         </div>
       </div>
-      <div className="grid min-h-0 flex-1 grid-cols-1 grid-rows-[minmax(280px,1fr)_180px] lg:grid-cols-[minmax(0,1fr)_260px] lg:grid-rows-1">
+      <div className="grid min-h-0 flex-1 grid-rows-[minmax(260px,1fr)_140px]">
         <div className="grid min-h-0 place-items-center bg-black p-3">
           <iframe
             ref={iframeRef}
@@ -234,7 +333,7 @@ export function EspClawRuntime({
             className="size-full min-h-0 border-0"
           />
         </div>
-        <aside className="bg-muted/20 flex min-h-0 flex-col border-t lg:border-t-0 lg:border-l">
+        <aside className="bg-muted/20 flex min-h-0 flex-col border-t">
           <div className="flex h-11 shrink-0 items-center gap-2 border-b px-3 text-xs font-semibold">
             <Terminal className="size-3.5" />
             运行日志

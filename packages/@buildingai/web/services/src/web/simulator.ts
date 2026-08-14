@@ -51,6 +51,11 @@ export type SimulatorInputDto =
     | { type: "button"; pressed: boolean }
     | { type: "potentiometer"; value: number };
 
+export type SimulatorOperation = {
+    action: string;
+    args: Record<string, unknown>;
+};
+
 export const simulatorQueryKeys = {
     all: ["simulator"] as const,
     sessions: () => ["simulator", "sessions"] as const,
@@ -82,6 +87,13 @@ export function updateSimulatorInput(
 
 export function writeSimulatorSerial(id: string, text: string): Promise<SimulatorSession> {
     return apiHttpClient.post(`${SIMULATOR_PATH}/${id}/serial`, { text });
+}
+
+export function applySimulatorOperations(
+    id: string,
+    operations: SimulatorOperation[],
+): Promise<SimulatorSession> {
+    return apiHttpClient.post(`${SIMULATOR_PATH}/${id}/operations`, { operations });
 }
 
 export function deleteSimulatorSession(id: string): Promise<void> {
@@ -138,10 +150,7 @@ export function useResetSimulatorSessionMutation(
 export function useUpdateSimulatorInputMutation(
     options?: MutationOptionsUtil<SimulatorSession, { id: string; input: SimulatorInputDto }>,
 ) {
-    return useSimulatorMutation(
-        ({ id, input }) => updateSimulatorInput(id, input),
-        options,
-    );
+    return useSimulatorMutation(({ id, input }) => updateSimulatorInput(id, input), options);
 }
 
 export function useWriteSimulatorSerialMutation(
@@ -150,8 +159,18 @@ export function useWriteSimulatorSerialMutation(
     return useSimulatorMutation(({ id, text }) => writeSimulatorSerial(id, text), options);
 }
 
-export function useDeleteSimulatorSessionMutation(
-    options?: MutationOptionsUtil<void, string>,
+export function useApplySimulatorOperationsMutation(
+    options?: MutationOptionsUtil<
+        SimulatorSession,
+        { id: string; operations: SimulatorOperation[] }
+    >,
 ) {
+    return useSimulatorMutation(
+        ({ id, operations }) => applySimulatorOperations(id, operations),
+        options,
+    );
+}
+
+export function useDeleteSimulatorSessionMutation(options?: MutationOptionsUtil<void, string>) {
     return useSimulatorMutation(deleteSimulatorSession, options);
 }
