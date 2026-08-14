@@ -28,10 +28,12 @@ export interface SimulatorSerialEntry {
     createdAt: string;
 }
 
+export type SimulatorBoardType = "esp32-devkit-v1" | "cubecat-s3" | "cubecat-p4";
+
 export interface SimulatorSession {
     id: string;
     name: string;
-    board: { type: "esp32-devkit-v1"; name: string; voltage: 3.3 };
+    board: { type: SimulatorBoardType; name: string; voltage: 3.3 };
     revision: number;
     pins: Record<string, SimulatorPinState>;
     peripherals: {
@@ -56,6 +58,11 @@ export type SimulatorOperation = {
     args: Record<string, unknown>;
 };
 
+export type CreateSimulatorSessionInput = {
+    name?: string;
+    boardType?: SimulatorBoardType;
+};
+
 export const simulatorQueryKeys = {
     all: ["simulator"] as const,
     sessions: () => ["simulator", "sessions"] as const,
@@ -66,8 +73,10 @@ export function listSimulatorSessions(): Promise<SimulatorSession[]> {
     return apiHttpClient.get(SIMULATOR_PATH);
 }
 
-export function createSimulatorSession(name?: string): Promise<SimulatorSession> {
-    return apiHttpClient.post(SIMULATOR_PATH, name ? { name } : {});
+export function createSimulatorSession(
+    input: CreateSimulatorSessionInput = {},
+): Promise<SimulatorSession> {
+    return apiHttpClient.post(SIMULATOR_PATH, input);
 }
 
 export function getSimulatorSession(id: string): Promise<SimulatorSession> {
@@ -76,6 +85,13 @@ export function getSimulatorSession(id: string): Promise<SimulatorSession> {
 
 export function resetSimulatorSession(id: string): Promise<SimulatorSession> {
     return apiHttpClient.post(`${SIMULATOR_PATH}/${id}/reset`);
+}
+
+export function updateSimulatorBoard(
+    id: string,
+    boardType: SimulatorBoardType,
+): Promise<SimulatorSession> {
+    return apiHttpClient.patch(`${SIMULATOR_PATH}/${id}/board`, { boardType });
 }
 
 export function updateSimulatorInput(
@@ -136,15 +152,24 @@ function useSimulatorMutation<TData, TVariables>(
 }
 
 export function useCreateSimulatorSessionMutation(
-    options?: MutationOptionsUtil<SimulatorSession, string | undefined>,
+    options?: MutationOptionsUtil<SimulatorSession, CreateSimulatorSessionInput | undefined>,
 ) {
-    return useSimulatorMutation(createSimulatorSession, options);
+    return useSimulatorMutation((input) => createSimulatorSession(input), options);
 }
 
 export function useResetSimulatorSessionMutation(
     options?: MutationOptionsUtil<SimulatorSession, string>,
 ) {
     return useSimulatorMutation(resetSimulatorSession, options);
+}
+
+export function useUpdateSimulatorBoardMutation(
+    options?: MutationOptionsUtil<SimulatorSession, { id: string; boardType: SimulatorBoardType }>,
+) {
+    return useSimulatorMutation(
+        ({ id, boardType }) => updateSimulatorBoard(id, boardType),
+        options,
+    );
 }
 
 export function useUpdateSimulatorInputMutation(

@@ -1,4 +1,5 @@
 import {
+  type SimulatorBoardType,
   type SimulatorSession,
   useApplySimulatorOperationsMutation,
   useCreateSimulatorSessionMutation,
@@ -7,6 +8,7 @@ import {
   useResetSimulatorSessionMutation,
   useSimulatorSessionQuery,
   useSimulatorSessionsQuery,
+  useUpdateSimulatorBoardMutation,
   useUpdateSimulatorInputMutation,
   useWriteSimulatorSerialMutation,
 } from "@buildingai/services/web";
@@ -48,6 +50,16 @@ const EXAMPLE_LUA_SOURCE = "example";
 const TRANSFERRED_DRAFT_SOURCE = "transferred-draft";
 const LOCAL_FILE_SOURCE = "local-file";
 
+const SIMULATOR_BOARDS: Array<{
+  type: SimulatorBoardType;
+  name: string;
+  chip: string;
+}> = [
+  { type: "esp32-devkit-v1", name: "ESP32 DevKit", chip: "ESP-WROOM-32" },
+  { type: "cubecat-s3", name: "CubeCat-S3", chip: "ESP32-S3" },
+  { type: "cubecat-p4", name: "CubeCat-P4", chip: "ESP32-P4" },
+];
+
 const DEFAULT_DISPLAY_DRAFT: SimulatorDraft = {
   name: "虚拟屏幕示例",
   code: `local board_manager = require("board_manager")
@@ -82,6 +94,8 @@ end`,
 
 function DevBoard({ session }: { session: SimulatorSession }) {
   const { led, button } = session.peripherals;
+  const chipName =
+    SIMULATOR_BOARDS.find((board) => board.type === session.board.type)?.chip ?? "ESP32";
   const activePinCount = Object.values(session.pins).filter(
     (pin) => pin.digitalValue || pin.pwmDutyCycle > 0,
   ).length;
@@ -106,7 +120,7 @@ function DevBoard({ session }: { session: SimulatorSession }) {
         <div className="absolute top-1/2 left-1/2 flex h-[45%] w-[58%] -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-sm border border-zinc-500 bg-zinc-800 shadow-sm">
           <div className="text-center text-zinc-200">
             <Cpu className="mx-auto mb-1 size-5" />
-            <div className="text-xs font-semibold">ESP-WROOM-32</div>
+            <div className="text-xs font-semibold">{chipName}</div>
           </div>
         </div>
 
@@ -192,6 +206,8 @@ export default function SimulatorPage() {
   const [simulatorDraft, setSimulatorDraft] = useState<SimulatorDraft>(DEFAULT_DISPLAY_DRAFT);
   const [luaSource, setLuaSource] = useState(EXAMPLE_LUA_SOURCE);
   const [localFileName, setLocalFileName] = useState<string>();
+  const [preferredBoardType, setPreferredBoardType] =
+    useState<SimulatorBoardType>("esp32-devkit-v1");
   const [runtimeResetVersion, setRuntimeResetVersion] = useState(0);
   const didCreateDefault = useRef(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -202,6 +218,7 @@ export default function SimulatorPage() {
   const createMutation = useCreateSimulatorSessionMutation({
     onSuccess: (created) => {
       setSelectedId(created.id);
+      setPreferredBoardType(created.board.type);
       toast.success("虚拟开发板已创建");
     },
     onError: (error) => toast.error(error.message),
@@ -214,6 +231,13 @@ export default function SimulatorPage() {
     onError: (error) => toast.error(error.message),
   });
   const inputMutation = useUpdateSimulatorInputMutation({
+    onError: (error) => toast.error(error.message),
+  });
+  const boardMutation = useUpdateSimulatorBoardMutation({
+    onSuccess: (updated) => {
+      setRuntimeResetVersion((version) => version + 1);
+      toast.success(`已切换为 ${updated.board.name}`);
+    },
     onError: (error) => toast.error(error.message),
   });
   const deviceOperationsMutation = useApplySimulatorOperationsMutation({
@@ -257,9 +281,9 @@ export default function SimulatorPage() {
       !createMutation.isPending
     ) {
       didCreateDefault.current = true;
-      createMutation.mutate(undefined);
+      createMutation.mutate({ boardType: preferredBoardType });
     }
-  }, [createMutation, selectedId, sessions, sessionsQuery.isSuccess]);
+  }, [createMutation, preferredBoardType, selectedId, sessions, sessionsQuery.isSuccess]);
 
   useEffect(() => {
     if (session) setPotentiometer(session.peripherals.potentiometer.value);
@@ -448,39 +472,69 @@ export default function SimulatorPage() {
         </main>
 
         <aside className="flex min-h-0 flex-col border-t xl:border-t-0 xl:border-l">
-          <div className="flex items-center gap-2 border-b p-3">
-            <Cpu className="size-4 shrink-0" />
-            <Select value={selectedId} onValueChange={setSelectedId}>
-              <SelectTrigger className="h-9 min-w-0 flex-1" aria-label="选择虚拟开发板">
-                <SelectValue placeholder="选择虚拟开发板" />
-              </SelectTrigger>
-              <SelectContent>
-                {sessions.map((item) => (
-                  <SelectItem key={item.id} value={item.id}>
-                    {item.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Button
-              variant="outline"
-              size="icon"
-              title="新建开发板"
-              onClick={() => createMutation.mutate(undefined)}
-              disabled={createMutation.isPending}
-            >
-              <Plus />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              title="删除当前会话"
-              className="text-destructive"
-              disabled={!session || deleteMutation.isPending}
-              onClick={() => session && deleteMutation.mutate(session.id)}
-            >
-              <Trash2 />
-            </Button>
+          <div className="border-b">
+            <div className="flex items-center gap-2 p-3">
+              <Cpu className="size-4 shrink-0" />
+              <Select value={selectedId} onValueChange={setSelectedId}>
+                <SelectTrigger className="h-9 min-w-0 flex-1" aria-label="选择虚拟开发板">
+                  <SelectValue placeholder="选择虚拟开发板" />
+                </SelectTrigger>
+                <SelectContent>
+                  {sessions.map((item) => (
+                    <SelectItem key={item.id} value={item.id}>
+                      {item.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Button
+                variant="outline"
+                size="icon"
+                title="新建开发板"
+                onClick={() => createMutation.mutate({ boardType: preferredBoardType })}
+                disabled={createMutation.isPending}
+              >
+                <Plus />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                title="删除当前会话"
+                className="text-destructive"
+                disabled={!session || deleteMutation.isPending}
+                onClick={() => session && deleteMutation.mutate(session.id)}
+              >
+                <Trash2 />
+              </Button>
+            </div>
+            <div className="flex items-center gap-3 border-t px-3 py-2.5">
+              <span className="text-muted-foreground text-xs">开发板型号</span>
+              <Select
+                value={session?.board.type ?? preferredBoardType}
+                onValueChange={(boardType) => {
+                  const nextBoardType = boardType as SimulatorBoardType;
+                  setPreferredBoardType(nextBoardType);
+                  if (session) {
+                    boardMutation.mutate({
+                      id: session.id,
+                      boardType: nextBoardType,
+                    });
+                  }
+                }}
+                disabled={boardMutation.isPending}
+              >
+                <SelectTrigger className="h-8 min-w-0 flex-1" aria-label="选择开发板型号">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {SIMULATOR_BOARDS.map((board) => (
+                    <SelectItem key={board.type} value={board.type}>
+                      {board.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
 
           {session ? (

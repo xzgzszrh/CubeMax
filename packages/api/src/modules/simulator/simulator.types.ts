@@ -29,13 +29,17 @@ export type VirtualPeripheralState = {
     servo: { pin: string; angle: number };
 };
 
+export const SIMULATOR_BOARD_TYPES = ["esp32-devkit-v1", "cubecat-s3", "cubecat-p4"] as const;
+
+export type SimulatorBoardType = (typeof SIMULATOR_BOARD_TYPES)[number];
+
 export type SimulatorSession = {
     id: string;
     userId: string;
     name: string;
     board: {
-        type: "esp32-devkit-v1";
-        name: "ESP32 DevKit V1";
+        type: SimulatorBoardType;
+        name: "ESP32 DevKit" | "CubeCat-S3" | "CubeCat-P4";
         voltage: 3.3;
     };
     revision: number;

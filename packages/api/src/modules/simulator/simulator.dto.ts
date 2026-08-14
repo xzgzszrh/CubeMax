@@ -12,13 +12,23 @@ import {
     Min,
 } from "class-validator";
 
-import type { SimulatorOperation } from "./simulator.types";
+import type { SimulatorBoardType, SimulatorOperation } from "./simulator.types";
+import { SIMULATOR_BOARD_TYPES } from "./simulator.types";
 
 export class CreateSimulatorSessionDto {
     @IsOptional()
     @IsString()
     @MaxLength(100)
     name?: string;
+
+    @IsOptional()
+    @IsIn(SIMULATOR_BOARD_TYPES)
+    boardType?: SimulatorBoardType;
+}
+
+export class UpdateSimulatorBoardDto {
+    @IsIn(SIMULATOR_BOARD_TYPES)
+    boardType: SimulatorBoardType;
 }
 
 export class UpdateSimulatorInputDto {

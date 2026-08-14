@@ -25,6 +25,21 @@ describe("SimulatorService", () => {
         expect(service.list("student-b")).toHaveLength(1);
     });
 
+    it("stores the selected board model while sharing the simulator backend", async () => {
+        const session = service.create("student", undefined, "cubecat-s3");
+
+        expect(session.board).toMatchObject({ type: "cubecat-s3", name: "CubeCat-S3" });
+        service.updateBoard(session.id, "student", "cubecat-p4");
+        await service.executeTool("gpio_write", {
+            sessionId: session.id,
+            pin: "2",
+            value: true,
+        });
+
+        expect(session.board).toMatchObject({ type: "cubecat-p4", name: "CubeCat-P4" });
+        expect(session.peripherals.led.on).toBe(true);
+    });
+
     it("applies GPIO, PWM, servo and input operations to the same session", async () => {
         const session = service.create("student");
 

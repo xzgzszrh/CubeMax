@@ -4,12 +4,19 @@ import { HttpErrorFactory } from "@buildingai/errors";
 import { Injectable } from "@nestjs/common";
 
 import type {
+    SimulatorBoardType,
     SimulatorOperation,
     SimulatorSerialEntry,
     SimulatorSession,
     VirtualPinMode,
     VirtualPinState,
 } from "./simulator.types";
+
+const BOARD_DEFINITIONS: Record<SimulatorBoardType, SimulatorSession["board"]> = {
+    "esp32-devkit-v1": { type: "esp32-devkit-v1", name: "ESP32 DevKit", voltage: 3.3 },
+    "cubecat-s3": { type: "cubecat-s3", name: "CubeCat-S3", voltage: 3.3 },
+    "cubecat-p4": { type: "cubecat-p4", name: "CubeCat-P4", voltage: 3.3 },
+};
 
 const MAX_SESSIONS_PER_USER = 10;
 const MAX_SERIAL_ENTRIES = 200;
@@ -27,7 +34,11 @@ export class SimulatorService {
             .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
     }
 
-    create(userId: string, name?: string): SimulatorSession {
+    create(
+        userId: string,
+        name?: string,
+        boardType: SimulatorBoardType = "esp32-devkit-v1",
+    ): SimulatorSession {
         const existing = this.list(userId);
         if (existing.length >= MAX_SESSIONS_PER_USER) {
             this.sessions.delete(existing.at(-1)!.id);
@@ -38,11 +49,7 @@ export class SimulatorService {
             id: randomUUID(),
             userId,
             name: name?.trim() || `ESP32 仿真板 ${existing.length + 1}`,
-            board: {
-                type: "esp32-devkit-v1",
-                name: "ESP32 DevKit V1",
-                voltage: 3.3,
-            },
+            board: { ...BOARD_DEFINITIONS[boardType] },
             revision: 1,
             pins: {},
             peripherals: {
@@ -79,6 +86,14 @@ export class SimulatorService {
     reset(id: string, userId: string): SimulatorSession {
         const current = this.getForUser(id, userId);
         return this.resetSession(current);
+    }
+
+    updateBoard(id: string, userId: string, boardType: SimulatorBoardType): SimulatorSession {
+        const session = this.getForUser(id, userId);
+        session.board = { ...BOARD_DEFINITIONS[boardType] };
+        this.appendSerial(session, "system", `开发板型号已切换为 ${session.board.name}`);
+        this.touch(session);
+        return session;
     }
 
     remove(id: string, userId: string): void {

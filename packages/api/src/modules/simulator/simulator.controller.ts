@@ -6,6 +6,7 @@ import { Body, Delete, Get, Param, Patch, Post } from "@nestjs/common";
 import {
     ApplySimulatorOperationsDto,
     CreateSimulatorSessionDto,
+    UpdateSimulatorBoardDto,
     UpdateSimulatorInputDto,
     WriteSimulatorSerialDto,
 } from "./simulator.dto";
@@ -22,7 +23,7 @@ export class SimulatorController {
 
     @Post("sessions")
     create(@Playground() user: UserPlayground, @Body() dto: CreateSimulatorSessionDto) {
-        return this.simulatorService.create(user.id, dto.name);
+        return this.simulatorService.create(user.id, dto.name, dto.boardType);
     }
 
     @Get("sessions/:id")
@@ -33,6 +34,15 @@ export class SimulatorController {
     @Post("sessions/:id/reset")
     reset(@Playground() user: UserPlayground, @Param("id") id: string) {
         return this.simulatorService.reset(id, user.id);
+    }
+
+    @Patch("sessions/:id/board")
+    updateBoard(
+        @Playground() user: UserPlayground,
+        @Param("id") id: string,
+        @Body() dto: UpdateSimulatorBoardDto,
+    ) {
+        return this.simulatorService.updateBoard(id, user.id, dto.boardType);
     }
 
     @Patch("sessions/:id/input")
