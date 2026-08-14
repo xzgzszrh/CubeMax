@@ -23,7 +23,7 @@
     },
     "scripts": {
         "build:clean": "rimraf build .nuxt .output .temp",
-        "dev:web": "vite",
+        "dev:web": "vite build --watch",
         "dev:api": "cross-env NODE_ENV=development tsup --watch src/api",
         "dev": "concurrently -n web,api -c cyan,magenta \"pnpm dev:web\" \"pnpm dev:api\"",
         "build:api": "cross-env NODE_ENV=production tsup",
