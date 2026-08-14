@@ -31,22 +31,13 @@ export type LuaDeviceRunStatus =
 
 @Entity("lua_physical_device")
 @Index(["deviceId"], { unique: true })
-@Index(["createBy", "displayName"])
+@Index(["displayName"])
 export class LuaPhysicalDevice extends BaseEntity {
     @Column({ name: "device_id", type: "varchar", length: 36 })
     deviceId: string;
 
     @Column({ name: "display_name", type: "varchar", length: 100 })
     displayName: string;
-
-    @Column({ name: "create_by", type: "varchar", length: 255 })
-    createBy: string;
-
-    @Column({ name: "key_id", type: "varchar", length: 16, default: "v1" })
-    keyId: string;
-
-    @Column({ name: "secret_ciphertext", type: "text" })
-    secretCiphertext: string;
 
     @Column({ name: "firmware_version", type: "varchar", length: 32, nullable: true })
     firmwareVersion?: string | null;
@@ -66,8 +57,6 @@ export class LuaPhysicalDevice extends BaseEntity {
     @Column({ name: "last_seen_at", type: "timestamptz", nullable: true })
     lastSeenAt?: Date | null;
 
-    @Column({ name: "revoked_at", type: "timestamptz", nullable: true })
-    revokedAt?: Date | null;
 }
 
 @Entity("lua_device_connection")

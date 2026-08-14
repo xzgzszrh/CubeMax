@@ -4,15 +4,15 @@
 
 本协议用于让 ESP32 主动连接 CubeMax 服务器。用户在 Web 端点击“发送并运行”后，服务器将当前 Lua 源码快照和参数可靠地下发到指定 ESP32，由设备执行并回传状态、日志和结果。
 
-浏览器不直连 ESP32，也不把用户 JWT 交给设备。浏览器沿用当前登录态调用 HTTP API；服务器负责设备鉴权、用户授权、任务排队、可靠投递和状态持久化。
+浏览器不直连 ESP32，也不把用户 JWT 交给设备。浏览器沿用当前登录态调用 HTTP API；服务器负责设备自动登记、任务排队、可靠投递和状态持久化。
 
 设备通道采用原生 RFC 6455 WebSocket，不使用 Socket.IO。生产环境只允许 TLS：
 
 ~~~text
-wss://<host>/api/device-ws/v1
+wss://max.sh.creativone.cn/api/device-ws/v1
 ~~~
 
-连接 URL 不携带密钥。设备在 WebSocket 升级完成后通过服务端随机挑战完成认证。生产环境应拒绝明文 ws 连接。
+固件直接内置该 URL。设备在 WebSocket 升级完成后立即发送 hello，服务端按 Board UUID 自动创建或更新设备记录；不使用设备密钥、配对码或 OTA 下发配置。生产环境应拒绝明文 ws 连接。
 
 本文定义的协议版本为 1。新增可选字段属于向后兼容；修改必填字段、字段类型或现有消息语义时，必须升级主版本并使用新的 URL 路径。
 
@@ -24,8 +24,7 @@ sequenceDiagram
   participant API as CubeMax API / Device Gateway
   participant ESP as ESP32
   ESP->>API: WebSocket Upgrade
-  API->>ESP: hello.challenge
-  ESP->>API: hello（HMAC + 能力）
+  ESP->>API: hello（UUID + 能力）
   API->>ESP: hello.welcome
   Web->>API: POST 创建 Lua 运行任务（用户 JWT）
   API->>ESP: run.prepare -> run.chunk* -> run.commit
@@ -35,17 +34,17 @@ sequenceDiagram
 
 服务器职责：
 
-- 注册设备、配对、吊销和授权。xiaozhi-esp32 使用固件首次启动时生成并持久化的 Board UUID 作为 device_id；设备必须绑定用户或组织，只有具备操作权限的用户才能下发任务。
+- 收到 hello 时按 Board UUID 自动登记设备；管理员控制台展示全部已连接过的 ESP32。
 - 下发前持久化运行任务。服务重启后不能丢失已排队的源码、参数和投递状态。
 - 校验 UTF-8 和大小，计算 SHA-256，并根据设备声明的限制分片和限速。
 - 将全部设备消息视为不可信输入，逐字段校验，并把设备事件映射为 Web 可查询的运行状态。
-- 每个 device_id 只保留一个有效连接。新连接认证成功后替换旧连接。
+- 每个 device_id 只保留一个有效连接。新连接登记成功后替换旧连接。
 
 ESP32 职责：
 
 - 维持出站 WebSocket 连接，断线后按退避策略重连。
-- 使用独立设备密钥认证；上报能力；在同一次固件启动内保留传输进度；校验分片和完整文件；在 NVS 中保留最近终态，保证已提交的同一 run_id 不会重复执行。
-- 只执行通过已认证连接接收的源码，不能相信 Lua 源码或参数中出现的任意 device_id。
+- 连接固件内置的服务器地址；上报能力；在同一次固件启动内保留传输进度；校验分片和完整文件；在 NVS 中保留最近终态，保证已提交的同一 run_id 不会重复执行。
+- 只执行当前 WebSocket 连接接收的源码，不能相信 Lua 源码或参数中出现的任意 device_id。
 
 ## 3. 编码与限制
 
@@ -94,15 +93,14 @@ sha256 是对完整原始字节计算的 64 位小写十六进制字符串。crc
 
 接收方必须忽略未知的顶层字段和 data 字段，以支持兼容升级。缺少必填字段、类型错误、非法 JSON 或不支持的版本应返回 error；无法恢复时随后关闭连接。
 
-run_id 由服务器生成；device_id 采用 xiaozhi-esp32 已有的持久化 Board UUID，并在服务器注册/配对；boot_id 和每条设备上行消息的 id 由设备生成。任何一方都不能仅凭 ID 格式判断权限。
+run_id 由服务器生成；device_id 采用 xiaozhi-esp32 已有的持久化 Board UUID，首次 hello 时自动注册；boot_id 和每条设备上行消息的 id 由设备生成。
 
 消息类型总表：
 
 | type | 方向 | 作用 |
 | --- | --- | --- |
-| hello.challenge | 服务器 -> 设备 | 认证随机挑战 |
-| hello | 设备 -> 服务器 | 身份证明、能力和恢复状态 |
-| hello.welcome | 服务器 -> 设备 | 认证成功及协商参数 |
+| hello | 设备 -> 服务器 | 自动登记、能力和恢复状态 |
+| hello.welcome | 服务器 -> 设备 | 登记成功及协商参数 |
 | device.status | 设备 -> 服务器 | 心跳、资源和任务状态 |
 | run.prepare | 服务器 -> 设备 | 声明待传源码和运行参数 |
 | run.ready | 设备 -> 服务器 | 接受/恢复传输 |
@@ -117,42 +115,23 @@ run_id 由服务器生成；device_id 采用 xiaozhi-esp32 已有的持久化 Bo
 | run.finished.ack | 服务器 -> 设备 | 终态已持久化 |
 | error | 双向 | 协议或命令错误 |
 
-## 5. 连接、认证与存活
+## 5. 连接、自动登记与存活
 
-WebSocket 建立后，服务器立即发送一个密码学安全的随机 32 字节挑战。设备必须在 10 秒内发送 hello；服务器应关闭超时未认证的连接。
+设备连接固件内置的 WebSocket 地址后，必须在 10 秒内发送 hello。服务端使用 device_id 自动创建或更新设备记录，不校验密钥或挑战响应。
 
-### 5.1 服务器到设备：hello.challenge
-
-~~~json
-{
-  "v": 1,
-  "type": "hello.challenge",
-  "id": "9df11643-2284-4c72-8bfc-4f57074b3ce1",
-  "ts": "2026-08-14T10:00:00.000Z",
-  "data": {
-    "nonce_b64": "mP7sZx4PYpYNpQbAlyQ2mMdM9yAFNHN9mq4aG9o7PSw=",
-    "auth_deadline_ms": 10000,
-    "server_time": "2026-08-14T10:00:00.000Z"
-  }
-}
-~~~
-
-### 5.2 设备到服务器：hello
+### 5.1 设备到服务器：hello
 
 ~~~json
 {
   "v": 1,
   "type": "hello",
   "id": "c0911b82-c930-48f9-8593-075c0a44c79d",
-  "reply_to": "9df11643-2284-4c72-8bfc-4f57074b3ce1",
   "ts": "2026-08-14T10:00:01.242Z",
   "data": {
     "device_id": "a2a494dc-4e76-4b8f-8c7f-439d42087edb",
-    "key_id": "v1",
     "boot_id": "9b3e1fc4-b605-4edf-9ba3-677e4f77ce16",
     "firmware_version": "1.0.0",
     "lua_runtime": "esp-claw-0.1.0",
-    "proof_b64": "<base64 HMAC-SHA256>",
     "limits": {
       "max_script_bytes": 65536,
       "max_params_bytes": 4096,
@@ -176,41 +155,9 @@ WebSocket 建立后，服务器立即发送一个密码学安全的随机 32 字
 }
 ~~~
 
-proof_b64 的计算公式为：
+device_id 和 boot_id 必须是小写规范 UUID；firmware_version 只允许 1 至 32 个 ASCII 字母、数字、点、加号或短横线。服务端仍应对 IP、设备 UUID 和消息大小实施限速与校验。boot_id 在固件每次启动时重新生成，用于判断传输是否被设备重启打断。
 
-~~~text
-Base64(HMAC-SHA256(device_secret, canonical_input))
-~~~
-
-canonical_input 是下面的 UTF-8 字节串。其中 \n 表示恰好一个 LF 字节 0x0A；各字段必须按收到/发送的原始文本拼接，不做大小写转换：
-
-~~~text
-cubemax-device-ws-v1\n<nonce_b64>\n<device_id>\n<key_id>\n<boot_id>\n<firmware_version>
-~~~
-
-为避免规范化歧义，device_id 和 boot_id 必须是小写规范 UUID；key_id 只允许 1 至 16 个 ASCII 字母、数字、点、下划线或短横线；firmware_version 只允许 1 至 32 个 ASCII 字母、数字、点、加号或短横线。上述字段均禁止空白和换行。
-
-双方实现必须通过以下 HMAC 测试向量：
-
-~~~text
-device_secret_hex =
-000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f
-
-canonical_input =
-cubemax-device-ws-v1\nmP7sZx4PYpYNpQbAlyQ2mMdM9yAFNHN9mq4aG9o7PSw=\na2a494dc-4e76-4b8f-8c7f-439d42087edb\nv1\n9b3e1fc4-b605-4edf-9ba3-677e4f77ce16\n1.0.0
-
-expected_hmac_sha256_hex =
-accd42fdaf0931d1d94149b9a6ad7d7a445584804ce6f2dea63dada618e2101f
-
-expected_proof_b64 =
-rM1C/a8JMdHZQUm5pq19ekRVhIBM5vLepj2tphjiEB8=
-~~~
-
-设备初始化时获得独立、随机的 32 字节 device_secret。服务器使用项目密钥管理能力加密保存；ESP32 存入受保护 NVS，建议同时启用 Flash Encryption。禁止使用平台 JWT_SECRET、全设备共享密码或 URL 查询参数中的 API Key。
-
-服务器必须恒定时间比较 HMAC，对 IP 和 device_id 限速，并拒绝已吊销或未配对设备。boot_id 在固件每次启动时重新生成，用于判断传输是否被设备重启打断；它不是凭据。
-
-### 5.3 服务器到设备：hello.welcome
+### 5.2 服务器到设备：hello.welcome
 
 ~~~json
 {
@@ -236,9 +183,9 @@ rM1C/a8JMdHZQUm5pq19ekRVhIBM5vLepj2tphjiEB8=
 
 服务器每 25 秒发送 RFC 6455 Ping 控制帧，10 秒内无 Pong 就关闭连接。设备另需至少每 20 秒发送一次 device.status，并在状态变化时立即发送。
 
-断线重连间隔依次为 1、2、4、8、16、30 秒，之后封顶 30 秒，并增加正负 20% 随机抖动。明确的 AUTH_FAILED、DEVICE_REVOKED 或版本不支持不能无限重试，必须等待重新配置或固件升级。
+断线重连间隔依次为 1、2、4、8、16、30 秒，之后封顶 30 秒。无效 hello 或版本不支持时，设备等待下一次重连。
 
-### 5.4 设备到服务器：device.status
+### 5.3 设备到服务器：device.status
 
 ~~~json
 {
@@ -603,8 +550,6 @@ run.stop 可重复执行。服务端在收到 run.finished 前不能把 Web 状�
 | --- | --- |
 | BAD_ENVELOPE | JSON 或信封字段非法 |
 | UNSUPPORTED_VERSION | 不支持协议版本 |
-| AUTH_FAILED | 认证失败 |
-| DEVICE_REVOKED | 设备已吊销 |
 | DEVICE_BUSY | 存在另一个传输或不可替换任务 |
 | UNSUPPORTED_CAPABILITY | 缺少任务声明的能力 |
 | PAYLOAD_TOO_LARGE | 消息、源码、参数或结果超限 |
@@ -619,19 +564,17 @@ run.stop 可重复执行。服务端在收到 run.finished 前不能把 Web 状�
 | LUA_RUNTIME_ERROR | Lua 运行失败 |
 | EXECUTION_TIMEOUT | 超过 timeout_ms |
 
-这些 code 同时用于 error.data.code 和 run.finished.data.error.code。协议解析、分片、存储或鉴权问题使用 error；Lua 编译、运行和超时属于任务结果，使用 run.finished。HASH_MISMATCH 时设备删除临时文件并返回 retryable: true，服务器最多用同一 run_id 从第 0 片完整重传一次；再次失败则将任务置为 failed。
+这些 code 同时用于 error.data.code 和 run.finished.data.error.code。协议解析、分片或存储问题使用 error；Lua 编译、运行和超时属于任务结果，使用 run.finished。HASH_MISMATCH 时设备删除临时文件并返回 retryable: true，服务器最多用同一 run_id 从第 0 片完整重传一次；再次失败则将任务置为 failed。
 
 WebSocket Close Code：
 
 | Code | 含义 | 设备行为 |
 | --- | --- | --- |
 | 1000 | 服务正常关闭 | 按退避重连 |
-| 1008 | 策略或认证违规 | 等待重新配网/配置，不持续重试 |
 | 1009 | 消息过大 | 重连后降低消息或分片大小 |
 | 1011 | 服务端内部错误 | 按退避重连 |
 | 4001 | hello 超时 | 按退避重连并检查设备负载 |
 | 4002 | 被更新的同设备连接替换 | 停止旧连接重试并记录告警 |
-| 4003 | 设备已吊销 | 停止重试 |
 | 4004 | 不支持协议版本 | 停止并等待固件升级 |
 
 服务器在连接关闭后立即标记设备离线；连接存在但 45 秒未收到 device.status 时主动关闭。处于投递或运行中的任务先进入 waiting_for_device，而不是直接失败。
@@ -662,46 +605,41 @@ run.prepare 声明了设备不支持的 required_capabilities 时，设备必须
 - replace 原子切换：新源码校验或加载失败时保留旧的可运行版本；新任务接受后不得继续遗留旧任务。
 - 捕获编译行号、运行错误和 JSON 兼容返回值的能力。
 
-## 10. 设备初始化、配对与存储
+## 10. 设备登记与存储
 
-设备初始化和配对通过管理员/用户 HTTP 接口完成，不走长期 WebSocket。
-
-服务器使用设备上报的 Board UUID 注册 device_id，并生成 32 字节 device_secret 和 key_id。xiaozhi-esp32 的 OTA/激活响应可返回 lua_gateway 对象（url、device_id、key_id、secret_b64），固件通过现有 Settings 写入 lua_gateway NVS 命名空间。也可使用一次性短配对码把设备绑定到登录用户；配对码应在 10 分钟内过期、限制尝试次数，并且绝不能作为长期 WebSocket 密钥。
+固件在源码中内置 WebSocket 地址，不读取 OTA、NVS 或 Web 页面下发的 Lua 网关配置。设备连上该地址并发送 hello 后，服务器以 Board UUID 自动创建或更新记录；管理员在 ESP32 设备列表中查看设备状态。
 
 建议服务端持久化实体：
 
 | 实体 | 关键字段 |
 | --- | --- |
-| physical_device | id、owner/organization、display_name、secret_ciphertext、key_id、revoked_at、last_seen_at、firmware_version、capabilities、limits |
+| physical_device | id、device_id、display_name、last_seen_at、firmware_version、capabilities、limits |
 | device_connection | device_id、connection_id、boot_id、connected_at、disconnected_at、close_code |
 | lua_device_run | run_id、device_id、requester_id、module_id 可空、source/source_location、source_sha256、params、status、deadlines、result/error |
 | lua_device_run_log | run_id、sequence、level、text、received_at |
-
-device_secret 不能以明文进入日志、API 响应或数据库普通字段。支持轮换时，服务器可在短过渡期同时接受当前 key_id 和上一 key_id；设备确认新密钥后立即吊销旧密钥。
 
 ## 11. 双方实现边界
 
 服务器端：
 
 1. 在 Nest HTTP Server 上挂载 /api/device-ws/v1 原生 WebSocket Gateway；设备通道不要引入 Socket.IO。
-2. 实现设备初始化/配对、HMAC 挑战认证、连接注册、心跳和单连接替换。
-3. 增加物理设备与运行任务持久化、Web 鉴权接口、每设备串行投递状态机、日志和状态查询/SSE。
+2. 实现 hello 自动登记、连接注册、心跳和单连接替换。
+3. 增加物理设备与运行任务持久化、管理员设备列表、每设备串行投递状态机、日志和状态查询/SSE。
 4. Web 增加在线物理设备选择和“发送并运行”；UI 展示服务端持久化状态，不展示乐观的 socket write 状态。
 5. 当前 ecosystem.config.js 只有一个 API 实例，可以先使用进程内 device_id -> socket 注册表；扩展为多实例前，必须增加 Redis 连接归属/发布订阅或独立 Device Gateway，不能假定任意 API 进程都持有目标 socket。
 
 ESP32 端：
 
-1. 实现 CA 证书校验的 WSS、原生文本 JSON 帧、HMAC 挑战、Ping/Pong、重连退避和 device.status。
+1. 实现 CA 证书校验的 WSS、原生文本 JSON 帧、hello、Ping/Pong、重连退避和 device.status。
 2. 使用有界 JSON/Base64 缓冲区；当前固件把分片写入有上限的 PSRAM 缓冲区，验证 CRC-32 和最终 SHA-256；不得占用或覆盖 assets 分区。将来增加专用 Lua 分区后可升级为跨重启续传。
 3. 实现 run_id 幂等、停止/超时、main(params)、xiaozhi.v1 API、日志限流和可靠终态上报。
 
 ## 12. 联调验收用例
 
-1. 已配对设备上线，Web API 能看到固件版本和限制；错误 HMAC 永远不能把设备标为在线。
+1. 新设备上线后自动出现在管理员 ESP32 列表中，列表能看到固件版本、能力和在线状态。
 2. 发送包含中文且恰好 64 KB 的 Lua 文件，设备所得字节与服务器快照完全一致，并且只运行一次。
 3. 在第 n 个分片后断线且设备未重启，重连后从 next_chunk_index 续传；设备重启后使用同一 run_id 从第 0 片重传。
 4. 重复发送 run.prepare、某个 run.chunk、run.commit 和 run.finished，最终仍只执行一次且服务端只有一个终态。
 5. 对超限源码、非法 Base64、错误 CRC-32、错误 SHA-256 分别验证拒绝；先前可运行脚本不能被覆盖。
 6. 停止一个无限循环脚本，依次看到 run.stopping、run.finished: stopped、run.finished.ack。
 7. 设备运行时断网再恢复，服务端不能误报成功；设备持久化的终态可在重连后补报。
-8. 吊销设备后，现有连接立即关闭，后续连接不能认证，排队任务不能继续下发。

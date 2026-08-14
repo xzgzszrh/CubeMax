@@ -300,6 +300,18 @@
                 ]
             },
             {
+                "name": "ESP32 设备",
+                "code": "esp32-device-list",
+                "path": "esp32-devices",
+                "icon": "microchip",
+                "component": "/console/device/list",
+                "permissionCode": "esp32-devices:list",
+                "sort": 650,
+                "isHidden": 0,
+                "type": 2,
+                "sourceType": 1
+            },
+            {
                 "name": "订单管理",
                 "code": null,
                 "path": "order",

@@ -39,6 +39,16 @@ export class QueryLuaModuleDto {
     isPublished?: boolean;
 }
 
+export class LuaAssistantMessageDto {
+    @IsIn(["user", "assistant"])
+    role: "user" | "assistant";
+
+    @IsString()
+    @IsNotEmpty()
+    @MaxLength(8000)
+    content: string;
+}
+
 export class CreateLuaModuleDto {
     @Transform(({ value }) => (typeof value === "string" ? value.trim() : value))
     @IsString()
@@ -61,6 +71,17 @@ export class CreateLuaModuleDto {
 
     @IsObject()
     outputSchema: Record<string, unknown>;
+
+    @IsOptional()
+    @IsObject()
+    testParams?: Record<string, unknown>;
+
+    @IsOptional()
+    @IsArray()
+    @ArrayMaxSize(100)
+    @ValidateNested({ each: true })
+    @Type(() => LuaAssistantMessageDto)
+    assistantMessages?: LuaAssistantMessageDto[];
 }
 
 export class UpdateLuaModuleDto {
@@ -89,6 +110,17 @@ export class UpdateLuaModuleDto {
     @IsOptional()
     @IsObject()
     outputSchema?: Record<string, unknown>;
+
+    @IsOptional()
+    @IsArray()
+    @ArrayMaxSize(100)
+    @ValidateNested({ each: true })
+    @Type(() => LuaAssistantMessageDto)
+    assistantMessages?: LuaAssistantMessageDto[];
+
+    @IsOptional()
+    @IsObject()
+    testParams?: Record<string, unknown>;
 }
 
 export class TestLuaModuleDto {
@@ -106,16 +138,6 @@ export class TestLuaModuleDto {
     @IsString()
     @IsNotEmpty()
     simulatorSessionId?: string;
-}
-
-export class LuaAssistantMessageDto {
-    @IsIn(["user", "assistant"])
-    role: "user" | "assistant";
-
-    @IsString()
-    @IsNotEmpty()
-    @MaxLength(8000)
-    content: string;
 }
 
 export class GenerateLuaModuleDto {

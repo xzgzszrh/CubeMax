@@ -14,16 +14,6 @@ import {
     Min,
 } from "class-validator";
 
-export class RegisterLuaDeviceDto {
-    @IsUUID("4")
-    deviceId: string;
-
-    @IsString()
-    @IsNotEmpty()
-    @MaxLength(100)
-    displayName: string;
-}
-
 export class CreateLuaDeviceRunDto {
     @IsString()
     @IsNotEmpty()

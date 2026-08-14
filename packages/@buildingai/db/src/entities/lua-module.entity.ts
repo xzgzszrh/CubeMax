@@ -8,6 +8,11 @@ export type LuaModuleSchema = {
     required?: string[];
 };
 
+export type LuaAssistantMessage = {
+    role: "user" | "assistant";
+    content: string;
+};
+
 @Entity("lua_module")
 @Index(["createBy", "name"])
 export class LuaModule extends BaseEntity {
@@ -28,6 +33,12 @@ export class LuaModule extends BaseEntity {
 
     @Column({ name: "output_schema", type: "jsonb", default: () => "'{}'::jsonb" })
     outputSchema: LuaModuleSchema;
+
+    @Column({ name: "assistant_messages", type: "jsonb", default: () => "'[]'::jsonb" })
+    assistantMessages: LuaAssistantMessage[];
+
+    @Column({ name: "test_params", type: "jsonb", default: () => "'{}'::jsonb" })
+    testParams: Record<string, unknown>;
 
     @Column({ name: "published_input_schema", type: "jsonb", nullable: true })
     publishedInputSchema?: LuaModuleSchema | null;

@@ -1,6 +1,7 @@
 import {
   generateLuaModule,
   type LuaAssistantMessage,
+  type LuaModuleDto,
   type LuaModuleItem,
   type LuaModuleSchema,
   testLuaModule,
@@ -13,7 +14,6 @@ import {
   useLuaDevicesQuery,
   useLuaModulesQuery,
   usePublishLuaModuleMutation,
-  useRegisterLuaDeviceMutation,
   useSimulatorSessionsQuery,
   useStopLuaDeviceRunMutation,
   useUnpublishLuaModuleMutation,
@@ -21,6 +21,14 @@ import {
 } from "@buildingai/services/web";
 import { Badge } from "@buildingai/ui/components/ui/badge";
 import { Button } from "@buildingai/ui/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@buildingai/ui/components/ui/dialog";
 import { Input } from "@buildingai/ui/components/ui/input";
 import { Label } from "@buildingai/ui/components/ui/label";
 import { ScrollArea } from "@buildingai/ui/components/ui/scroll-area";
@@ -32,13 +40,13 @@ import {
   SelectValue,
 } from "@buildingai/ui/components/ui/select";
 import { Textarea } from "@buildingai/ui/components/ui/textarea";
+import { useAlertDialog } from "@buildingai/ui/hooks/use-alert-dialog";
 import {
   Bot,
   Braces,
   ChevronLeft,
   ChevronRight,
   Code2,
-  Copy,
   Cpu,
   FileCode2,
   Loader2,
@@ -48,7 +56,6 @@ import {
   Plus,
   RadioTower,
   Rocket,
-  Save,
   Send,
   Sparkles,
   Square,
@@ -56,7 +63,7 @@ import {
   UserRound,
   X,
 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 
@@ -116,7 +123,7 @@ function moduleToEditor(module: LuaModuleItem): EditorState {
     draftCode: module.draftCode,
     inputSchema: JSON.stringify(module.inputSchema, null, 2),
     outputSchema: JSON.stringify(module.outputSchema, null, 2),
-    testParams: "{}",
+    testParams: JSON.stringify(module.testParams ?? {}, null, 2),
   };
 }
 
@@ -126,6 +133,53 @@ function parseObject(value: string, label: string): Record<string, unknown> {
     throw new Error(`${label}必须是 JSON 对象`);
   }
   return parsed as Record<string, unknown>;
+}
+
+function editorToDto(editor: EditorState, messages: LuaChatMessage[]): LuaModuleDto {
+  return {
+    name: editor.name.trim(),
+    description: editor.description.trim(),
+    draftCode: editor.draftCode,
+    inputSchema: parseObject(editor.inputSchema, "输入定义") as LuaModuleSchema,
+    outputSchema: parseObject(editor.outputSchema, "输出定义") as LuaModuleSchema,
+    testParams: parseObject(editor.testParams, "测试参数"),
+    assistantMessages: messages
+      .slice(-100)
+      .map(({ role, content }) => ({ role, content })),
+  };
+}
+
+function editorToAutoSaveDto(
+  editor: EditorState,
+  messages: LuaChatMessage[],
+): Partial<LuaModuleDto> {
+  const dto: Partial<LuaModuleDto> = {
+    description: editor.description.trim(),
+    draftCode: editor.draftCode,
+    assistantMessages: messages
+      .slice(-100)
+      .map(({ role, content }) => ({ role, content })),
+  };
+  const name = editor.name.trim();
+  if (name) dto.name = name;
+
+  try {
+    dto.inputSchema = parseObject(editor.inputSchema, "输入定义") as LuaModuleSchema;
+  } catch {
+    // Keep saving the other fields while this JSON value is incomplete.
+  }
+  try {
+    dto.outputSchema = parseObject(editor.outputSchema, "输出定义") as LuaModuleSchema;
+  } catch {
+    // Keep saving the other fields while this JSON value is incomplete.
+  }
+  try {
+    dto.testParams = parseObject(editor.testParams, "测试参数");
+  } catch {
+    // Keep saving the other fields while this JSON value is incomplete.
+  }
+
+  return dto;
 }
 
 const DEVICE_RUN_STATUS_LABELS: Record<string, string> = {
@@ -148,9 +202,11 @@ export default function LuaModulesPage() {
   const simulatorSessionsQuery = useSimulatorSessionsQuery();
   const physicalDevicesQuery = useLuaDevicesQuery();
   const navigate = useNavigate();
+  const { confirm } = useAlertDialog();
   const providersQuery = useAiProvidersQuery({ supportedModelTypes: "llm" });
   const modules = modulesQuery.data?.items ?? [];
   const [selectedId, setSelectedId] = useState<string>();
+  const [editorModuleId, setEditorModuleId] = useState<string>();
   const [editor, setEditor] = useState<EditorState>(emptyEditor);
   const [result, setResult] = useState<string>("");
   const [running, setRunning] = useState(false);
@@ -163,9 +219,11 @@ export default function LuaModulesPage() {
   const [simulatorSessionId, setSimulatorSessionId] = useState<string>("none");
   const [physicalDeviceId, setPhysicalDeviceId] = useState<string>("none");
   const [physicalRunId, setPhysicalRunId] = useState<string>();
-  const [registerDeviceId, setRegisterDeviceId] = useState("");
-  const [registerDeviceName, setRegisterDeviceName] = useState("");
-  const [otaConfig, setOtaConfig] = useState<string>();
+  const [newModuleDialogOpen, setNewModuleDialogOpen] = useState(false);
+  const [newModuleName, setNewModuleName] = useState("");
+  const moduleDraftsRef = useRef(
+    new Map<string, { editor: EditorState; messages: LuaChatMessage[] }>(),
+  );
 
   const physicalRunQuery = useLuaDeviceRunQuery(
     physicalDeviceId === "none" ? undefined : physicalDeviceId,
@@ -193,8 +251,25 @@ export default function LuaModulesPage() {
   );
 
   useEffect(() => {
-    if (selected) setEditor(moduleToEditor(selected));
-  }, [selected]);
+    if (!selected || editorModuleId === selected.id) return;
+    const cached = moduleDraftsRef.current.get(selected.id);
+    const nextEditor = cached?.editor ?? moduleToEditor(selected);
+    const nextMessages = cached?.messages ?? selected.assistantMessages ?? [];
+    setEditor(nextEditor);
+    setMessages(nextMessages);
+    moduleDraftsRef.current.set(selected.id, {
+      editor: nextEditor,
+      messages: nextMessages,
+    });
+    setResult("");
+    setEditorModuleId(selected.id);
+  }, [editorModuleId, selected]);
+
+  useEffect(() => {
+    if (modulesQuery.isSuccess && !selectedId && modules[0]) {
+      setSelectedId(modules[0].id);
+    }
+  }, [modules, modulesQuery.isSuccess, selectedId]);
 
   useEffect(() => {
     if (!modelId && models[0]) setModelId(models[0].id);
@@ -202,15 +277,26 @@ export default function LuaModulesPage() {
 
   const createMutation = useCreateLuaModuleMutation({
     onSuccess: (module) => {
+      const nextEditor = moduleToEditor(module);
+      const nextMessages = module.assistantMessages ?? [];
+      setEditor(nextEditor);
+      setMessages(nextMessages);
+      moduleDraftsRef.current.set(module.id, {
+        editor: nextEditor,
+        messages: nextMessages,
+      });
+      setEditorModuleId(module.id);
       setSelectedId(module.id);
+      setNewModuleDialogOpen(false);
+      setNewModuleName("");
       toast.success("Lua 模块已创建");
     },
     onError: (error) => toast.error(error.message),
   });
-  const updateMutation = useUpdateLuaModuleMutation({
-    onSuccess: () => toast.success("草稿已保存"),
-    onError: (error) => toast.error(error.message),
-  });
+  const { mutate: persistModule, mutateAsync: persistModuleAsync } =
+    useUpdateLuaModuleMutation({
+      onError: (error) => toast.error(`自动保存失败：${error.message}`),
+    });
   const publishMutation = usePublishLuaModuleMutation({
     onSuccess: () => toast.success("模块已发布，可在工作流中使用"),
     onError: (error) => toast.error(error.message),
@@ -221,7 +307,9 @@ export default function LuaModulesPage() {
   });
   const deleteMutation = useDeleteLuaModuleMutation({
     onSuccess: () => {
+      if (selectedId) moduleDraftsRef.current.delete(selectedId);
       setSelectedId(undefined);
+      setEditorModuleId(undefined);
       setEditor(emptyEditor());
       setResult("");
       setMessages([]);
@@ -229,6 +317,23 @@ export default function LuaModulesPage() {
     },
     onError: (error) => toast.error(error.message),
   });
+  const handleDeleteModule = async () => {
+    if (!selectedId) return;
+
+    try {
+      await confirm({
+        title: "删除模块",
+        description: `确定要删除模块「${selected?.name ?? "当前模块"}」吗？此操作不可恢复。`,
+        confirmText: "删除",
+        cancelText: "取消",
+        confirmVariant: "destructive",
+      });
+    } catch {
+      return;
+    }
+
+    deleteMutation.mutate(selectedId);
+  };
   const createDeviceRunMutation = useCreateLuaDeviceRunMutation({
     onSuccess: (run) => {
       setPhysicalRunId(run.id);
@@ -241,40 +346,47 @@ export default function LuaModulesPage() {
     onSuccess: () => toast.success("停止请求已发送"),
     onError: (error) => toast.error(error.message),
   });
-  const registerDeviceMutation = useRegisterLuaDeviceMutation({
-    onSuccess: (registered) => {
-      setPhysicalDeviceId(registered.device.deviceId);
-      setOtaConfig(JSON.stringify({ lua_gateway: registered.otaConfig }, null, 2));
-      setRegisterDeviceId("");
-      setRegisterDeviceName("");
-      toast.success("设备已注册");
-    },
-    onError: (error) => toast.error(error.message),
-  });
+  useEffect(() => {
+    if (!selectedId || editorModuleId !== selectedId) return;
+    moduleDraftsRef.current.set(selectedId, { editor, messages });
+    const timer = window.setTimeout(() => {
+      persistModule({ id: selectedId, dto: editorToAutoSaveDto(editor, messages) });
+    }, 800);
+    return () => window.clearTimeout(timer);
+  }, [editor, editorModuleId, messages, persistModule, selectedId]);
 
-  const payload = () => ({
-    name: editor.name.trim(),
-    description: editor.description.trim(),
-    draftCode: editor.draftCode,
-    inputSchema: parseObject(editor.inputSchema, "输入定义") as LuaModuleSchema,
-    outputSchema: parseObject(editor.outputSchema, "输出定义") as LuaModuleSchema,
-  });
-
-  const save = async () => {
+  const persistCurrentModule = async () => {
+    if (!selectedId || editorModuleId !== selectedId) return;
+    moduleDraftsRef.current.set(selectedId, { editor, messages });
     try {
-      const dto = payload();
-      if (!dto.name) throw new Error("请输入模块名称");
-      if (selectedId) updateMutation.mutate({ id: selectedId, dto });
-      else createMutation.mutate(dto);
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : "内容格式错误");
+      await persistModuleAsync({
+        id: selectedId,
+        dto: editorToAutoSaveDto(editor, messages),
+      });
+    } catch {
+      // The mutation reports the error; the local module cache still preserves the draft.
     }
+  };
+
+  const selectModule = async (id: string) => {
+    if (id === selectedId) return;
+    await persistCurrentModule();
+    setEditorModuleId(undefined);
+    setSelectedId(id);
+  };
+
+  const createModule = () => {
+    const name = newModuleName.trim();
+    if (!name) return;
+    void persistCurrentModule();
+    const initialEditor = { ...emptyEditor(), name };
+    createMutation.mutate(editorToDto(initialEditor, []));
   };
 
   const run = async () => {
     try {
       if (!selectedId) {
-        toast.error("请先保存模块");
+        toast.error("请先新建模块");
         return;
       }
       setRunning(true);
@@ -333,26 +445,35 @@ export default function LuaModulesPage() {
     }
   };
 
-  const registerPhysicalDevice = () => {
-    registerDeviceMutation.mutate({
-      deviceId: registerDeviceId.trim(),
-      displayName: registerDeviceName.trim(),
-    });
-  };
-
   const publish = async () => {
     if (!selectedId) return;
     try {
-      await updateMutation.mutateAsync({ id: selectedId, dto: payload() });
+      await persistModuleAsync({ id: selectedId, dto: editorToDto(editor, messages) });
       await publishMutation.mutateAsync(selectedId);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "发布失败");
     }
   };
 
+  const clearMessages = async () => {
+    if (!selectedId || messages.length === 0) return;
+    setMessages([]);
+    moduleDraftsRef.current.set(selectedId, { editor, messages: [] });
+    try {
+      await persistModuleAsync({ id: selectedId, dto: { assistantMessages: [] } });
+      toast.success("对话已清空");
+    } catch {
+      // The mutation already reports the persistence error.
+    }
+  };
+
   const generate = async () => {
     const userMessage = prompt.trim();
     if (!userMessage || generating) return;
+    if (!selectedId) {
+      toast.error("请先新建一个模块");
+      return;
+    }
     if (!modelId) {
       toast.error("请先选择一个可用的 LLM 模型");
       return;
@@ -368,7 +489,11 @@ export default function LuaModulesPage() {
         testParams: parseObject(editor.testParams, "测试参数"),
       };
       const history = messages.slice(-12).map(({ role, content }) => ({ role, content }));
-      setMessages([...messages, { role: "user", content: userMessage }]);
+      const userMessages: LuaChatMessage[] = [
+        ...messages,
+        { role: "user", content: userMessage },
+      ].slice(-100);
+      setMessages(userMessages);
       setPrompt("");
       setGenerating(true);
       const generated = await generateLuaModule({
@@ -377,28 +502,34 @@ export default function LuaModulesPage() {
         messages: history,
         current,
       });
-      setEditor({
+      const generatedEditor: EditorState = {
         name: generated.name,
         description: generated.description,
         draftCode: generated.draftCode,
         inputSchema: JSON.stringify(generated.inputSchema, null, 2),
         outputSchema: JSON.stringify(generated.outputSchema, null, 2),
         testParams: JSON.stringify(generated.testParams, null, 2),
-      });
-      setMessages((currentMessages) => [
-        ...currentMessages,
+      };
+      const nextMessages: LuaChatMessage[] = [
+        ...userMessages,
         {
           role: "assistant",
           content: generated.reply,
           codeDiff: createLuaCodeDiff(current.draftCode, generated.draftCode),
         },
-      ]);
+      ].slice(-100);
+      setEditor(generatedEditor);
+      setMessages(nextMessages);
+      persistModule({ id: selectedId, dto: editorToDto(generatedEditor, nextMessages) });
     } catch (error) {
       const message = error instanceof Error ? error.message : "生成失败";
-      setMessages((currentMessages) => [
-        ...currentMessages,
+      const failedMessages: LuaChatMessage[] = [
+        ...messages,
+        { role: "user", content: userMessage },
         { role: "assistant", content: `生成失败：${message}` },
-      ]);
+      ].slice(-100);
+      setMessages(failedMessages);
+      if (selectedId) persistModule({ id: selectedId, dto: { assistantMessages: failedMessages } });
       toast.error(message);
     } finally {
       setGenerating(false);
@@ -425,13 +556,6 @@ export default function LuaModulesPage() {
         >
           <Braces /> 代码与配置
           {detailsOpen ? <ChevronRight /> : <ChevronLeft />}
-        </Button>
-        <Button
-          variant="outline"
-          onClick={save}
-          disabled={createMutation.isPending || updateMutation.isPending}
-        >
-          <Save /> 保存
         </Button>
         <Button variant="outline" onClick={run} disabled={running || !selectedId}>
           <Play /> {running ? "运行中" : "运行"}
@@ -507,11 +631,10 @@ export default function LuaModulesPage() {
               variant="outline"
               size={fileSidebarOpen ? "default" : "icon"}
               title="新建模块"
+              disabled={generating}
               onClick={() => {
-                setSelectedId(undefined);
-                setEditor(emptyEditor());
-                setResult("");
-                setMessages([]);
+                setNewModuleName("");
+                setNewModuleDialogOpen(true);
               }}
             >
               <Plus />
@@ -526,13 +649,8 @@ export default function LuaModulesPage() {
                 key={module.id}
                 type="button"
                 title={module.name}
-                onClick={() => {
-                  if (module.id !== selectedId) {
-                    setMessages([]);
-                    setResult("");
-                  }
-                  setSelectedId(module.id);
-                }}
+                disabled={generating}
+                onClick={() => void selectModule(module.id)}
                 className={`relative flex h-10 w-full items-center rounded-md text-left text-sm ${
                   fileSidebarOpen ? "gap-2 px-2.5" : "justify-center"
                 } ${selectedId === module.id ? "bg-accent" : "hover:bg-muted"}`}
@@ -558,6 +676,15 @@ export default function LuaModulesPage() {
             <div className="mr-auto min-w-0">
               <h2 className="text-sm font-semibold">AI 模块助手</h2>
             </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => void clearMessages()}
+              disabled={!selectedId || messages.length === 0 || generating}
+              title="清空当前模块的对话记录"
+            >
+              <Trash2 /> 清空对话
+            </Button>
             <Select value={modelId} onValueChange={setModelId}>
               <SelectTrigger className="w-56">
                 <SelectValue placeholder="选择模型" />
@@ -660,12 +787,13 @@ export default function LuaModulesPage() {
                     }
                   }}
                   placeholder="描述你想让模块完成的任务"
+                  disabled={!selectedId}
                   className="min-h-20 resize-none border-0 px-2 py-2 shadow-none focus-visible:ring-0"
                 />
                 <Button
                   size="icon"
                   onClick={() => void generate()}
-                  disabled={!prompt.trim() || generating || !modelId}
+                  disabled={!selectedId || !prompt.trim() || generating || !modelId}
                   title="发送"
                 >
                   {generating ? <Loader2 className="animate-spin" /> : <Send />}
@@ -793,48 +921,6 @@ export default function LuaModulesPage() {
                       </Badge>
                     )}
                   </div>
-                  <div className="grid gap-2 sm:grid-cols-[1fr_10rem_auto]">
-                    <Input
-                      value={registerDeviceId}
-                      onChange={(event) => setRegisterDeviceId(event.target.value)}
-                      placeholder="设备 UUID"
-                    />
-                    <Input
-                      value={registerDeviceName}
-                      onChange={(event) => setRegisterDeviceName(event.target.value)}
-                      placeholder="设备名称"
-                    />
-                    <Button
-                      variant="outline"
-                      onClick={registerPhysicalDevice}
-                      disabled={
-                        !registerDeviceId.trim() ||
-                        !registerDeviceName.trim() ||
-                        registerDeviceMutation.isPending
-                      }
-                    >
-                      <Plus /> 注册
-                    </Button>
-                  </div>
-                  {otaConfig && (
-                    <div className="relative">
-                      <pre className="bg-muted max-h-48 overflow-auto rounded-md border p-3 pr-10 text-xs whitespace-pre-wrap">
-                        {otaConfig}
-                      </pre>
-                      <Button
-                        variant="ghost"
-                        size="icon-sm"
-                        className="absolute top-1.5 right-1.5"
-                        title="复制设备配置"
-                        onClick={() => {
-                          void navigator.clipboard.writeText(otaConfig);
-                          toast.success("设备配置已复制");
-                        }}
-                      >
-                        <Copy />
-                      </Button>
-                    </div>
-                  )}
                   {physicalRunQuery.data && (
                     <div className="space-y-2">
                       <div className="flex items-center gap-2 text-sm">
@@ -901,7 +987,8 @@ export default function LuaModulesPage() {
                   <Button
                     variant="ghost"
                     className="text-destructive w-full"
-                    onClick={() => deleteMutation.mutate(selectedId)}
+                    onClick={handleDeleteModule}
+                    disabled={deleteMutation.isPending}
                   >
                     <Trash2 /> 删除模块
                   </Button>
@@ -911,6 +998,49 @@ export default function LuaModulesPage() {
           </aside>
         )}
       </div>
+
+      <Dialog open={newModuleDialogOpen} onOpenChange={setNewModuleDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <form
+            className="grid gap-4"
+            onSubmit={(event) => {
+              event.preventDefault();
+              createModule();
+            }}
+          >
+            <DialogHeader>
+              <DialogTitle>新建 Lua 模块</DialogTitle>
+              <DialogDescription>输入模块名称，创建后会立即保存到模块列表。</DialogDescription>
+            </DialogHeader>
+            <div className="space-y-2">
+              <Label htmlFor="new-lua-module-name">模块名称</Label>
+              <Input
+                id="new-lua-module-name"
+                value={newModuleName}
+                onChange={(event) => setNewModuleName(event.target.value)}
+                placeholder="例如：成绩等级判断"
+                maxLength={100}
+                autoFocus
+                disabled={createMutation.isPending}
+              />
+            </div>
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setNewModuleDialogOpen(false)}
+                disabled={createMutation.isPending}
+              >
+                取消
+              </Button>
+              <Button type="submit" disabled={!newModuleName.trim() || createMutation.isPending}>
+                {createMutation.isPending && <Loader2 className="animate-spin" />}
+                创建模块
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

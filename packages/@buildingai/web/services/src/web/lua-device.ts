@@ -21,7 +21,6 @@ export interface LuaPhysicalDeviceItem {
     id: string;
     deviceId: string;
     displayName: string;
-    keyId: string;
     online: boolean;
     firmwareVersion?: string | null;
     bootId?: string | null;
@@ -70,16 +69,6 @@ export interface LuaDeviceRunLogItem {
     createdAt: string;
 }
 
-export interface RegisterLuaDeviceResult {
-    device: LuaPhysicalDeviceItem;
-    otaConfig: {
-        enabled: true;
-        url: string;
-        key_id: string;
-        secret_b64: string;
-    };
-}
-
 export const luaDeviceQueryKeys = {
     all: ["lua-devices"] as const,
     devices: () => ["lua-devices", "list"] as const,
@@ -99,27 +88,6 @@ export function useLuaDevicesQuery(options?: QueryOptionsUtil<LuaPhysicalDeviceI
         queryFn: listLuaDevices,
         refetchInterval: 5000,
         ...options,
-    });
-}
-
-export function registerLuaDevice(dto: { deviceId: string; displayName: string }) {
-    return apiHttpClient.post<RegisterLuaDeviceResult>(DEVICES_PATH, dto);
-}
-
-export function useRegisterLuaDeviceMutation(
-    options?: MutationOptionsUtil<
-        RegisterLuaDeviceResult,
-        { deviceId: string; displayName: string }
-    >,
-) {
-    const queryClient = useQueryClient();
-    return useMutation({
-        mutationFn: registerLuaDevice,
-        ...options,
-        onSuccess: async (...args) => {
-            await queryClient.invalidateQueries({ queryKey: luaDeviceQueryKeys.all });
-            options?.onSuccess?.(...args);
-        },
     });
 }
 

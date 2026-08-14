@@ -19,6 +19,8 @@ export interface LuaModuleItem {
     publishedCode?: string | null;
     inputSchema: LuaModuleSchema;
     outputSchema: LuaModuleSchema;
+    assistantMessages: LuaAssistantMessage[];
+    testParams: Record<string, unknown>;
     publishedInputSchema?: LuaModuleSchema | null;
     publishedOutputSchema?: LuaModuleSchema | null;
     isPublished: boolean;
@@ -42,6 +44,8 @@ export interface LuaModuleDto {
     draftCode: string;
     inputSchema: LuaModuleSchema;
     outputSchema: LuaModuleSchema;
+    assistantMessages?: LuaAssistantMessage[];
+    testParams?: Record<string, unknown>;
 }
 
 export type LuaAssistantMessage = {

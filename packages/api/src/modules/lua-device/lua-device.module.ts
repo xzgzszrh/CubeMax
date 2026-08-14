@@ -8,6 +8,7 @@ import {
 import { Module } from "@nestjs/common";
 
 import { LuaDeviceController } from "./lua-device.controller";
+import { LuaDeviceConsoleController } from "./lua-device-console.controller";
 import { LuaDeviceGatewayService } from "./lua-device-gateway.service";
 
 @Module({
@@ -19,7 +20,7 @@ import { LuaDeviceGatewayService } from "./lua-device-gateway.service";
             LuaDeviceRunLog,
         ]),
     ],
-    controllers: [LuaDeviceController],
+    controllers: [LuaDeviceController, LuaDeviceConsoleController],
     providers: [LuaDeviceGatewayService],
     exports: [LuaDeviceGatewayService],
 })

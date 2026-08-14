@@ -10,24 +10,16 @@ import { In, MoreThan, Repository } from "@buildingai/db/typeorm";
 import { HttpErrorFactory } from "@buildingai/errors";
 import { Injectable, Logger, OnApplicationBootstrap, OnApplicationShutdown } from "@nestjs/common";
 import { HttpAdapterHost } from "@nestjs/core";
-import {
-    createCipheriv,
-    createDecipheriv,
-    createHmac,
-    createHash,
-    randomBytes,
-    randomUUID,
-    timingSafeEqual,
-} from "crypto";
+import { createHash, randomUUID } from "crypto";
 import type { IncomingMessage } from "http";
 import type { Duplex } from "stream";
 import { WebSocket, WebSocketServer, type RawData } from "ws";
 
-import type { CreateLuaDeviceRunDto, RegisterLuaDeviceDto } from "./lua-device.dto";
-import { buildLuaDeviceAuthCanonical, calculateLuaChunkCrc32 } from "./lua-device-protocol";
+import type { CreateLuaDeviceRunDto } from "./lua-device.dto";
+import { calculateLuaChunkCrc32 } from "./lua-device-protocol";
 
 const MAX_MESSAGE_BYTES = 24_576;
-const AUTH_TIMEOUT_MS = 10_000;
+const HELLO_TIMEOUT_MS = 10_000;
 const CHUNK_ACK_TIMEOUT_MS = 5_000;
 const MAX_CHUNK_RETRIES = 3;
 const TERMINAL_STATUSES = ["succeeded", "failed", "stopped", "timed_out"] as const;
@@ -42,9 +34,8 @@ type Envelope = {
 };
 
 type ClientState = {
-    authenticated: boolean;
-    nonceB64: string;
-    authTimer: NodeJS.Timeout;
+    ready: boolean;
+    helloTimer: NodeJS.Timeout;
     alive: boolean;
     deviceId?: string;
     bootId?: string;
@@ -124,44 +115,19 @@ export class LuaDeviceGatewayService implements OnApplicationBootstrap, OnApplic
         return `${prefix}/device-ws/v1`;
     }
 
-    async listDevices(userId: string) {
+    async listDevices() {
         const devices = await this.deviceRepository.find({
-            where: { createBy: userId },
             order: { updatedAt: "DESC" },
         });
         return devices.map((device) => this.serializeDevice(device));
     }
 
-    async registerDevice(userId: string, dto: RegisterLuaDeviceDto, publicUrl?: string) {
-        const deviceId = dto.deviceId.toLowerCase();
-        const existing = await this.deviceRepository.findOne({ where: { deviceId } });
-        if (existing) throw HttpErrorFactory.badRequest("该设备 UUID 已注册");
-
-        const secret = randomBytes(32);
-        const device = await this.deviceRepository.save(
-            this.deviceRepository.create({
-                deviceId,
-                displayName: dto.displayName.trim(),
-                createBy: userId,
-                keyId: "v1",
-                secretCiphertext: this.encryptSecret(secret),
-                capabilities: [],
-            }),
-        );
-        const url = process.env.LUA_DEVICE_GATEWAY_PUBLIC_URL || publicUrl || "";
-        return {
-            device: this.serializeDevice(device),
-            otaConfig: {
-                enabled: true,
-                url,
-                key_id: device.keyId,
-                secret_b64: secret.toString("base64"),
-            },
-        };
+    async listAllDevices() {
+        return this.listDevices();
     }
 
     async listRuns(userId: string, deviceId: string) {
-        const device = await this.requireOwnedDevice(userId, deviceId);
+        const device = await this.requireDevice(deviceId);
         const runs = await this.runRepository.find({
             where: { createBy: userId, deviceId: device.deviceId },
             order: { createdAt: "DESC" },
@@ -184,7 +150,7 @@ export class LuaDeviceGatewayService implements OnApplicationBootstrap, OnApplic
     }
 
     async createRun(userId: string, deviceId: string, dto: CreateLuaDeviceRunDto) {
-        const device = await this.requireOwnedDevice(userId, deviceId);
+        const device = await this.requireDevice(deviceId);
         deviceId = device.deviceId;
         const source = Buffer.from(dto.source, "utf8");
         const paramsJson = JSON.stringify(dto.params);
@@ -290,28 +256,21 @@ export class LuaDeviceGatewayService implements OnApplicationBootstrap, OnApplic
     };
 
     private readonly handleConnection = (socket: WebSocket, request: IncomingMessage): void => {
-        const nonceB64 = randomBytes(32).toString("base64");
         const state: ClientState = {
-            authenticated: false,
-            nonceB64,
+            ready: false,
             alive: true,
             pending: new Map(),
-            authTimer: setTimeout(
-                () => socket.close(4401, "authentication timeout"),
-                AUTH_TIMEOUT_MS,
+            helloTimer: setTimeout(
+                () => socket.close(4401, "hello timeout"),
+                HELLO_TIMEOUT_MS,
             ),
         };
-        state.authTimer.unref();
+        state.helloTimer.unref();
         this.states.set(socket, state);
         socket.on("pong", () => (state.alive = true));
         socket.on("message", (data, binary) => void this.handleMessage(socket, data, binary));
         socket.on("close", (code) => void this.handleClose(socket, code));
         socket.on("error", (error) => this.logger.warn(`Device socket error: ${error.message}`));
-        this.send(socket, "hello.challenge", {
-            nonce_b64: nonceB64,
-            auth_deadline_ms: AUTH_TIMEOUT_MS,
-            server_time: new Date().toISOString(),
-        });
         (state as ClientState & { remoteAddress?: string }).remoteAddress =
             request.socket.remoteAddress;
     };
@@ -340,13 +299,13 @@ export class LuaDeviceGatewayService implements OnApplicationBootstrap, OnApplic
         }
         const state = this.states.get(socket);
         if (!state) return;
-        if (!state.authenticated) {
+        if (!state.ready) {
             if (envelope.type !== "hello") return this.closeProtocol(socket, "hello required");
-            await this.authenticate(socket, state, envelope);
+            await this.registerConnection(socket, state, envelope);
             return;
         }
         try {
-            await this.handleAuthenticatedMessage(socket, state, envelope);
+            await this.handleDeviceMessage(socket, state, envelope);
         } catch (error) {
             this.logger.error(`Device message ${envelope.type} failed`, error);
             this.send(
@@ -363,52 +322,34 @@ export class LuaDeviceGatewayService implements OnApplicationBootstrap, OnApplic
         }
     }
 
-    private async authenticate(socket: WebSocket, state: ClientState, envelope: Envelope) {
+    private async registerConnection(socket: WebSocket, state: ClientState, envelope: Envelope) {
         const data = envelope.data;
         const deviceId = stringField(data, "device_id")?.toLowerCase();
-        const keyId = stringField(data, "key_id");
         const bootId = stringField(data, "boot_id");
         const firmwareVersion = stringField(data, "firmware_version");
-        const proofB64 = stringField(data, "proof_b64");
         if (
             !deviceId ||
-            !keyId ||
             !bootId ||
             !firmwareVersion ||
-            !proofB64 ||
             !/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(
                 deviceId,
             ) ||
             !/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(bootId) ||
-            !/^[A-Za-z0-9._-]{1,16}$/.test(keyId) ||
             !/^[A-Za-z0-9.+-]{1,32}$/.test(firmwareVersion)
         ) {
             return socket.close(4401, "invalid hello");
         }
-        const device = await this.deviceRepository.findOne({ where: { deviceId, keyId } });
-        if (!device || device.revokedAt) return socket.close(4403, "device not registered");
-        const canonical = buildLuaDeviceAuthCanonical({
-            nonceB64: state.nonceB64,
-            deviceId,
-            keyId,
-            bootId,
-            firmwareVersion,
-        });
-        const expected = createHmac("sha256", this.decryptSecret(device.secretCiphertext))
-            .update(canonical)
-            .digest();
-        let actual: Buffer;
-        try {
-            actual = Buffer.from(proofB64, "base64");
-        } catch {
-            return socket.close(4401, "invalid proof");
-        }
-        if (actual.length !== expected.length || !timingSafeEqual(actual, expected)) {
-            return socket.close(4401, "authentication failed");
+        let device = await this.deviceRepository.findOne({ where: { deviceId } });
+        if (!device) {
+            device = this.deviceRepository.create({
+                deviceId,
+                displayName: `ESP32 ${deviceId.slice(0, 8)}`,
+                capabilities: [],
+            });
         }
 
-        clearTimeout(state.authTimer);
-        state.authenticated = true;
+        clearTimeout(state.helloTimer);
+        state.ready = true;
         state.deviceId = deviceId;
         state.bootId = bootId;
         state.connectionId = randomUUID();
@@ -460,7 +401,7 @@ export class LuaDeviceGatewayService implements OnApplicationBootstrap, OnApplic
         await this.resumePendingRun(deviceId);
     }
 
-    private async handleAuthenticatedMessage(
+    private async handleDeviceMessage(
         socket: WebSocket,
         state: ClientState,
         envelope: Envelope,
@@ -703,7 +644,7 @@ export class LuaDeviceGatewayService implements OnApplicationBootstrap, OnApplic
     private async handleClose(socket: WebSocket, code: number) {
         const state = this.states.get(socket);
         if (!state) return;
-        clearTimeout(state.authTimer);
+        clearTimeout(state.helloTimer);
         if (state.deviceId && this.clients.get(state.deviceId)?.socket === socket) {
             this.clients.delete(state.deviceId);
             await this.runRepository.update(
@@ -821,9 +762,9 @@ export class LuaDeviceGatewayService implements OnApplicationBootstrap, OnApplic
         return this.runRepository.findOne({ where: { id: runId, deviceId } });
     }
 
-    private async requireOwnedDevice(userId: string, deviceId: string) {
+    private async requireDevice(deviceId: string) {
         const device = await this.deviceRepository.findOne({
-            where: { deviceId: deviceId.toLowerCase(), createBy: userId },
+            where: { deviceId: deviceId.toLowerCase() },
         });
         if (!device) throw HttpErrorFactory.notFound("物理设备不存在");
         return device;
@@ -842,7 +783,6 @@ export class LuaDeviceGatewayService implements OnApplicationBootstrap, OnApplic
             id: device.id,
             deviceId: device.deviceId,
             displayName: device.displayName,
-            keyId: device.keyId,
             online: this.clients.has(device.deviceId),
             firmwareVersion: device.firmwareVersion,
             bootId: device.bootId,
@@ -850,7 +790,6 @@ export class LuaDeviceGatewayService implements OnApplicationBootstrap, OnApplic
             limits: device.limits,
             runtime: device.runtime,
             lastSeenAt: device.lastSeenAt,
-            revokedAt: device.revokedAt,
             createdAt: device.createdAt,
             updatedAt: device.updatedAt,
         };
@@ -872,41 +811,4 @@ export class LuaDeviceGatewayService implements OnApplicationBootstrap, OnApplic
         };
     }
 
-    private masterKey(): Buffer {
-        const encoded = process.env.LUA_DEVICE_GATEWAY_MASTER_KEY;
-        const key = encoded ? Buffer.from(encoded, "base64") : Buffer.alloc(0);
-        if (key.length !== 32) {
-            throw HttpErrorFactory.badRequest(
-                "LUA_DEVICE_GATEWAY_MASTER_KEY 必须配置为 32 字节 Base64 密钥",
-            );
-        }
-        return key;
-    }
-
-    private encryptSecret(secret: Buffer): string {
-        const iv = randomBytes(12);
-        const cipher = createCipheriv("aes-256-gcm", this.masterKey(), iv);
-        const encrypted = Buffer.concat([cipher.update(secret), cipher.final()]);
-        return [
-            "v1",
-            iv.toString("base64url"),
-            cipher.getAuthTag().toString("base64url"),
-            encrypted.toString("base64url"),
-        ].join(".");
-    }
-
-    private decryptSecret(value: string): Buffer {
-        const [version, iv, tag, encrypted] = value.split(".");
-        if (version !== "v1" || !iv || !tag || !encrypted) throw new Error("invalid device secret");
-        const decipher = createDecipheriv(
-            "aes-256-gcm",
-            this.masterKey(),
-            Buffer.from(iv, "base64url"),
-        );
-        decipher.setAuthTag(Buffer.from(tag, "base64url"));
-        return Buffer.concat([
-            decipher.update(Buffer.from(encrypted, "base64url")),
-            decipher.final(),
-        ]);
-    }
 }

@@ -1,10 +1,9 @@
 import type { UserPlayground } from "@buildingai/db";
 import { Playground } from "@buildingai/decorators/playground.decorator";
 import { WebController } from "@common/decorators/controller.decorator";
-import { Body, Get, Param, Post, Query, Req } from "@nestjs/common";
-import type { Request } from "express";
+import { Body, Get, Param, Post, Query } from "@nestjs/common";
 
-import { CreateLuaDeviceRunDto, QueryLuaRunLogsDto, RegisterLuaDeviceDto } from "./lua-device.dto";
+import { CreateLuaDeviceRunDto, QueryLuaRunLogsDto } from "./lua-device.dto";
 import { LuaDeviceGatewayService } from "./lua-device-gateway.service";
 
 @WebController("devices")
@@ -12,21 +11,8 @@ export class LuaDeviceController {
     constructor(private readonly gateway: LuaDeviceGatewayService) {}
 
     @Get()
-    list(@Playground() user: UserPlayground) {
-        return this.gateway.listDevices(user.id);
-    }
-
-    @Post()
-    register(
-        @Playground() user: UserPlayground,
-        @Body() dto: RegisterLuaDeviceDto,
-        @Req() request: Request,
-    ) {
-        const configuredUrl = process.env.LUA_DEVICE_GATEWAY_PUBLIC_URL;
-        const publicUrl =
-            configuredUrl ||
-            `${request.protocol === "https" ? "wss" : "ws"}://${request.get("host")}${this.gateway.websocketPath}`;
-        return this.gateway.registerDevice(user.id, dto, publicUrl);
+    list() {
+        return this.gateway.listDevices();
     }
 
     @Get(":deviceId/lua-runs")

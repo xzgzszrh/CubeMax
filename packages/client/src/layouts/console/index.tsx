@@ -32,6 +32,7 @@ import DecorateAgentIndexPage from "@/pages/console/decorate/agent";
 import DecorateAppsIndexPage from "@/pages/console/decorate/apps";
 import DecorateLayoutIndexPage from "@/pages/console/decorate/layout";
 import ExtensionIndexPage from "@/pages/console/extension";
+import Esp32DeviceListPage from "@/pages/console/device/list";
 import FinancialAnalysisIndexPage from "@/pages/console/financial/analysis";
 import FinancialBalanceDetailsIndexPage from "@/pages/console/financial/balance-details";
 import NoticeNotificationSettingsPage from "@/pages/console/notice/notification-settings";
@@ -176,6 +177,10 @@ function ConsoleRoutes() {
             element: <UserListIndexPage />,
           },
         ],
+      },
+      {
+        path: "esp32-devices",
+        element: <Esp32DeviceListPage />,
       },
       {
         path: "order",

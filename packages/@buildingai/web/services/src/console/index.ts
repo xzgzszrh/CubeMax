@@ -31,3 +31,4 @@ export * from "./system";
 export * from "./tag";
 export * from "./user";
 export * from "./website";
+export * from "./esp32-devices";
