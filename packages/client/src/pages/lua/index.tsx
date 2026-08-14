@@ -1,16 +1,16 @@
 import {
   generateLuaModule,
-  useCreateLuaDeviceRunMutation,
-  useLuaDeviceRunLogsQuery,
-  useLuaDeviceRunQuery,
-  useLuaDevicesQuery,
   type LuaAssistantMessage,
   type LuaModuleItem,
   type LuaModuleSchema,
   testLuaModule,
   useAiProvidersQuery,
+  useCreateLuaDeviceRunMutation,
   useCreateLuaModuleMutation,
   useDeleteLuaModuleMutation,
+  useLuaDeviceRunLogsQuery,
+  useLuaDeviceRunQuery,
+  useLuaDevicesQuery,
   useLuaModulesQuery,
   usePublishLuaModuleMutation,
   useRegisterLuaDeviceMutation,
@@ -38,20 +38,20 @@ import {
   ChevronLeft,
   ChevronRight,
   Code2,
-  Cpu,
   Copy,
+  Cpu,
   FileCode2,
   Loader2,
   PanelLeftClose,
   PanelLeftOpen,
   Play,
   Plus,
-  Rocket,
   RadioTower,
+  Rocket,
   Save,
   Send,
-  Square,
   Sparkles,
+  Square,
   Trash2,
   UserRound,
   X,
@@ -59,6 +59,8 @@ import {
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
+
+import { createLuaCodeDiff, type LuaCodeDiff, LuaCodeDiffView } from "./lua-code-diff";
 
 const DEFAULT_CODE = `-- params 是工作流传入的参数表
 function main(params)
@@ -92,6 +94,10 @@ type EditorState = {
   inputSchema: string;
   outputSchema: string;
   testParams: string;
+};
+
+type LuaChatMessage = LuaAssistantMessage & {
+  codeDiff?: LuaCodeDiff;
 };
 
 const emptyEditor = (): EditorState => ({
@@ -151,7 +157,7 @@ export default function LuaModulesPage() {
   const [modelId, setModelId] = useState("");
   const [prompt, setPrompt] = useState("");
   const [generating, setGenerating] = useState(false);
-  const [messages, setMessages] = useState<LuaAssistantMessage[]>([]);
+  const [messages, setMessages] = useState<LuaChatMessage[]>([]);
   const [fileSidebarOpen, setFileSidebarOpen] = useState(true);
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [simulatorSessionId, setSimulatorSessionId] = useState<string>("none");
@@ -361,7 +367,7 @@ export default function LuaModulesPage() {
         outputSchema: parseObject(editor.outputSchema, "输出定义") as LuaModuleSchema,
         testParams: parseObject(editor.testParams, "测试参数"),
       };
-      const history = messages.slice(-12);
+      const history = messages.slice(-12).map(({ role, content }) => ({ role, content }));
       setMessages([...messages, { role: "user", content: userMessage }]);
       setPrompt("");
       setGenerating(true);
@@ -381,7 +387,11 @@ export default function LuaModulesPage() {
       });
       setMessages((currentMessages) => [
         ...currentMessages,
-        { role: "assistant", content: generated.reply },
+        {
+          role: "assistant",
+          content: generated.reply,
+          codeDiff: createLuaCodeDiff(current.draftCode, generated.draftCode),
+        },
       ]);
     } catch (error) {
       const message = error instanceof Error ? error.message : "生成失败";
@@ -610,13 +620,18 @@ export default function LuaModulesPage() {
                           <Bot className="size-4" />
                         )}
                       </span>
-                      <div
-                        className={`max-w-[82%] rounded-md px-4 py-3 text-sm leading-6 whitespace-pre-wrap ${
-                          message.role === "user" ? "bg-foreground text-background" : "bg-muted"
-                        }`}
-                      >
-                        {message.content}
-                      </div>
+                      {message.role === "user" ? (
+                        <div className="bg-foreground text-background max-w-[82%] rounded-md px-4 py-3 text-sm leading-6 whitespace-pre-wrap">
+                          {message.content}
+                        </div>
+                      ) : (
+                        <div className="max-w-[calc(100%-2.75rem)] min-w-0 flex-1 space-y-2.5">
+                          <div className="bg-muted rounded-md px-4 py-3 text-sm leading-6 whitespace-pre-wrap">
+                            {message.content}
+                          </div>
+                          {message.codeDiff && <LuaCodeDiffView diff={message.codeDiff} />}
+                        </div>
+                      )}
                     </div>
                   ))}
                   {generating && (
