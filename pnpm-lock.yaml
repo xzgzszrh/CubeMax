@@ -1303,9 +1303,15 @@ importers:
       '@tanstack/react-query':
         specifier: ^5.62.16
         version: 5.90.21(react@19.2.4)
+      axios:
+        specifier: 'catalog:'
+        version: 1.13.6
       react:
         specifier: '>=19'
         version: 19.2.4
+      sonner:
+        specifier: ^2.0.7
+        version: 2.0.7(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
     devDependencies:
       '@buildingai/eslint-config':
         specifier: workspace:*
@@ -1897,6 +1903,9 @@ importers:
       ajv:
         specifier: ^8.17.1
         version: 8.18.0
+      ai:
+        specifier: ^6.0.138
+        version: 6.0.138(zod@4.3.6)
       bcryptjs:
         specifier: ^3.0.2
         version: 3.0.3
@@ -1912,6 +1921,12 @@ importers:
       cli-table3:
         specifier: 'catalog:'
         version: 0.6.5
+      class-transformer:
+        specifier: catalog:api
+        version: 0.5.1
+      class-validator:
+        specifier: catalog:api
+        version: 0.14.4
       cookie-parser:
         specifier: ^1.4.7
         version: 1.4.7
@@ -1975,6 +1990,9 @@ importers:
       xlsx:
         specifier: ^0.18.5
         version: 0.18.5
+      zod:
+        specifier: ^4.3.6
+        version: 4.3.6
     devDependencies:
       '@buildingai/eslint-config':
         specifier: workspace:*
@@ -2256,6 +2274,9 @@ importers:
       rollup-plugin-visualizer:
         specifier: ^7.0.1
         version: 7.0.1(rolldown@1.0.0-rc.9)(rollup@4.59.0)
+      sonner:
+        specifier: ^2.0.7
+        version: 2.0.7(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
       styled-components:
         specifier: ^6.4.3
         version: 6.4.3(react-dom@19.2.4(react@19.2.4))(react@19.2.4)

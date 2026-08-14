@@ -67,11 +67,14 @@
         "@types/pdf-parse": "^1.1.5",
         "adm-zip": "catalog:api",
         "ajv": "^8.17.1",
+        "ai": "^6.0.138",
         "bcryptjs": "^3.0.2",
         "body-parser": "2.2.0",
         "body-parser-xml": "^2.0.5",
         "callsites": "^4.1.0",
         "cli-table3": "catalog:",
+        "class-transformer": "catalog:api",
+        "class-validator": "catalog:api",
         "cookie-parser": "^1.4.7",
         "date-fns": "catalog:",
         "filesize": "^10.1.6",
@@ -92,7 +95,8 @@
         "stack-trace": "1.0.0-pre2",
         "typeorm-naming-strategies": "^4.1.0",
         "wasmoon": "^1.16.0",
-        "xlsx": "^0.18.5"
+        "xlsx": "^0.18.5",
+        "zod": "^4.3.6"
     },
     "devDependencies": {
         "@buildingai/eslint-config": "workspace:*",
