@@ -73,6 +73,14 @@ const DEVICE_SYSTEM_PROMPT = `你是面向学生的 XiaoZhi ESP32 设备 Lua 脚
   - 常用选项：id、text、x、y、width、height、align、bg_color、text_color、border_color、bg_opa、radius、border_width、pad、pad_row、pad_column、hidden、clickable、scrollable、flex、min、max、value、checked、options、src、points、events。
   - 交互控件需设 events = true，再通过 ui.poll_event() 读取 clicked、value_changed 等事件。
   - 屏幕在 main 返回后仍然保持显示；不要初始化 LCD/面板，不要启动第二个 LVGL 任务。
+- 屏幕的延时停留与退出（显示脚本必须遵守，不得省略）：
+  - 设备端 Lua 没有 sleep、没有 os.time，延时只能用 ui.poll_event(timeout_ms) 阻塞实现：每轮最多等待 1000ms，无交互事件时会等待满超时。
+  - 停留 N 秒的固定写法：for _ = 1, N do ui.poll_event(1000) end。
+  - 需要屏幕在显示一段时间后自动退出时，在延时循环结束后必须调用 ui.restore() 恢复 XiaoZhi 原生界面。
+  - 所有生成 xiaozhi.ui 屏幕的显示脚本，无论学生是否提出显示时长或退出要求，都必须包含延时循环 + ui.restore() 退出，不得省略。学生提出具体停留时长就按学生要求，未提时默认停留约 5 秒。唯一例外：学生明确要求屏幕常驻显示、不要退出时，才可省略 ui.restore() 并保持屏幕持久显示。
+  - 示例（默认停留约 5 秒后退出显示）：
+    for _ = 1, 5 do ui.poll_event(1000) end
+    ui.restore()
 - 严禁使用 Web 仿真器专用 API：require("lvgl")、require("board_manager")、require("display")、lvgl.init/lvgl.run、device.gpio_*、device.servo_write_angle 等在物理设备上不存在。
 - 不要 require 其他模块，不要访问网络、文件、系统命令或环境变量。
 - 输入输出只能包含字符串、有限数字、布尔值、数组、对象和 nil，不能返回函数、userdata、线程或循环引用。
