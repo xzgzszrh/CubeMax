@@ -80,116 +80,54 @@ end`,
   params: { message: "你好，CubeMax！" },
 };
 
-const LEFT_PINS = [
-  "3V3",
-  "EN",
-  "VP",
-  "VN",
-  "34",
-  "35",
-  "32",
-  "33",
-  "25",
-  "26",
-  "27",
-  "14",
-  "12",
-  "GND",
-  "13",
-];
-const RIGHT_PINS = [
-  "VIN",
-  "GND",
-  "23",
-  "22",
-  "TX0",
-  "RX0",
-  "21",
-  "GND",
-  "19",
-  "18",
-  "5",
-  "17",
-  "16",
-  "4",
-  "2",
-];
-
-function PinRail({ pins, session }: { pins: string[]; session: SimulatorSession }) {
-  return (
-    <div className="flex flex-col justify-between py-2">
-      {pins.map((name) => {
-        const state = session.pins[name];
-        const active = !!state?.digitalValue || (state?.pwmDutyCycle ?? 0) > 0;
-        return (
-          <div key={name} className="flex h-6 items-center gap-1.5 text-[10px] font-medium">
-            <span
-              className={`size-2.5 shrink-0 rounded-sm border ${
-                active ? "border-amber-400 bg-amber-300" : "border-zinc-500 bg-zinc-300"
-              }`}
-            />
-            <span className={active ? "text-amber-200" : "text-zinc-200"}>{name}</span>
-          </div>
-        );
-      })}
-    </div>
-  );
-}
-
 function DevBoard({ session }: { session: SimulatorSession }) {
-  const { led, button, buzzer, servo } = session.peripherals;
+  const { led, button } = session.peripherals;
+  const activePinCount = Object.values(session.pins).filter(
+    (pin) => pin.digitalValue || pin.pwmDutyCycle > 0,
+  ).length;
   return (
-    <div className="relative mx-auto w-full max-w-[620px] px-2 py-5 sm:px-8">
-      <div className="relative grid aspect-[1.5/1] min-h-[360px] grid-cols-[52px_1fr_52px] overflow-hidden rounded-md border border-emerald-950 bg-emerald-700 p-3 shadow-xl shadow-black/10">
-        <PinRail pins={LEFT_PINS} session={session} />
-        <div className="relative flex min-w-0 flex-col items-center justify-between py-4">
-          <div className="h-14 w-28 rounded-sm border-2 border-zinc-400 bg-zinc-200 shadow-inner">
-            <div className="mx-auto mt-2 h-5 w-20 rounded-sm bg-zinc-400" />
-          </div>
-
-          <div className="relative flex h-[46%] w-[70%] items-center justify-center rounded-sm border border-zinc-500 bg-zinc-800 shadow-md">
-            <div className="absolute inset-2 border border-zinc-600" />
-            <div className="text-center text-zinc-200">
-              <Cpu className="mx-auto mb-2 size-8" />
-              <div className="text-sm font-semibold">ESP-WROOM-32</div>
-              <div className="mt-1 text-[10px] text-zinc-400">2.4 GHz Wi-Fi + Bluetooth</div>
-            </div>
-          </div>
-
-          <div className="flex w-full items-center justify-around px-2">
-            <div className="text-center">
-              <div
-                className={`mx-auto size-4 rounded-full border-2 ${led.on ? "border-amber-200 bg-amber-400 shadow-[0_0_18px_#fbbf24]" : "border-zinc-400 bg-zinc-700"}`}
-              />
-              <span className="mt-1 block text-[9px] text-emerald-100">LED · GPIO {led.pin}</span>
-            </div>
-            <div className="text-center">
-              <div
-                className={`mx-auto size-6 rounded-sm border-2 ${button.pressed ? "translate-y-0.5 border-zinc-500 bg-zinc-800" : "border-zinc-300 bg-zinc-600"}`}
-              />
-              <span className="mt-1 block text-[9px] text-emerald-100">
-                BOOT · GPIO {button.pin}
-              </span>
-            </div>
-          </div>
-
-          <div className="absolute top-1/2 left-0 h-px w-[15%] bg-cyan-300/80" />
-          <div className="absolute top-1/2 right-0 h-px w-[15%] bg-cyan-300/80" />
-          {buzzer.active && (
-            <div className="absolute top-1/2 right-0 size-2 -translate-y-1/2 rounded-full bg-cyan-300 shadow-[0_0_12px_#67e8f9]" />
-          )}
-          <div
-            className="absolute top-1/2 left-0 h-1 w-12 origin-left rounded-full bg-orange-300 transition-transform"
-            style={{ transform: `rotate(${servo.angle - 90}deg)` }}
-          />
+    <div className="mx-auto w-full max-w-[280px]">
+      <div className="relative aspect-[16/9] overflow-hidden rounded-md border border-emerald-950 bg-emerald-700 shadow-sm">
+        <div className="absolute inset-y-3 left-2 flex flex-col justify-between">
+          {Array.from({ length: 8 }, (_, index) => (
+            <span key={index} className="size-1.5 rounded-sm bg-zinc-300" />
+          ))}
         </div>
-        <div className="flex flex-col items-end">
-          <PinRail pins={RIGHT_PINS} session={session} />
+        <div className="absolute inset-y-3 right-2 flex flex-col justify-between">
+          {Array.from({ length: 8 }, (_, index) => (
+            <span key={index} className="size-1.5 rounded-sm bg-zinc-300" />
+          ))}
+        </div>
+
+        <div className="absolute top-0 left-1/2 h-8 w-16 -translate-x-1/2 rounded-b-sm border-x border-b border-zinc-400 bg-zinc-200">
+          <div className="mx-auto mt-2 h-3 w-10 rounded-sm bg-zinc-400" />
+        </div>
+
+        <div className="absolute top-1/2 left-1/2 flex h-[45%] w-[58%] -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-sm border border-zinc-500 bg-zinc-800 shadow-sm">
+          <div className="text-center text-zinc-200">
+            <Cpu className="mx-auto mb-1 size-5" />
+            <div className="text-xs font-semibold">ESP-WROOM-32</div>
+          </div>
+        </div>
+
+        <div className="absolute bottom-3 left-1/2 flex -translate-x-1/2 items-center gap-8">
+          <div className="flex items-center gap-1.5 text-[9px] text-emerald-50">
+            <span
+              className={`size-2.5 rounded-full border ${led.on ? "border-amber-200 bg-amber-400 shadow-[0_0_10px_#fbbf24]" : "border-zinc-400 bg-zinc-700"}`}
+            />
+            LED
+          </div>
+          <div className="flex items-center gap-1.5 text-[9px] text-emerald-50">
+            <span
+              className={`size-3 rounded-sm border ${button.pressed ? "border-zinc-200 bg-zinc-800" : "border-zinc-300 bg-zinc-600"}`}
+            />
+            BOOT
+          </div>
         </div>
       </div>
-      <div className="text-muted-foreground mt-3 flex items-center justify-between text-xs">
+      <div className="text-muted-foreground mt-2 flex items-center justify-between text-[11px]">
         <span>{session.board.name}</span>
-        <span>3.3 V · 修订 {session.revision}</span>
+        <span>{activePinCount} 个活动引脚</span>
       </div>
     </div>
   );
