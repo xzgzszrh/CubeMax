@@ -11,6 +11,21 @@ export type LuaModuleSchema = {
 export type LuaAssistantMessage = {
     role: "user" | "assistant";
     content: string;
+    codeDiff?: LuaCodeDiff;
+};
+
+export type LuaCodeDiff = {
+    additions: number;
+    deletions: number;
+    hunks: Array<{
+        header: string;
+        lines: Array<{
+            type: "context" | "addition" | "deletion";
+            content: string;
+            oldLineNumber?: number;
+            newLineNumber?: number;
+        }>;
+    }>;
 };
 
 @Entity("lua_module")

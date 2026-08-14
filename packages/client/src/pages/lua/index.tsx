@@ -63,7 +63,7 @@ import {
   UserRound,
   X,
 } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 
@@ -107,6 +107,81 @@ type LuaChatMessage = LuaAssistantMessage & {
   codeDiff?: LuaCodeDiff;
 };
 
+const LUA_MODULE_MESSAGES_STORAGE_PREFIX = "cubemax:lua-module-messages:";
+
+function toStoredMessages(messages: LuaChatMessage[]): LuaAssistantMessage[] {
+  return messages.slice(-100).map(({ role, content, codeDiff }) => ({ role, content, codeDiff }));
+}
+
+function isLuaCodeDiff(value: unknown): value is LuaCodeDiff {
+  if (!value || typeof value !== "object") return false;
+  const diff = value as LuaCodeDiff;
+  return (
+    typeof diff.additions === "number" &&
+    typeof diff.deletions === "number" &&
+    Array.isArray(diff.hunks) &&
+    diff.hunks.every(
+      (hunk) =>
+        typeof hunk?.header === "string" &&
+        Array.isArray(hunk.lines) &&
+        hunk.lines.every(
+          (line) =>
+            ["context", "addition", "deletion"].includes(line?.type) &&
+            typeof line.content === "string",
+        ),
+    )
+  );
+}
+
+function normalizeMessages(messages: unknown[]): LuaChatMessage[] {
+  return messages.flatMap((message) => {
+    if (
+      !message ||
+      typeof message !== "object" ||
+      !["user", "assistant"].includes((message as LuaAssistantMessage).role) ||
+      typeof (message as LuaAssistantMessage).content !== "string"
+    ) {
+      return [];
+    }
+
+    const { role, content, codeDiff } = message as LuaAssistantMessage;
+    return [{ role, content, codeDiff: isLuaCodeDiff(codeDiff) ? codeDiff : undefined }];
+  });
+}
+
+function getStoredMessages(moduleId: string): LuaChatMessage[] | undefined {
+  try {
+    const value = window.sessionStorage.getItem(`${LUA_MODULE_MESSAGES_STORAGE_PREFIX}${moduleId}`);
+    if (!value) return undefined;
+
+    const parsed = JSON.parse(value) as unknown;
+    if (!Array.isArray(parsed)) return undefined;
+
+    return normalizeMessages(parsed);
+  } catch {
+    return undefined;
+  }
+}
+
+function storeMessages(moduleId: string, messages: LuaChatMessage[]) {
+  try {
+    window.sessionStorage.setItem(
+      `${LUA_MODULE_MESSAGES_STORAGE_PREFIX}${moduleId}`,
+      JSON.stringify(toStoredMessages(messages)),
+    );
+  } catch {
+    // Server-side persistence remains the source of truth if storage is unavailable.
+  }
+}
+
+function removeStoredMessages(moduleId: string) {
+  try {
+    window.sessionStorage.removeItem(`${LUA_MODULE_MESSAGES_STORAGE_PREFIX}${moduleId}`);
+  } catch {
+    // Nothing else is required when session storage is unavailable.
+  }
+}
+
 const emptyEditor = (): EditorState => ({
   name: "我的 Lua 模块",
   description: "",
@@ -143,9 +218,7 @@ function editorToDto(editor: EditorState, messages: LuaChatMessage[]): LuaModule
     inputSchema: parseObject(editor.inputSchema, "输入定义") as LuaModuleSchema,
     outputSchema: parseObject(editor.outputSchema, "输出定义") as LuaModuleSchema,
     testParams: parseObject(editor.testParams, "测试参数"),
-    assistantMessages: messages
-      .slice(-100)
-      .map(({ role, content }) => ({ role, content })),
+    assistantMessages: toStoredMessages(messages),
   };
 }
 
@@ -156,9 +229,7 @@ function editorToAutoSaveDto(
   const dto: Partial<LuaModuleDto> = {
     description: editor.description.trim(),
     draftCode: editor.draftCode,
-    assistantMessages: messages
-      .slice(-100)
-      .map(({ role, content }) => ({ role, content })),
+    assistantMessages: toStoredMessages(messages),
   };
   const name = editor.name.trim();
   if (name) dto.name = name;
@@ -224,6 +295,14 @@ export default function LuaModulesPage() {
   const moduleDraftsRef = useRef(
     new Map<string, { editor: EditorState; messages: LuaChatMessage[] }>(),
   );
+  const moduleSaveQueueRef = useRef(new Map<string, Promise<unknown>>());
+  const cacheModuleDraft = useCallback(
+    (id: string, nextEditor: EditorState, nextMessages: LuaChatMessage[]) => {
+      moduleDraftsRef.current.set(id, { editor: nextEditor, messages: nextMessages });
+      storeMessages(id, nextMessages);
+    },
+    [],
+  );
 
   const physicalRunQuery = useLuaDeviceRunQuery(
     physicalDeviceId === "none" ? undefined : physicalDeviceId,
@@ -254,16 +333,16 @@ export default function LuaModulesPage() {
     if (!selected || editorModuleId === selected.id) return;
     const cached = moduleDraftsRef.current.get(selected.id);
     const nextEditor = cached?.editor ?? moduleToEditor(selected);
-    const nextMessages = cached?.messages ?? selected.assistantMessages ?? [];
+    const nextMessages =
+      cached?.messages ??
+      getStoredMessages(selected.id) ??
+      normalizeMessages(selected.assistantMessages ?? []);
     setEditor(nextEditor);
     setMessages(nextMessages);
-    moduleDraftsRef.current.set(selected.id, {
-      editor: nextEditor,
-      messages: nextMessages,
-    });
+    cacheModuleDraft(selected.id, nextEditor, nextMessages);
     setResult("");
     setEditorModuleId(selected.id);
-  }, [editorModuleId, selected]);
+  }, [cacheModuleDraft, editorModuleId, selected]);
 
   useEffect(() => {
     if (modulesQuery.isSuccess && !selectedId && modules[0]) {
@@ -278,13 +357,10 @@ export default function LuaModulesPage() {
   const createMutation = useCreateLuaModuleMutation({
     onSuccess: (module) => {
       const nextEditor = moduleToEditor(module);
-      const nextMessages = module.assistantMessages ?? [];
+      const nextMessages = normalizeMessages(module.assistantMessages ?? []);
       setEditor(nextEditor);
       setMessages(nextMessages);
-      moduleDraftsRef.current.set(module.id, {
-        editor: nextEditor,
-        messages: nextMessages,
-      });
+      cacheModuleDraft(module.id, nextEditor, nextMessages);
       setEditorModuleId(module.id);
       setSelectedId(module.id);
       setNewModuleDialogOpen(false);
@@ -293,10 +369,9 @@ export default function LuaModulesPage() {
     },
     onError: (error) => toast.error(error.message),
   });
-  const { mutate: persistModule, mutateAsync: persistModuleAsync } =
-    useUpdateLuaModuleMutation({
-      onError: (error) => toast.error(`自动保存失败：${error.message}`),
-    });
+  const { mutateAsync: persistModuleAsync } = useUpdateLuaModuleMutation({
+    onError: (error) => toast.error(`自动保存失败：${error.message}`),
+  });
   const publishMutation = usePublishLuaModuleMutation({
     onSuccess: () => toast.success("模块已发布，可在工作流中使用"),
     onError: (error) => toast.error(error.message),
@@ -307,7 +382,11 @@ export default function LuaModulesPage() {
   });
   const deleteMutation = useDeleteLuaModuleMutation({
     onSuccess: () => {
-      if (selectedId) moduleDraftsRef.current.delete(selectedId);
+      if (selectedId) {
+        moduleDraftsRef.current.delete(selectedId);
+        moduleSaveQueueRef.current.delete(selectedId);
+        removeStoredMessages(selectedId);
+      }
       setSelectedId(undefined);
       setEditorModuleId(undefined);
       setEditor(emptyEditor());
@@ -317,6 +396,15 @@ export default function LuaModulesPage() {
     },
     onError: (error) => toast.error(error.message),
   });
+  const queueModuleSave = useCallback(
+    (id: string, dto: Partial<LuaModuleDto>) => {
+      const previous = moduleSaveQueueRef.current.get(id) ?? Promise.resolve();
+      const next = previous.catch(() => undefined).then(() => persistModuleAsync({ id, dto }));
+      moduleSaveQueueRef.current.set(id, next);
+      return next;
+    },
+    [persistModuleAsync],
+  );
   const handleDeleteModule = async () => {
     if (!selectedId) return;
 
@@ -348,21 +436,20 @@ export default function LuaModulesPage() {
   });
   useEffect(() => {
     if (!selectedId || editorModuleId !== selectedId) return;
-    moduleDraftsRef.current.set(selectedId, { editor, messages });
+    cacheModuleDraft(selectedId, editor, messages);
     const timer = window.setTimeout(() => {
-      persistModule({ id: selectedId, dto: editorToAutoSaveDto(editor, messages) });
+      void queueModuleSave(selectedId, editorToAutoSaveDto(editor, messages)).catch(
+        () => undefined,
+      );
     }, 800);
     return () => window.clearTimeout(timer);
-  }, [editor, editorModuleId, messages, persistModule, selectedId]);
+  }, [cacheModuleDraft, editor, editorModuleId, messages, queueModuleSave, selectedId]);
 
   const persistCurrentModule = async () => {
     if (!selectedId || editorModuleId !== selectedId) return;
-    moduleDraftsRef.current.set(selectedId, { editor, messages });
+    cacheModuleDraft(selectedId, editor, messages);
     try {
-      await persistModuleAsync({
-        id: selectedId,
-        dto: editorToAutoSaveDto(editor, messages),
-      });
+      await queueModuleSave(selectedId, editorToAutoSaveDto(editor, messages));
     } catch {
       // The mutation reports the error; the local module cache still preserves the draft.
     }
@@ -448,7 +535,7 @@ export default function LuaModulesPage() {
   const publish = async () => {
     if (!selectedId) return;
     try {
-      await persistModuleAsync({ id: selectedId, dto: editorToDto(editor, messages) });
+      await queueModuleSave(selectedId, editorToDto(editor, messages));
       await publishMutation.mutateAsync(selectedId);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "发布失败");
@@ -458,9 +545,9 @@ export default function LuaModulesPage() {
   const clearMessages = async () => {
     if (!selectedId || messages.length === 0) return;
     setMessages([]);
-    moduleDraftsRef.current.set(selectedId, { editor, messages: [] });
+    cacheModuleDraft(selectedId, editor, []);
     try {
-      await persistModuleAsync({ id: selectedId, dto: { assistantMessages: [] } });
+      await queueModuleSave(selectedId, { assistantMessages: [] });
       toast.success("对话已清空");
     } catch {
       // The mutation already reports the persistence error.
@@ -494,6 +581,10 @@ export default function LuaModulesPage() {
         { role: "user", content: userMessage },
       ].slice(-100);
       setMessages(userMessages);
+      cacheModuleDraft(selectedId, editor, userMessages);
+      void queueModuleSave(selectedId, {
+        assistantMessages: toStoredMessages(userMessages),
+      }).catch(() => undefined);
       setPrompt("");
       setGenerating(true);
       const generated = await generateLuaModule({
@@ -520,7 +611,10 @@ export default function LuaModulesPage() {
       ].slice(-100);
       setEditor(generatedEditor);
       setMessages(nextMessages);
-      persistModule({ id: selectedId, dto: editorToDto(generatedEditor, nextMessages) });
+      cacheModuleDraft(selectedId, generatedEditor, nextMessages);
+      void queueModuleSave(selectedId, editorToDto(generatedEditor, nextMessages)).catch(
+        () => undefined,
+      );
     } catch (error) {
       const message = error instanceof Error ? error.message : "生成失败";
       const failedMessages: LuaChatMessage[] = [
@@ -529,7 +623,12 @@ export default function LuaModulesPage() {
         { role: "assistant", content: `生成失败：${message}` },
       ].slice(-100);
       setMessages(failedMessages);
-      if (selectedId) persistModule({ id: selectedId, dto: { assistantMessages: failedMessages } });
+      if (selectedId) {
+        cacheModuleDraft(selectedId, editor, failedMessages);
+        void queueModuleSave(selectedId, {
+          assistantMessages: toStoredMessages(failedMessages),
+        }).catch(() => undefined);
+      }
       toast.error(message);
     } finally {
       setGenerating(false);

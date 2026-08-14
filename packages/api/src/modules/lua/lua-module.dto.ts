@@ -39,6 +39,53 @@ export class QueryLuaModuleDto {
     isPublished?: boolean;
 }
 
+export class LuaCodeDiffLineDto {
+    @IsIn(["context", "addition", "deletion"])
+    type: "context" | "addition" | "deletion";
+
+    @IsString()
+    @MaxLength(65536)
+    content: string;
+
+    @IsOptional()
+    @IsInt()
+    @Min(1)
+    oldLineNumber?: number;
+
+    @IsOptional()
+    @IsInt()
+    @Min(1)
+    newLineNumber?: number;
+}
+
+export class LuaCodeDiffHunkDto {
+    @IsString()
+    @MaxLength(1000)
+    header: string;
+
+    @IsArray()
+    @ArrayMaxSize(10000)
+    @ValidateNested({ each: true })
+    @Type(() => LuaCodeDiffLineDto)
+    lines: LuaCodeDiffLineDto[];
+}
+
+export class LuaCodeDiffDto {
+    @IsInt()
+    @Min(0)
+    additions: number;
+
+    @IsInt()
+    @Min(0)
+    deletions: number;
+
+    @IsArray()
+    @ArrayMaxSize(1000)
+    @ValidateNested({ each: true })
+    @Type(() => LuaCodeDiffHunkDto)
+    hunks: LuaCodeDiffHunkDto[];
+}
+
 export class LuaAssistantMessageDto {
     @IsIn(["user", "assistant"])
     role: "user" | "assistant";
@@ -47,6 +94,11 @@ export class LuaAssistantMessageDto {
     @IsNotEmpty()
     @MaxLength(8000)
     content: string;
+
+    @IsOptional()
+    @ValidateNested()
+    @Type(() => LuaCodeDiffDto)
+    codeDiff?: LuaCodeDiffDto;
 }
 
 export class CreateLuaModuleDto {

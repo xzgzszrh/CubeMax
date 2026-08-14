@@ -51,6 +51,23 @@ export interface LuaModuleDto {
 export type LuaAssistantMessage = {
     role: "user" | "assistant";
     content: string;
+    codeDiff?: LuaCodeDiff;
+};
+
+export type LuaCodeDiffLine = {
+    type: "context" | "addition" | "deletion";
+    content: string;
+    oldLineNumber?: number;
+    newLineNumber?: number;
+};
+
+export type LuaCodeDiff = {
+    additions: number;
+    deletions: number;
+    hunks: Array<{
+        header: string;
+        lines: LuaCodeDiffLine[];
+    }>;
 };
 
 export interface GenerateLuaModuleDto {
