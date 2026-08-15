@@ -30,6 +30,15 @@ export const UserTerminal = {
     H5: 2,
     MP: 3,
     APP: 4,
+    /**
+     * 教室大屏。
+     *
+     * 单独占一个终端类型不是为了统计，而是为了隔离：撤销旧令牌的
+     * `revokeTokensByTerminal` 按终端分桶，老师在大屏上登录自己的账号时
+     * 落在 SCREEN 桶里，因此**结构上不可能**踢掉他在 PC 上的控制台会话 ——
+     * 哪怕管理员把"允许多处登录"关掉。
+     */
+    SCREEN: 5,
 } as const;
 export type UserTerminalType = (typeof UserTerminal)[keyof typeof UserTerminal];
 export type UserTerminalKey = keyof typeof UserTerminal;
@@ -38,4 +47,5 @@ export const USER_TERMINAL_TYPE_DESCRIPTION = {
     [UserTerminal.H5]: "手机H5",
     [UserTerminal.MP]: "微信小程序",
     [UserTerminal.APP]: "APP",
+    [UserTerminal.SCREEN]: "教室大屏",
 } as const;

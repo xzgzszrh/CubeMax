@@ -1,5 +1,0 @@
-{
-    "compilerOptions": {
-        "tsBuildInfoFile": "./.temp/tsconfig.web.tsbuildinfo"
-    }
-}

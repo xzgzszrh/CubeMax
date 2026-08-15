@@ -182,7 +182,7 @@ export class OrganizationService {
 
         const query = this.memberRepository
             .createQueryBuilder("member")
-            .innerJoin(User, "user", 'user.id = member.user_id AND user.deleted_at IS NULL')
+            .innerJoin(User, "user", "user.id = member.user_id AND user.deleted_at IS NULL")
             .where("member.organization_id = :organizationId", { organizationId })
             .andWhere("member.deleted_at IS NULL")
             .select([
@@ -280,7 +280,10 @@ export class OrganizationService {
 
     async leave(userId: string, organizationId: string) {
         const access = await this.requireWorkspace(userId, organizationId);
-        if (!access.member?.canLeave || access.member.memberType !== OrganizationMemberType.INVITED) {
+        if (
+            !access.member?.canLeave ||
+            access.member.memberType !== OrganizationMemberType.INVITED
+        ) {
             throw HttpErrorFactory.forbidden("托管子账号和组织创建人不能主动退出组织");
         }
         await this.memberRepository.softRemove(access.member);
@@ -331,7 +334,8 @@ export class OrganizationService {
             }> = [];
 
             for (const [index, item] of normalized.entries()) {
-                const password = item.password || (await this.userService.generateRandomPassword(12));
+                const password =
+                    item.password || (await this.userService.generateRandomPassword(12));
                 const user = await manager.save(
                     manager.create(User, {
                         username: item.username,
@@ -366,7 +370,11 @@ export class OrganizationService {
         });
     }
 
-    async importManagedAccounts(userId: string, organizationId: string, file?: Express.Multer.File) {
+    async importManagedAccounts(
+        userId: string,
+        organizationId: string,
+        file?: Express.Multer.File,
+    ) {
         if (!file?.buffer?.length) throw HttpErrorFactory.badRequest("请选择CSV或Excel文件");
         let workbook: XLSX.WorkBook;
         try {
@@ -412,5 +420,14 @@ export class OrganizationService {
             throw HttpErrorFactory.badRequest("方糖猫只能分发给本组织的成员");
         }
         return member;
+    }
+
+    /** 组织内全部成员的用户ID，供授权/额度等批量校验复用。 */
+    async listMemberUserIds(organizationId: string): Promise<string[]> {
+        const members = await this.memberRepository.find({
+            where: { organizationId },
+            select: ["userId"],
+        });
+        return members.map((member) => member.userId);
     }
 }

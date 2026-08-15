@@ -29,6 +29,7 @@ export * from "./secret";
 export * from "./storage-config";
 export * from "./system";
 export * from "./tag";
+export * from "./teaching";
 export * from "./user";
 export * from "./website";
 export * from "./esp32-devices";

@@ -31,6 +31,11 @@
             "import": "./dist/modules/index.js",
             "require": "./dist/modules/index.js",
             "types": "./dist/modules/index.d.ts"
+        },
+        "./modules/classroom": {
+            "import": "./dist/modules/classroom/index.js",
+            "require": "./dist/modules/classroom/index.js",
+            "types": "./dist/modules/classroom/index.d.ts"
         }
     },
     "scripts": {

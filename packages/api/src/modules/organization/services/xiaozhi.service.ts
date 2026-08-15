@@ -1,3 +1,4 @@
+import { ClassroomKitService } from "@buildingai/core/modules/classroom";
 import { InjectRepository } from "@buildingai/db/@nestjs/typeorm";
 import {
     Agent,
@@ -64,7 +65,6 @@ export const CONFIG_LOCK_KEYS = [
     "mcp_endpoints",
 ] as const;
 
-
 @Injectable()
 export class XiaozhiService {
     private readonly challenges = new Map<string, LoginChallenge>();
@@ -89,6 +89,7 @@ export class XiaozhiService {
         private readonly buildingAgentRepository: Repository<Agent>,
         private readonly organizationService: OrganizationService,
         private readonly mcpGateway: XiaozhiMcpGatewayService,
+        private readonly classroomKit: ClassroomKitService,
     ) {}
 
     async getCaptcha(userId: string) {
@@ -327,11 +328,7 @@ export class XiaozhiService {
         return { success: true, removed: account.label };
     }
 
-    async deleteAgent(
-        userId: string,
-        organizationId: string | null | undefined,
-        agentId: string,
-    ) {
+    async deleteAgent(userId: string, organizationId: string | null | undefined, agentId: string) {
         const { agent, account } = await this.resolveAgent(userId, organizationId, agentId, true);
         await this.request(account, "/agents/delete", {
             method: "POST",
@@ -694,6 +691,12 @@ export class XiaozhiService {
      * Resolve an agent for the self-service link feature: managers can touch
      * any workspace agent, and a student can touch the agent distributed to
      * them — this is the one deliberate write path students have.
+     *
+     * It is also where a running classroom app session locks students out. An
+     * app takes over the device by rewriting its role prompt (that plus the
+     * tool table is all a cubecat responds to), so a student who could still
+     * edit their own device could simply undo the takeover. Managers stay
+     * unaffected — the app's own writes run as the teacher who started it.
      */
     private async resolveLinkableAgent(
         userId: string,
@@ -707,6 +710,12 @@ export class XiaozhiService {
             access.permissions.includes(OrganizationPermission.ASSET_MANAGE) ||
             agent.assignedUserId === userId;
         if (!canWrite) throw HttpErrorFactory.forbidden("该方糖猫没有分发给你");
+        if (
+            !this.isAssetManager(access) &&
+            (await this.classroomKit.isDeviceLockedForStudents(agent.id))
+        ) {
+            throw HttpErrorFactory.forbidden("课堂活动进行中，暂时无法修改这台方糖猫的设置");
+        }
         return resolved;
     }
 
@@ -770,11 +779,7 @@ export class XiaozhiService {
         agentId: string,
         buildingAgentId: string | null,
     ) {
-        const { agent, account } = await this.resolveLinkableAgent(
-            userId,
-            organizationId,
-            agentId,
-        );
+        const { agent, account } = await this.resolveLinkableAgent(userId, organizationId, agentId);
 
         if (!buildingAgentId) {
             agent.linkedAgentId = null;
@@ -813,11 +818,7 @@ export class XiaozhiService {
         organizationId: string | null | undefined,
         agentId: string,
     ) {
-        const { agent, account } = await this.resolveLinkableAgent(
-            userId,
-            organizationId,
-            agentId,
-        );
+        const { agent, account } = await this.resolveLinkableAgent(userId, organizationId, agentId);
         if (!agent.linkedAgentId) {
             throw HttpErrorFactory.badRequest("该方糖猫还没有绑定智能体");
         }
@@ -854,9 +855,7 @@ export class XiaozhiService {
             account,
             `/chats/list?agentId=${agent.upstreamAgentId}&page=1&pageSize=${pageSize}`,
         );
-        return (result.data?.list || []).map((chat) =>
-            mapUpstreamChat(chat, agent.id, agent.name),
-        );
+        return (result.data?.list || []).map((chat) => mapUpstreamChat(chat, agent.id, agent.name));
     }
 
     async listChatMessages(
@@ -974,9 +973,9 @@ export class XiaozhiService {
     }
 
     private readSetCookies(headers: Headers) {
-        const values =
-            (headers as Headers & { getSetCookie?: () => string[] }).getSetCookie?.() ||
-            [headers.get("set-cookie") || ""];
+        const values = (
+            headers as Headers & { getSetCookie?: () => string[] }
+        ).getSetCookie?.() || [headers.get("set-cookie") || ""];
         return values
             .flatMap((value) => value.split(/,(?=\s*[^;,]+=)/))
             .map((value) => value.split(";", 1)[0]?.trim())

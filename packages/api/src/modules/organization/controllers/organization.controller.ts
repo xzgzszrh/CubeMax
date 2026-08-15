@@ -1,5 +1,7 @@
 import { type UserPlayground } from "@buildingai/db";
+import { AssignmentStatus } from "@buildingai/db/entities";
 import { Playground } from "@buildingai/decorators/playground.decorator";
+import { HttpErrorFactory } from "@buildingai/errors";
 import { UUIDValidationPipe } from "@buildingai/pipe/param-validate.pipe";
 import { WebController } from "@common/decorators/controller.decorator";
 import {
@@ -11,23 +13,20 @@ import {
     ParseIntPipe,
     Patch,
     Post,
+    Put,
     Query,
     UploadedFile,
     UseInterceptors,
 } from "@nestjs/common";
 import { FileInterceptor } from "@nestjs/platform-express";
 
+import { SaveAppGrantsDto, UpdateAppWhitelistDto } from "../dto/app-grant.dto";
+import { ReviewSubmissionDto, SaveAssignmentDto, SubmitAssignmentDto } from "../dto/assignment.dto";
 import {
     ClassroomEventsQueryDto,
     ClassroomTestEventDto,
     SaveClassroomInteractionDto,
 } from "../dto/classroom.dto";
-import {
-    BatchConfigureXiaozhiMcpDto,
-    ReportXiaozhiMcpCompletionDto,
-    UpdateXiaozhiMcpConnectionDto,
-    UpdateXiaozhiMcpSettingsDto,
-} from "../dto/xiaozhi-mcp.dto";
 import {
     AddOrganizationMemberDto,
     ApplyXiaozhiSceneDto,
@@ -50,11 +49,21 @@ import {
     UpdateXiaozhiAccountDto,
     UpdateXiaozhiAgentConfigDto,
 } from "../dto/organization.dto";
+import { AllocateQuotaDto } from "../dto/quota.dto";
+import {
+    BatchConfigureXiaozhiMcpDto,
+    ReportXiaozhiMcpCompletionDto,
+    UpdateXiaozhiMcpConnectionDto,
+    UpdateXiaozhiMcpSettingsDto,
+} from "../dto/xiaozhi-mcp.dto";
+import { AssignmentService } from "../services/assignment.service";
 import { ClassroomService } from "../services/classroom.service";
 import { OrganizationService } from "../services/organization.service";
+import { OrganizationAppService } from "../services/organization-app.service";
+import { OrganizationQuotaService } from "../services/organization-quota.service";
+import { XiaozhiService } from "../services/xiaozhi.service";
 import { XiaozhiAutomationService } from "../services/xiaozhi-automation.service";
 import { XiaozhiMcpService } from "../services/xiaozhi-mcp.service";
-import { XiaozhiService } from "../services/xiaozhi.service";
 
 @WebController("organizations")
 export class OrganizationController {
@@ -64,7 +73,20 @@ export class OrganizationController {
         private readonly automationService: XiaozhiAutomationService,
         private readonly mcpService: XiaozhiMcpService,
         private readonly classroomService: ClassroomService,
+        private readonly assignmentService: AssignmentService,
+        private readonly appService: OrganizationAppService,
+        private readonly quotaService: OrganizationQuotaService,
     ) {}
+
+    /**
+     * 讲台功能都以班级为单位，个人空间下没有意义，这里统一挡掉。
+     */
+    private requireOrganization(organizationId?: string): string {
+        if (!organizationId) {
+            throw HttpErrorFactory.badRequest("请先切换到班级工作空间后再操作");
+        }
+        return organizationId;
+    }
 
     @Get("context")
     getContext(@Playground() user: UserPlayground) {
@@ -310,12 +332,7 @@ export class OrganizationController {
         @Param("agentId", UUIDValidationPipe) agentId: string,
         @Body() dto: UpdateXiaozhiAgentConfigDto,
     ) {
-        return this.xiaozhiService.updateAgentConfig(
-            user.id,
-            organizationId,
-            agentId,
-            dto.config,
-        );
+        return this.xiaozhiService.updateAgentConfig(user.id, organizationId, agentId, dto.config);
     }
 
     @Get("xiaozhi/agents/:agentId/devices")
@@ -475,12 +492,7 @@ export class OrganizationController {
         @Param("agentId", UUIDValidationPipe) agentId: string,
         @Query() query: ChatHistoryQueryDto,
     ) {
-        return this.xiaozhiService.listAgentChats(
-            user.id,
-            organizationId,
-            agentId,
-            query.pageSize,
-        );
+        return this.xiaozhiService.listAgentChats(user.id, organizationId, agentId, query.pageSize);
     }
 
     @Get("xiaozhi/agents/:agentId/chats/:chatId/messages")
@@ -567,12 +579,7 @@ export class OrganizationController {
         @Param("connectionId", UUIDValidationPipe) connectionId: string,
         @Body() dto: ReportXiaozhiMcpCompletionDto,
     ) {
-        return this.mcpService.reportManualCompletion(
-            user.id,
-            organizationId,
-            connectionId,
-            dto,
-        );
+        return this.mcpService.reportManualCompletion(user.id, organizationId, connectionId, dto);
     }
 
     @Get("classroom/interactions")
@@ -599,12 +606,7 @@ export class OrganizationController {
         @Param("interactionId", UUIDValidationPipe) interactionId: string,
         @Body() dto: SaveClassroomInteractionDto,
     ) {
-        return this.classroomService.updateInteraction(
-            user.id,
-            organizationId,
-            interactionId,
-            dto,
-        );
+        return this.classroomService.updateInteraction(user.id, organizationId, interactionId, dto);
     }
 
     @Delete("classroom/interactions/:interactionId")
@@ -656,5 +658,207 @@ export class OrganizationController {
         @Body() dto: ClassroomTestEventDto,
     ) {
         return this.classroomService.createTestEvent(user.id, organizationId, dto);
+    }
+
+    // ==================== 班级任务列表 ====================
+
+    @Get("assignments")
+    listAssignments(
+        @Playground() user: UserPlayground,
+        @Headers("x-organization-id") organizationId?: string,
+    ) {
+        return this.assignmentService.list(user.id, this.requireOrganization(organizationId));
+    }
+
+    @Post("assignments")
+    createAssignment(
+        @Playground() user: UserPlayground,
+        @Headers("x-organization-id") organizationId: string | undefined,
+        @Body() dto: SaveAssignmentDto,
+    ) {
+        return this.assignmentService.save(user.id, this.requireOrganization(organizationId), dto);
+    }
+
+    @Patch("assignments/:assignmentId")
+    updateAssignment(
+        @Playground() user: UserPlayground,
+        @Headers("x-organization-id") organizationId: string | undefined,
+        @Param("assignmentId", UUIDValidationPipe) assignmentId: string,
+        @Body() dto: SaveAssignmentDto,
+    ) {
+        return this.assignmentService.save(
+            user.id,
+            this.requireOrganization(organizationId),
+            dto,
+            assignmentId,
+        );
+    }
+
+    @Delete("assignments/:assignmentId")
+    removeAssignment(
+        @Playground() user: UserPlayground,
+        @Headers("x-organization-id") organizationId: string | undefined,
+        @Param("assignmentId", UUIDValidationPipe) assignmentId: string,
+    ) {
+        return this.assignmentService.remove(
+            user.id,
+            this.requireOrganization(organizationId),
+            assignmentId,
+        );
+    }
+
+    @Post("assignments/:assignmentId/publish")
+    publishAssignment(
+        @Playground() user: UserPlayground,
+        @Headers("x-organization-id") organizationId: string | undefined,
+        @Param("assignmentId", UUIDValidationPipe) assignmentId: string,
+    ) {
+        return this.assignmentService.updateStatus(
+            user.id,
+            this.requireOrganization(organizationId),
+            assignmentId,
+            AssignmentStatus.PUBLISHED,
+        );
+    }
+
+    @Post("assignments/:assignmentId/close")
+    closeAssignment(
+        @Playground() user: UserPlayground,
+        @Headers("x-organization-id") organizationId: string | undefined,
+        @Param("assignmentId", UUIDValidationPipe) assignmentId: string,
+    ) {
+        return this.assignmentService.updateStatus(
+            user.id,
+            this.requireOrganization(organizationId),
+            assignmentId,
+            AssignmentStatus.CLOSED,
+        );
+    }
+
+    @Get("assignments/:assignmentId/submissions")
+    listAssignmentSubmissions(
+        @Playground() user: UserPlayground,
+        @Headers("x-organization-id") organizationId: string | undefined,
+        @Param("assignmentId", UUIDValidationPipe) assignmentId: string,
+    ) {
+        return this.assignmentService.listSubmissions(
+            user.id,
+            this.requireOrganization(organizationId),
+            assignmentId,
+        );
+    }
+
+    @Patch("submissions/:submissionId/review")
+    reviewSubmission(
+        @Playground() user: UserPlayground,
+        @Headers("x-organization-id") organizationId: string | undefined,
+        @Param("submissionId", UUIDValidationPipe) submissionId: string,
+        @Body() dto: ReviewSubmissionDto,
+    ) {
+        return this.assignmentService.review(
+            user.id,
+            this.requireOrganization(organizationId),
+            submissionId,
+            dto,
+        );
+    }
+
+    @Get("my-assignments")
+    listMyAssignments(
+        @Playground() user: UserPlayground,
+        @Headers("x-organization-id") organizationId?: string,
+    ) {
+        return this.assignmentService.listMine(user.id, this.requireOrganization(organizationId));
+    }
+
+    @Post("my-assignments/:assignmentId/submit")
+    submitAssignment(
+        @Playground() user: UserPlayground,
+        @Headers("x-organization-id") organizationId: string | undefined,
+        @Param("assignmentId", UUIDValidationPipe) assignmentId: string,
+        @Body() dto: SubmitAssignmentDto,
+    ) {
+        return this.assignmentService.submit(
+            user.id,
+            this.requireOrganization(organizationId),
+            assignmentId,
+            dto,
+        );
+    }
+
+    // ==================== 班级应用管理 ====================
+
+    @Get("app-grants")
+    getAppGrants(
+        @Playground() user: UserPlayground,
+        @Headers("x-organization-id") organizationId?: string,
+    ) {
+        return this.appService.getGrantMatrix(user.id, this.requireOrganization(organizationId));
+    }
+
+    @Put("app-grants")
+    saveAppGrants(
+        @Playground() user: UserPlayground,
+        @Headers("x-organization-id") organizationId: string | undefined,
+        @Body() dto: SaveAppGrantsDto,
+    ) {
+        return this.appService.saveGrants(user.id, this.requireOrganization(organizationId), dto);
+    }
+
+    @Patch("app-whitelist")
+    updateAppWhitelist(
+        @Playground() user: UserPlayground,
+        @Headers("x-organization-id") organizationId: string | undefined,
+        @Body() dto: UpdateAppWhitelistDto,
+    ) {
+        return this.appService.updateWhitelist(
+            user.id,
+            this.requireOrganization(organizationId),
+            dto,
+        );
+    }
+
+    @Get("my-apps")
+    listMyApps(
+        @Playground() user: UserPlayground,
+        @Headers("x-organization-id") organizationId?: string,
+    ) {
+        return this.appService.listMine(user.id, this.requireOrganization(organizationId));
+    }
+
+    // ==================== 额度管理 ====================
+
+    @Get("quota")
+    getQuota(
+        @Playground() user: UserPlayground,
+        @Headers("x-organization-id") organizationId?: string,
+    ) {
+        return this.quotaService.getOverview(user.id, this.requireOrganization(organizationId));
+    }
+
+    @Get("quota/logs")
+    listQuotaLogs(
+        @Playground() user: UserPlayground,
+        @Headers("x-organization-id") organizationId?: string,
+    ) {
+        return this.quotaService.listLogs(user.id, this.requireOrganization(organizationId));
+    }
+
+    @Post("quota/allocate")
+    allocateQuota(
+        @Playground() user: UserPlayground,
+        @Headers("x-organization-id") organizationId: string | undefined,
+        @Body() dto: AllocateQuotaDto,
+    ) {
+        return this.quotaService.allocate(user.id, this.requireOrganization(organizationId), dto);
+    }
+
+    @Post("quota/reclaim")
+    reclaimQuota(
+        @Playground() user: UserPlayground,
+        @Headers("x-organization-id") organizationId: string | undefined,
+        @Body() dto: AllocateQuotaDto,
+    ) {
+        return this.quotaService.reclaim(user.id, this.requireOrganization(organizationId), dto);
     }
 }

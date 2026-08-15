@@ -9,6 +9,15 @@ const isDev = import.meta.env.DEV;
 const devBase = import.meta.env.VITE_DEVELOP_APP_BASE_URL;
 const prodBase = import.meta.env.VITE_PRODUCTION_APP_BASE_URL;
 
+/**
+ * Where the selected workspace is persisted.
+ *
+ * Defined here rather than in `web/organization.ts` because both the host client
+ * and the plugin clients below need it, and that module already imports from
+ * this one — re-exported there so existing import sites keep working.
+ */
+export const ACTIVE_ORGANIZATION_STORAGE_KEY = "buildingai:active-organization-id";
+
 export function generateWebApiBase() {
     const base: string = isDev ? devBase : prodBase;
     return `${base}${import.meta.env.VITE_APP_WEB_API_PREFIX || "/api"}`;
@@ -64,7 +73,7 @@ export const apiHttpClient = createHttpClient({
 // organization-scoped assets use it as part of their authorization boundary.
 apiHttpClient.instance.interceptors.request.use((config) => {
     if (typeof window === "undefined") return config;
-    const organizationId = window.localStorage.getItem("buildingai:active-organization-id");
+    const organizationId = window.localStorage.getItem(ACTIVE_ORGANIZATION_STORAGE_KEY);
     if (organizationId) {
         config.headers.set("x-organization-id", organizationId);
     } else {
@@ -118,6 +127,22 @@ async function handlePluginAuthError(error: unknown): Promise<void> {
 }
 
 /**
+ * Resolve the workspace an extension page should act in.
+ *
+ * Extensions run in an iframe. Same-origin (production) they can read the host's
+ * localStorage directly, but in dev the host and the extension are served from
+ * different ports, so the host forwards the active workspace as an `_org` query
+ * param on the iframe URL. Checking the param first also lets a page be opened
+ * against an explicit workspace regardless of what was last selected.
+ */
+function getPluginOrganizationId(): string | null {
+    if (typeof window === "undefined") return null;
+    const fromUrl = new URLSearchParams(window.location.search).get("_org");
+    if (fromUrl) return fromUrl;
+    return window.localStorage.getItem(ACTIVE_ORGANIZATION_STORAGE_KEY);
+}
+
+/**
  * Create plugin-specific HTTP clients with plugin identifier in path prefix
  * @param pluginIdentifier - Plugin unique identifier, if not provided, will extract from URL
  * @returns Object containing apiHttpClient and consoleHttpClient for plugin
@@ -152,6 +177,22 @@ export function createPluginHttpClients(pluginIdentifier?: string) {
             onError: handleHttpError,
         },
     });
+
+    // Same rule as the host client: the selected workspace rides along on every
+    // request, because organization-scoped APIs treat it as part of their
+    // authorization boundary. Without this an extension cannot tell which class
+    // it is running for.
+    for (const client of [pluginApiHttpClient, pluginConsoleHttpClient]) {
+        client.instance.interceptors.request.use((config) => {
+            const organizationId = getPluginOrganizationId();
+            if (organizationId) {
+                config.headers.set("x-organization-id", organizationId);
+            } else {
+                config.headers.delete("x-organization-id");
+            }
+            return config;
+        });
+    }
 
     return {
         apiHttpClient: pluginApiHttpClient,

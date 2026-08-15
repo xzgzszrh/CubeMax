@@ -28,6 +28,7 @@ import {
   TopRightToolSection,
   ViewportToolSection,
 } from "./styles";
+import { SubmitAssignmentTool } from "./submit-assignment";
 import { ZoomSelect } from "./zoom-select";
 
 export const DemoTools = () => {
@@ -65,6 +66,7 @@ export const DemoTools = () => {
       </BottomCenterToolSection>
 
       <TopRightToolSection aria-label="发布工作流">
+        <SubmitAssignmentTool disabled={playground.config.readonly} />
         <PublishTool disabled={playground.config.readonly} />
       </TopRightToolSection>
 

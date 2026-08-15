@@ -71,6 +71,7 @@ export type LuaCodeDiff = {
 };
 
 export interface GenerateLuaModuleDto {
+    target?: "simulator" | "device";
     modelId: string;
     message: string;
     messages: LuaAssistantMessage[];

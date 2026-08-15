@@ -1,4 +1,5 @@
 export * from "./billing";
+export * from "./classroom";
 export * from "./cloud-storage";
 export * from "./extension";
 export * from "./queue";

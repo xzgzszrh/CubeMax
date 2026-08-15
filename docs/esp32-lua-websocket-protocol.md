@@ -594,7 +594,27 @@ xiaozhi.start_listening()
 xiaozhi.stop_listening()
 ~~~
 
-当前 CubeMax 仿真器中的 device.gpio_*、board_manager、lvgl 等 API 不等于物理固件能力。服务器和 Web 必须根据目标设备 capabilities 选择/校验脚本；不能把仿真脚本默认视为物理设备可运行。将来某个板卡通过通用 Board 接口实现 gpio、adc、display 等能力后，才允许声明对应 capability 并增加相应 Lua binding。
+带 LVGL 显示屏的物理固件额外声明 display capability，并提供受控的
+`xiaozhi.ui` API。它复用 XiaoZhi 已初始化的显示任务，支持持久化屏幕、常用
+LVGL 控件、样式、Flex 布局、更新、删除、恢复原界面和事件轮询。脚本不得再次
+初始化面板或启动第二个 LVGL 任务。
+
+~~~lua
+function main(params)
+    local ui = xiaozhi.ui
+    local info = ui.info()
+    local screen = ui.screen({ bg_color = "#101820" })
+    ui.label(screen, {
+        text = params.text or "123",
+        align = "center",
+        text_color = "#FFFFFF",
+    })
+    screen:load()
+    return { width = info.width, height = info.height }
+end
+~~~
+
+当前 CubeMax 仿真器中的 device.gpio_*、board_manager、lvgl 等 API 仍不等于物理固件能力。物理设备显示脚本必须使用 `xiaozhi.ui` 并声明 display capability；服务器和 Web 根据目标设备 capabilities 选择/校验脚本，不能把 ESP-Claw 的 `board_manager` 或独立 `lvgl.init/run` 脚本直接下发给 XiaoZhi 固件。
 
 run.prepare 声明了设备不支持的 required_capabilities 时，设备必须在执行前返回 UNSUPPORTED_CAPABILITY。
 

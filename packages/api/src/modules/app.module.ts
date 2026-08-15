@@ -4,6 +4,7 @@ import { getEnabledExtensionsFromConfig, initExtensionCache } from "@buildingai/
 import { getExtensionSchemaName } from "@buildingai/core/modules";
 import {
     BillingModule,
+    ClassroomKitModule,
     CloudStorageModule,
     SecretModule,
     UploadModule as CoreUploadModule,
@@ -96,8 +97,17 @@ export class AppModule {
                 ServeStaticModule.forRoot({
                     rootPath,
                     exclude: [
-                        ...extensionsList.map((extension) => `/extension/${extension.identifier}`),
-                        ...extensionsList.map((extension) => `/${extension.name}`),
+                        // 必须同时排除精确路径和子路径：iframe 实际请求的是
+                        // `/extension/<id>/?_org=...`（带尾斜杠），只写精确路径
+                        // 会让它落进 ServeStaticModule，转而去找不存在的
+                        // public/index.html 并报 404 —— 而 setAssetsDir 里的
+                        // SPA 兜底注册在这之后，根本没机会接手。
+                        ...buildStaticExcludePaths(
+                            ...extensionsList.map(
+                                (extension) => `/extension/${extension.identifier}`,
+                            ),
+                            ...extensionsList.map((extension) => `/${extension.name}`),
+                        ),
                         ...buildStaticExcludePaths(
                             process.env.VITE_APP_WEB_API_PREFIX || "/api",
                             process.env.VITE_APP_CONSOLE_API_PREFIX || "/consoleapi",
@@ -116,6 +126,7 @@ export class AppModule {
                 DatabaseModule,
                 GuardsModule,
                 BillingModule,
+                ClassroomKitModule,
                 AuthModule,
                 CDKModule, //
                 ChannelModule,

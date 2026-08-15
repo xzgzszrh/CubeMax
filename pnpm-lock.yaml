@@ -604,7 +604,7 @@ importers:
         specifier: catalog:dev
         version: 2.2.12(typescript@5.9.3)
 
-  extensions/simple-blog:
+  extensions/safe-cracker:
     dependencies:
       '@buildingai/base':
         specifier: workspace:*
@@ -657,6 +657,9 @@ importers:
       '@buildingai/web-core':
         specifier: workspace:*
         version: link:../../packages/@buildingai/web/core
+      '@tanstack/react-query':
+        specifier: ^5.62.16
+        version: 5.90.21(react@19.2.4)
       lucide-react:
         specifier: catalog:web
         version: 0.561.0(react@19.2.4)

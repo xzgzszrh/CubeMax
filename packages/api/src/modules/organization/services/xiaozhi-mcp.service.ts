@@ -1,4 +1,8 @@
 import { createMcpClient } from "@buildingai/ai-sdk";
+import {
+    type ClassroomToolContext,
+    ClassroomToolRegistryService,
+} from "@buildingai/core/modules/classroom";
 import { InjectRepository } from "@buildingai/db/@nestjs/typeorm";
 import {
     Agent,
@@ -128,7 +132,8 @@ function decryptSecret(value: string) {
 
 /** Strip endpoint tokens out of error messages before they are persisted. */
 function safeErrorMessage(error: unknown) {
-    const message = error instanceof Error ? error.message : String(error || "MCP 连接发生未知错误");
+    const message =
+        error instanceof Error ? error.message : String(error || "MCP 连接发生未知错误");
     return message
         .replace(/token=[^&\s)]+/gi, "token=***")
         .replace(/wss:\/\/[^\s]+/gi, "MCP 接入点")
@@ -185,19 +190,24 @@ type ConnectionSnapshot = {
     agentName: string;
     organizationId: string | null;
     ownerUserId: string;
+    /** 设备当前分发给的学生，用于把工具调用归到具体的人。 */
+    assignedUserId: string | null;
 };
 
 /** One BuildingAI MCP tool exposed to the device through this connection. */
 type ExposedTool = {
     exposedName: string;
     toolName: string;
-    server: {
+    /** 外部 MCP 服务：调用时经 HTTP/SSE 代理过去。 */
+    server?: {
         id: string;
         name: string;
         url: string;
         communicationType: string;
         headers: Record<string, string> | null;
     };
+    /** 已安装应用注册的工具：在进程内直接调用，并带上设备身份。 */
+    internal?: { sessionId: string };
     definition: {
         name: string;
         title?: string;
@@ -215,6 +225,11 @@ type ConnectorState = {
     snapshot: ConnectionSnapshot | null;
     settings: XiaozhiMcpToolSettingsValues;
     exposedTools: Map<string, ExposedTool>;
+    /**
+     * 本次是否隐藏内置的课堂上报工具。由已安装应用在注册会话时声明。
+     * 设备只能照提示词挑工具，两个语义重叠的上报工具同时挂着会让模型无从选择。
+     */
+    classroomToolSuppressed: boolean;
 };
 
 /** Ceiling for one passthrough tools/call round trip. */
@@ -234,6 +249,7 @@ export class XiaozhiMcpGatewayService implements OnModuleInit, OnModuleDestroy {
     private readonly logger = new Logger(XiaozhiMcpGatewayService.name);
     private readonly connectors = new Map<string, ConnectorState>();
     private readonly reconnectDelays = DEFAULT_RECONNECT_DELAYS;
+    private unsubscribeToolRegistry: (() => void) | null = null;
 
     constructor(
         @InjectRepository(XiaozhiMcpConnection)
@@ -249,10 +265,18 @@ export class XiaozhiMcpGatewayService implements OnModuleInit, OnModuleDestroy {
         @InjectRepository(AiMcpTool)
         private readonly mcpToolRepository: Repository<AiMcpTool>,
         private readonly builtinMcpRegistry: BuiltinMcpRegistryService,
+        private readonly classroomToolRegistry: ClassroomToolRegistryService,
         private readonly eventEmitter: EventEmitter2,
     ) {}
 
     async onModuleInit() {
+        // 应用注册/注销工具时只刷新受影响的连接，不断开 WebSocket。
+        this.unsubscribeToolRegistry = this.classroomToolRegistry.onChange((agentBindingIds) => {
+            for (const agentBindingId of agentBindingIds) {
+                void this.reloadAgentTools(agentBindingId);
+            }
+        });
+
         // Restore every enabled connection without blocking application boot.
         try {
             const connections = await this.connectionRepository.find({
@@ -270,6 +294,8 @@ export class XiaozhiMcpGatewayService implements OnModuleInit, OnModuleDestroy {
     }
 
     async onModuleDestroy() {
+        this.unsubscribeToolRegistry?.();
+        this.unsubscribeToolRegistry = null;
         await Promise.all([...this.connectors.keys()].map((id) => this.removeConnection(id)));
     }
 
@@ -289,6 +315,7 @@ export class XiaozhiMcpGatewayService implements OnModuleInit, OnModuleDestroy {
             snapshot: null,
             settings: { ...DEFAULT_TOOL_SETTINGS },
             exposedTools: new Map(),
+            classroomToolSuppressed: false,
         };
         this.connectors.set(connectionId, state);
         void this.connectState(state);
@@ -361,9 +388,7 @@ export class XiaozhiMcpGatewayService implements OnModuleInit, OnModuleDestroy {
         ownerUserId: string,
     ): Promise<XiaozhiMcpToolSettingsValues> {
         const row = await this.settingsRepository.findOne({
-            where: organizationId
-                ? { organizationId }
-                : { organizationId: IsNull(), ownerUserId },
+            where: organizationId ? { organizationId } : { organizationId: IsNull(), ownerUserId },
         });
         if (!row) return { ...DEFAULT_TOOL_SETTINGS };
         return {
@@ -405,17 +430,26 @@ export class XiaozhiMcpGatewayService implements OnModuleInit, OnModuleDestroy {
         });
         if (!connection?.enabled || state.cancelled) return;
 
+        const binding = await this.bindingRepository.findOne({
+            where: { id: connection.agentBindingId },
+            select: ["id", "assignedUserId"],
+        });
+
         state.snapshot = {
             connectionId: connection.id,
             agentBindingId: connection.agentBindingId,
             agentName: connection.agentName,
             organizationId: connection.organizationId,
             ownerUserId: connection.ownerUserId,
+            assignedUserId: binding?.assignedUserId ?? null,
         };
         state.settings = await this.loadSettings(connection.organizationId, connection.ownerUserId);
         state.exposedTools = await this.loadExposedTools(
             connection.agentBindingId,
             state.settings.toolName,
+        );
+        state.classroomToolSuppressed = this.classroomToolRegistry.isClassroomToolSuppressed(
+            connection.agentBindingId,
         );
         await this.updateStatus(
             connection.id,
@@ -547,15 +581,45 @@ export class XiaozhiMcpGatewayService implements OnModuleInit, OnModuleDestroy {
     }
 
     /**
-     * Load the BuildingAI MCP tools this connection exposes: the tools cached
-     * for every MCP server configured on the BuildingAI agent that is linked
-     * to this cubecat. No link (or no servers) means no extra tools.
+     * Load the extra MCP tools this connection exposes. Two independent sources:
+     *
+     * 1. 已安装应用为本次课堂活动注册的工具（进程内注册表）。这类工具**不要求**
+     *    设备绑定 BuildingAI 智能体 —— 设备身份来自这条长连接本身。
+     * 2. 设备所绑 BuildingAI 智能体上配置的 MCP 服务缓存工具（HTTP/SSE 代理）。
      */
     private async loadExposedTools(
         agentBindingId: string,
         classroomToolName: string,
     ): Promise<Map<string, ExposedTool>> {
         const exposed = new Map<string, ExposedTool>();
+
+        // Names must stay unique across sources and never shadow the
+        // classroom tool; suffix duplicates deterministically.
+        const reserveName = (toolName: string) => {
+            let exposedName = toolName;
+            let suffix = 2;
+            while (exposedName === classroomToolName || exposed.has(exposedName)) {
+                exposedName = `${toolName}_${suffix}`;
+                suffix += 1;
+            }
+            return exposedName;
+        };
+
+        for (const tool of this.classroomToolRegistry.listToolsFor(agentBindingId)) {
+            const exposedName = reserveName(tool.name);
+            exposed.set(exposedName, {
+                exposedName,
+                toolName: tool.name,
+                internal: { sessionId: tool.sessionId },
+                definition: {
+                    name: exposedName,
+                    title: tool.title || tool.name,
+                    description: tool.description || `课堂应用提供的工具`,
+                    inputSchema: tool.inputSchema ?? { type: "object", properties: {} },
+                },
+            });
+        }
+
         try {
             const binding = await this.bindingRepository.findOne({
                 where: { id: agentBindingId },
@@ -567,20 +631,13 @@ export class XiaozhiMcpGatewayService implements OnModuleInit, OnModuleDestroy {
             const serverIds = (buildingAgent?.mcpServerIds || []).filter(Boolean);
             if (!serverIds.length) return exposed;
 
-            // Names must stay unique across servers and never shadow the
-            // classroom tool; suffix duplicates deterministically.
             const addTool = (
-                server: ExposedTool["server"],
+                server: NonNullable<ExposedTool["server"]>,
                 toolName: string,
                 description: string | null | undefined,
                 inputSchema: unknown,
             ) => {
-                let exposedName = toolName;
-                let suffix = 2;
-                while (exposedName === classroomToolName || exposed.has(exposedName)) {
-                    exposedName = `${toolName}_${suffix}`;
-                    suffix += 1;
-                }
+                const exposedName = reserveName(toolName);
                 exposed.set(exposedName, {
                     exposedName,
                     toolName,
@@ -599,9 +656,7 @@ export class XiaozhiMcpGatewayService implements OnModuleInit, OnModuleDestroy {
 
             // 平台内置 MCP 服务（内存注册表）与用户配置的服务分开装载。
             const builtinIds = serverIds.filter((id) => this.builtinMcpRegistry.isBuiltinId(id));
-            const databaseIds = serverIds.filter(
-                (id) => !this.builtinMcpRegistry.isBuiltinId(id),
-            );
+            const databaseIds = serverIds.filter((id) => !this.builtinMcpRegistry.isBuiltinId(id));
 
             for (const builtinId of builtinIds) {
                 const server = this.builtinMcpRegistry.getServer(builtinId);
@@ -623,9 +678,7 @@ export class XiaozhiMcpGatewayService implements OnModuleInit, OnModuleDestroy {
                 const servers = await this.mcpServerRepository.find({
                     where: { id: In(databaseIds), isDisabled: false },
                 });
-                const usable = servers.filter(
-                    (server) => server.url && server.communicationType,
-                );
+                const usable = servers.filter((server) => server.url && server.communicationType);
                 if (usable.length) {
                     const tools = await this.mcpToolRepository.find({
                         where: { mcpServerId: In(usable.map((server) => server.id)) },
@@ -655,6 +708,55 @@ export class XiaozhiMcpGatewayService implements OnModuleInit, OnModuleDestroy {
         return exposed;
     }
 
+    /**
+     * 调用已安装应用注册的工具。
+     *
+     * 与外部 MCP 服务不同，这里不走 HTTP 代理：直接在进程内调用 handler，
+     * 并把设备身份（来自本条长连接，不可伪造）一并交给应用。课堂互动类应用
+     * 靠它区分「是哪个学生的方糖猫上报的」。
+     */
+    private async handleClassroomAppToolCall(
+        state: ConnectorState,
+        socket: GatewaySocket,
+        id: JsonRpcId,
+        exposed: ExposedTool,
+        params: Record<string, unknown>,
+    ) {
+        const snapshot = state.snapshot;
+        const sessionId = exposed.internal?.sessionId;
+        if (!snapshot || !sessionId) {
+            this.sendError(socket, id, -32603, "MCP 连接尚未就绪");
+            return;
+        }
+
+        const context: ClassroomToolContext = {
+            agentBindingId: snapshot.agentBindingId,
+            agentName: snapshot.agentName,
+            organizationId: snapshot.organizationId,
+            ownerUserId: snapshot.ownerUserId,
+            assignedUserId: snapshot.assignedUserId,
+            sessionId,
+        };
+
+        try {
+            const result = await this.classroomToolRegistry.call(
+                context,
+                exposed.toolName,
+                (params.arguments || {}) as Record<string, unknown>,
+            );
+            const text = typeof result === "string" ? result : JSON.stringify(result);
+            this.sendResult(socket, id, {
+                content: [{ type: "text", text }],
+                ...(typeof result === "object" && result !== null
+                    ? { structuredContent: result }
+                    : {}),
+                isError: false,
+            });
+        } catch (error) {
+            this.sendError(socket, id, -32603, safeErrorMessage(error));
+        }
+    }
+
     /** Proxy one tools/call to the BuildingAI MCP server that owns the tool. */
     private async handleBuildingToolCall(
         socket: GatewaySocket,
@@ -662,19 +764,21 @@ export class XiaozhiMcpGatewayService implements OnModuleInit, OnModuleDestroy {
         exposed: ExposedTool,
         params: Record<string, unknown>,
     ) {
+        const server = exposed.server;
+        if (!server) {
+            this.sendError(socket, id, -32603, "工具没有可用的 MCP 服务");
+            return;
+        }
         const args = (params.arguments || {}) as Record<string, unknown>;
         let client: Awaited<ReturnType<typeof createMcpClient>> | null = null;
         try {
             client = await createMcpClient({
                 transport: {
-                    type:
-                        exposed.server.communicationType === McpCommunicationType.SSE
-                            ? "sse"
-                            : "http",
-                    url: exposed.server.url,
-                    ...(exposed.server.headers && { headers: exposed.server.headers }),
+                    type: server.communicationType === McpCommunicationType.SSE ? "sse" : "http",
+                    url: server.url,
+                    ...(server.headers && { headers: server.headers }),
                 },
-                name: exposed.server.name,
+                name: server.name,
             });
             const result = await Promise.race([
                 client.callTool(exposed.toolName, args),
@@ -729,10 +833,23 @@ export class XiaozhiMcpGatewayService implements OnModuleInit, OnModuleDestroy {
         if (!connection) return;
         const state = this.connectors.get(connection.id);
         if (!state || state.cancelled) return;
-        state.exposedTools = await this.loadExposedTools(
-            agentBindingId,
-            state.settings.toolName,
-        );
+        state.exposedTools = await this.loadExposedTools(agentBindingId, state.settings.toolName);
+        state.classroomToolSuppressed =
+            this.classroomToolRegistry.isClassroomToolSuppressed(agentBindingId);
+
+        // 设备可能在会话中途被改派给另一个学生；快照是连接时抓的，这里顺带刷新，
+        // 否则应用会把上报算到上一个学生头上。
+        if (state.snapshot) {
+            const binding = await this.bindingRepository.findOne({
+                where: { id: agentBindingId },
+                select: ["id", "assignedUserId"],
+            });
+            state.snapshot = {
+                ...state.snapshot,
+                assignedUserId: binding?.assignedUserId ?? null,
+            };
+        }
+
         if (state.socket && state.socket.readyState === WS_OPEN) {
             this.sendMessage(state.socket, {
                 jsonrpc: "2.0",
@@ -806,7 +923,11 @@ export class XiaozhiMcpGatewayService implements OnModuleInit, OnModuleDestroy {
             case "tools/list":
                 this.sendResult(socket, id, {
                     tools: [
-                        this.buildToolDefinition(state.settings),
+                        // 应用声明接管上报时，内置工具整个从工具表里消失，
+                        // 而不是留在表里等调用后再拒绝 —— 模型看不到就不会误选。
+                        ...(state.classroomToolSuppressed
+                            ? []
+                            : [this.buildToolDefinition(state.settings)]),
                         ...[...state.exposedTools.values()].map((tool) => tool.definition),
                     ],
                 });
@@ -831,19 +952,32 @@ export class XiaozhiMcpGatewayService implements OnModuleInit, OnModuleDestroy {
         }
         if (params.name !== state.settings.toolName) {
             const exposed = state.exposedTools.get(String(params.name || ""));
-            if (exposed) {
+            if (exposed?.internal) {
+                await this.handleClassroomAppToolCall(state, socket, id, exposed, params);
+                return;
+            }
+            if (exposed?.server) {
                 await this.handleBuildingToolCall(socket, id, exposed, params);
                 return;
             }
             this.sendError(socket, id, -32602, `未知工具: ${String(params.name || "")}`);
             return;
         }
+        // 模型可能还拿着隐藏前缓存的工具表；明确告知它改用应用提供的工具。
+        if (state.classroomToolSuppressed) {
+            this.sendError(
+                socket,
+                id,
+                -32602,
+                `${state.settings.toolName} 在当前课堂应用运行期间不可用，请使用应用提供的工具`,
+            );
+            return;
+        }
         const args = (params.arguments || {}) as Record<string, unknown>;
         const summary = typeof args.summary === "string" ? args.summary.trim() : "";
         const taskKey = typeof args.task_key === "string" ? args.task_key.trim() : "";
-        const score = typeof args.score === "number" && Number.isFinite(args.score)
-            ? args.score
-            : null;
+        const score =
+            typeof args.score === "number" && Number.isFinite(args.score) ? args.score : null;
         if (!summary || summary.length > 300 || taskKey.length > 100) {
             this.sendError(socket, id, -32602, "summary 为必填（1-300字符），task_key 最长100字符");
             return;
@@ -1231,6 +1365,10 @@ export class XiaozhiMcpService {
     ) {
         await this.requireManage(userId, organizationId);
         const connection = await this.resolveConnection(userId, organizationId, connectionId);
+        const binding = await this.agentRepository.findOne({
+            where: { id: connection.agentBindingId },
+            select: ["id", "assignedUserId"],
+        });
         return this.gateway.reportCompletion(
             {
                 connectionId: connection.id,
@@ -1238,6 +1376,7 @@ export class XiaozhiMcpService {
                 agentName: connection.agentName,
                 organizationId: connection.organizationId,
                 ownerUserId: connection.ownerUserId,
+                assignedUserId: binding?.assignedUserId ?? null,
             },
             { taskKey: dto.taskKey, summary: dto.summary, score: dto.score },
             "manual",

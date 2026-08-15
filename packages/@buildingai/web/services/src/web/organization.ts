@@ -1,8 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
-import { apiHttpClient } from "../base";
+import { ACTIVE_ORGANIZATION_STORAGE_KEY, apiHttpClient } from "../base";
 
-export const ACTIVE_ORGANIZATION_STORAGE_KEY = "buildingai:active-organization-id";
+// 常量定义在 base 里（宿主与扩展的 http client 都要用），这里转出以免调用点改动。
+export { ACTIVE_ORGANIZATION_STORAGE_KEY };
 export const WORKSPACE_CHANGED_EVENT = "buildingai:workspace-changed";
 
 export const OrganizationRole = {
@@ -23,6 +24,7 @@ export const OrganizationPermission = {
     ASSET_MANAGE: "asset:manage",
     ORGANIZATION_MANAGE: "organization:manage",
     BILLING_MANAGE: "billing:manage",
+    QUOTA_ALLOCATE: "quota:allocate",
 } as const;
 
 export type OrganizationPermissionType =
@@ -918,6 +920,359 @@ export function useUpdateXiaozhiAgentConfigMutation(options?: any) {
         ...options,
         onSuccess: (...args: any[]) => {
             queryClient.invalidateQueries({ queryKey: ["xiaozhi"] });
+            options?.onSuccess?.(...args);
+        },
+    });
+}
+
+// ==================== 班级任务列表 ====================
+
+export type AssignmentTargetType = "workflow" | "agent";
+
+export type AssignmentStatus = "draft" | "published" | "closed";
+
+export type OrganizationAssignment = {
+    id: string;
+    organizationId: string;
+    ownerUserId: string;
+    title: string;
+    description: string;
+    dueAt: string | null;
+    allowedTypes: AssignmentTargetType[];
+    status: AssignmentStatus;
+    /** 生效的学生ID列表，空数组表示全班。 */
+    targetUserIds: string[];
+    createdAt: string;
+    updatedAt: string;
+    /** 老师视角的提交数量。 */
+    submissionCount?: number;
+};
+
+export type AssignmentSubmission = {
+    id: string;
+    assignmentId: string;
+    organizationId: string;
+    studentUserId: string;
+    targetType: AssignmentTargetType;
+    targetId: string;
+    targetName: string;
+    snapshot: Record<string, unknown>;
+    remark: string;
+    status: "submitted" | "reviewed";
+    score: number | null;
+    feedback: string;
+    reviewedByUserId: string | null;
+    submittedAt: string;
+    author?: {
+        userId: string;
+        username: string;
+        nickname: string;
+        realName?: string;
+        avatar?: string;
+    } | null;
+};
+
+export type MyAssignment = OrganizationAssignment & {
+    mySubmission: AssignmentSubmission | null;
+};
+
+export type SaveAssignmentPayload = {
+    assignmentId?: string;
+    title: string;
+    description?: string;
+    dueAt?: string | null;
+    allowedTypes?: AssignmentTargetType[];
+    /** 空数组表示全班生效。 */
+    targetUserIds?: string[];
+};
+
+export function useAssignmentsQuery(options?: { enabled?: boolean }) {
+    const organizationId = getActiveOrganizationId();
+    return useQuery<OrganizationAssignment[]>({
+        queryKey: ["organizations", organizationId, "assignments"],
+        queryFn: () =>
+            apiHttpClient.get("/organizations/assignments", { headers: organizationHeaders() }),
+        enabled: Boolean(organizationId) && options?.enabled !== false,
+    });
+}
+
+export function useSaveAssignmentMutation(options?: any) {
+    const queryClient = useQueryClient();
+    return useMutation<OrganizationAssignment, Error, SaveAssignmentPayload>({
+        mutationFn: ({ assignmentId, ...payload }) =>
+            assignmentId
+                ? apiHttpClient.patch(`/organizations/assignments/${assignmentId}`, payload, {
+                      headers: organizationHeaders(),
+                  })
+                : apiHttpClient.post("/organizations/assignments", payload, {
+                      headers: organizationHeaders(),
+                  }),
+        ...options,
+        onSuccess: (...args: any[]) => {
+            queryClient.invalidateQueries({ queryKey: ["organizations"] });
+            options?.onSuccess?.(...args);
+        },
+    });
+}
+
+export function useRemoveAssignmentMutation(options?: any) {
+    const queryClient = useQueryClient();
+    return useMutation<{ success: boolean }, Error, string>({
+        mutationFn: (assignmentId) =>
+            apiHttpClient.delete(`/organizations/assignments/${assignmentId}`, {
+                headers: organizationHeaders(),
+            }),
+        ...options,
+        onSuccess: (...args: any[]) => {
+            queryClient.invalidateQueries({ queryKey: ["organizations"] });
+            options?.onSuccess?.(...args);
+        },
+    });
+}
+
+export function useUpdateAssignmentStatusMutation(options?: any) {
+    const queryClient = useQueryClient();
+    return useMutation<
+        OrganizationAssignment,
+        Error,
+        { assignmentId: string; action: "publish" | "close" }
+    >({
+        mutationFn: ({ assignmentId, action }) =>
+            apiHttpClient.post(
+                `/organizations/assignments/${assignmentId}/${action}`,
+                undefined,
+                { headers: organizationHeaders() },
+            ),
+        ...options,
+        onSuccess: (...args: any[]) => {
+            queryClient.invalidateQueries({ queryKey: ["organizations"] });
+            options?.onSuccess?.(...args);
+        },
+    });
+}
+
+export function useAssignmentSubmissionsQuery(
+    assignmentId: string | null,
+    options?: { enabled?: boolean },
+) {
+    const organizationId = getActiveOrganizationId();
+    return useQuery<AssignmentSubmission[]>({
+        queryKey: ["organizations", organizationId, "submissions", assignmentId],
+        queryFn: () =>
+            apiHttpClient.get(`/organizations/assignments/${assignmentId}/submissions`, {
+                headers: organizationHeaders(),
+            }),
+        enabled: Boolean(assignmentId) && options?.enabled !== false,
+    });
+}
+
+export function useReviewSubmissionMutation(options?: any) {
+    const queryClient = useQueryClient();
+    return useMutation<
+        AssignmentSubmission,
+        Error,
+        { submissionId: string; score?: number | null; feedback?: string }
+    >({
+        mutationFn: ({ submissionId, ...payload }) =>
+            apiHttpClient.patch(
+                `/organizations/submissions/${submissionId}/review`,
+                payload,
+                { headers: organizationHeaders() },
+            ),
+        ...options,
+        onSuccess: (...args: any[]) => {
+            queryClient.invalidateQueries({ queryKey: ["organizations"] });
+            options?.onSuccess?.(...args);
+        },
+    });
+}
+
+export function useMyAssignmentsQuery(options?: { enabled?: boolean }) {
+    const organizationId = getActiveOrganizationId();
+    return useQuery<MyAssignment[]>({
+        queryKey: ["organizations", organizationId, "my-assignments"],
+        queryFn: () =>
+            apiHttpClient.get("/organizations/my-assignments", { headers: organizationHeaders() }),
+        enabled: Boolean(organizationId) && options?.enabled !== false,
+    });
+}
+
+export function useSubmitAssignmentMutation(options?: any) {
+    const queryClient = useQueryClient();
+    return useMutation<
+        AssignmentSubmission,
+        Error,
+        {
+            assignmentId: string;
+            targetType: AssignmentTargetType;
+            targetId: string;
+            remark?: string;
+        }
+    >({
+        mutationFn: ({ assignmentId, ...payload }) =>
+            apiHttpClient.post(
+                `/organizations/my-assignments/${assignmentId}/submit`,
+                payload,
+                { headers: organizationHeaders() },
+            ),
+        ...options,
+        onSuccess: (...args: any[]) => {
+            queryClient.invalidateQueries({ queryKey: ["organizations"] });
+            options?.onSuccess?.(...args);
+        },
+    });
+}
+
+// ==================== 班级应用管理 ====================
+
+export type OrganizationAppType = "extension" | "workflow";
+
+export type GrantableApp = {
+    appType: OrganizationAppType;
+    appRefId: string;
+    name: string;
+    description: string;
+    icon: string | null;
+    grantedToClass: boolean;
+    grantedUserIds: string[];
+};
+
+export type AppGrantMatrix = {
+    whitelistEnabled: boolean;
+    items: GrantableApp[];
+};
+
+export type AppGrantInput = {
+    appType: OrganizationAppType;
+    appRefId: string;
+    userId?: string | null;
+};
+
+export function useAppGrantsQuery(options?: { enabled?: boolean }) {
+    const organizationId = getActiveOrganizationId();
+    return useQuery<AppGrantMatrix>({
+        queryKey: ["organizations", organizationId, "app-grants"],
+        queryFn: () =>
+            apiHttpClient.get("/organizations/app-grants", { headers: organizationHeaders() }),
+        enabled: Boolean(organizationId) && options?.enabled !== false,
+    });
+}
+
+export function useSaveAppGrantsMutation(options?: any) {
+    const queryClient = useQueryClient();
+    return useMutation<{ granted: number; revoked: number }, Error, AppGrantInput[]>({
+        mutationFn: (grants) =>
+            apiHttpClient.put(
+                "/organizations/app-grants",
+                { grants },
+                { headers: organizationHeaders() },
+            ),
+        ...options,
+        onSuccess: (...args: any[]) => {
+            queryClient.invalidateQueries({ queryKey: ["organizations"] });
+            options?.onSuccess?.(...args);
+        },
+    });
+}
+
+export function useUpdateAppWhitelistMutation(options?: any) {
+    const queryClient = useQueryClient();
+    return useMutation<{ enabled: boolean }, Error, boolean>({
+        mutationFn: (enabled) =>
+            apiHttpClient.patch(
+                "/organizations/app-whitelist",
+                { enabled },
+                { headers: organizationHeaders() },
+            ),
+        ...options,
+        onSuccess: (...args: any[]) => {
+            queryClient.invalidateQueries({ queryKey: ["organizations"] });
+            options?.onSuccess?.(...args);
+        },
+    });
+}
+
+export type MyAppScope = {
+    restricted: boolean;
+    extensionIds: string[];
+    workflowIds: string[];
+};
+
+export function useMyAppScopeQuery(options?: { enabled?: boolean }) {
+    const organizationId = getActiveOrganizationId();
+    return useQuery<MyAppScope>({
+        queryKey: ["organizations", organizationId, "my-apps"],
+        queryFn: () =>
+            apiHttpClient.get("/organizations/my-apps", { headers: organizationHeaders() }),
+        enabled: Boolean(organizationId) && options?.enabled !== false,
+    });
+}
+
+// ==================== 额度管理 ====================
+
+export type QuotaMember = {
+    userId: string;
+    username: string;
+    nickname: string;
+    realName?: string;
+    avatar?: string;
+    power: number;
+    consumed: number;
+};
+
+export type QuotaOverview = {
+    pool: { balance: number; totalGranted: number; totalAllocated: number };
+    members: QuotaMember[];
+};
+
+export type QuotaLog = {
+    id: string;
+    organizationId: string;
+    targetUserId: string | null;
+    action: "topup" | "allocate" | "reclaim";
+    amount: number;
+    balanceAfter: number;
+    operatorUserId: string;
+    remark: string;
+    createdAt: string;
+    targetName: string | null;
+    operatorName: string;
+};
+
+export function useQuotaOverviewQuery(options?: { enabled?: boolean }) {
+    const organizationId = getActiveOrganizationId();
+    return useQuery<QuotaOverview>({
+        queryKey: ["organizations", organizationId, "quota"],
+        queryFn: () => apiHttpClient.get("/organizations/quota", { headers: organizationHeaders() }),
+        enabled: Boolean(organizationId) && options?.enabled !== false,
+    });
+}
+
+export function useQuotaLogsQuery(options?: { enabled?: boolean }) {
+    const organizationId = getActiveOrganizationId();
+    return useQuery<QuotaLog[]>({
+        queryKey: ["organizations", organizationId, "quota-logs"],
+        queryFn: () =>
+            apiHttpClient.get("/organizations/quota/logs", { headers: organizationHeaders() }),
+        enabled: Boolean(organizationId) && options?.enabled !== false,
+    });
+}
+
+export function useTransferQuotaMutation(options?: any) {
+    const queryClient = useQueryClient();
+    return useMutation<
+        { balance: number },
+        Error,
+        { action: "allocate" | "reclaim"; userId: string; amount: number; remark?: string }
+    >({
+        mutationFn: ({ action, ...payload }) =>
+            apiHttpClient.post(`/organizations/quota/${action}`, payload, {
+                headers: organizationHeaders(),
+            }),
+        ...options,
+        onSuccess: (...args: any[]) => {
+            queryClient.invalidateQueries({ queryKey: ["organizations"] });
+            queryClient.invalidateQueries({ queryKey: ["user", "info"] });
             options?.onSuccess?.(...args);
         },
     });

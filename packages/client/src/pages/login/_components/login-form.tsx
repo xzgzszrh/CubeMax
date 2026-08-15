@@ -1,5 +1,9 @@
 import { LOGIN_TYPE } from "@buildingai/constants/shared/auth";
 import {
+  UserTerminal,
+  type UserTerminalType,
+} from "@buildingai/constants/shared/status-codes.constant";
+import {
   useCheckAccountMutation,
   useLoginMutation,
   useRegisterMutation,
@@ -42,6 +46,9 @@ const PageEnum = {
   PASSWORD: "password",
   REGISTER: "register",
 } as const;
+
+/** 教室大屏路由前缀，与 router 中的 `/board/:identifier/*` 对应。 */
+const BOARD_PATH_PREFIX = "/board/";
 
 const accountSchema = z.object({
   account: z.string().min(1, { message: "请输入账号" }),
@@ -102,6 +109,17 @@ export function LoginForm({ className, ...props }: React.ComponentProps<"div">) 
   const [searchParams] = useSearchParams();
   const redirect =
     (location.state as { redirect?: string })?.redirect ?? searchParams.get("redirect") ?? "";
+
+  /**
+   * 登录终端。教室大屏（`/board/...`）走 SCREEN，其余走 PC。
+   *
+   * 这不只是统计口径：服务端撤销旧令牌时按终端分桶，老师在大屏上登录自己的
+   * 账号会落进 SCREEN 桶，因此不会踢掉他电脑上的控制台会话 —— 即便管理员
+   * 关掉了"允许多处登录"。终端直接从跳转目标推导，不额外传标记，免得两处失配。
+   */
+  const terminal: UserTerminalType = redirect.startsWith(BOARD_PATH_PREFIX)
+    ? UserTerminal.SCREEN
+    : UserTerminal.PC;
 
   const handleRedirect = useCallback(
     (path: string, token?: string) => {
@@ -273,7 +291,7 @@ export function LoginForm({ className, ...props }: React.ComponentProps<"div">) 
     const data = await login({
       username: checkResult.account,
       password: values.password,
-      terminal: 1,
+      terminal,
     });
     setToken(data.token);
     handleRedirect(redirect || "/", data.token);
@@ -286,7 +304,7 @@ export function LoginForm({ className, ...props }: React.ComponentProps<"div">) 
       username: values.username,
       password: values.password,
       confirmPassword: values.confirmPassword,
-      terminal: 1,
+      terminal,
       ...(values.nickname && { nickname: values.nickname }),
       ...(values.email && { email: values.email }),
     });

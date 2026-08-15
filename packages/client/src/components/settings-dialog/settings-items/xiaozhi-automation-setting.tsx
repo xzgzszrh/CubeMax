@@ -6,12 +6,12 @@ import {
   useRemoveXiaozhiSceneMutation,
   useSaveXiaozhiQuickCommandMutation,
   useSaveXiaozhiSceneMutation,
-  type XiaozhiAgent,
   useXiaozhiAgentEditorQuery,
-  type XiaozhiQuickCommand,
   useXiaozhiQuickCommandsQuery,
-  type XiaozhiScene,
   useXiaozhiScenesQuery,
+  type XiaozhiAgent,
+  type XiaozhiQuickCommand,
+  type XiaozhiScene,
 } from "@buildingai/services/web";
 import { Badge } from "@buildingai/ui/components/ui/badge";
 import { Button } from "@buildingai/ui/components/ui/button";
@@ -34,17 +34,7 @@ import {
   SelectValue,
 } from "@buildingai/ui/components/ui/select";
 import { Switch } from "@buildingai/ui/components/ui/switch";
-import {
-  Blocks,
-  Copy,
-  LoaderCircle,
-  Pencil,
-  Pin,
-  Play,
-  Plus,
-  Trash2,
-  Zap,
-} from "lucide-react";
+import { Blocks, Copy, LoaderCircle, Pencil, Pin, Play, Plus, Trash2, Zap } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
@@ -283,11 +273,7 @@ function SceneDialog({
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             取消
           </Button>
-          <Button
-            loading={saveScene.isPending}
-            disabled={!form || !resources}
-            onClick={submit}
-          >
+          <Button loading={saveScene.isPending} disabled={!form || !resources} onClick={submit}>
             保存场景
           </Button>
         </DialogFooter>
@@ -390,20 +376,54 @@ function CommandDialog({
   );
 }
 
-export function XiaozhiAutomationSetting({
+/** 批量执行的结果弹窗，场景与快捷指令共用。 */
+function ExecutionDialog({
+  execution,
+  onClose,
+}: {
+  execution: SceneApplyExecution | null;
+  onClose: () => void;
+}) {
+  return (
+    <Dialog
+      open={Boolean(execution)}
+      onOpenChange={(next) => {
+        if (!next) onClose();
+      }}
+    >
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>执行结果</DialogTitle>
+          <DialogDescription>批量应用完成，失败的目标可单独重试。</DialogDescription>
+        </DialogHeader>
+        {execution ? <ExecutionSummary execution={execution} /> : null}
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose}>
+            关闭
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+/**
+ * 场景管理：保存完整角色配置，并一键覆盖到任意智能体。
+ */
+export function XiaozhiSceneManager({
   canManage,
   agents,
+  hideHeading,
 }: {
   canManage: boolean;
   agents: XiaozhiAgent[];
+  /** 讲台页面已有页头，这里不再重复渲染标题。 */
+  hideHeading?: boolean;
 }) {
-  const { data: scenes = [], isLoading: scenesLoading } = useXiaozhiScenesQuery();
-  const { data: commands = [], isLoading: commandsLoading } = useXiaozhiQuickCommandsQuery();
+  const { data: scenes = [], isLoading } = useXiaozhiScenesQuery();
 
-  const [sceneDialogOpen, setSceneDialogOpen] = useState(false);
+  const [dialogOpen, setDialogOpen] = useState(false);
   const [editingScene, setEditingScene] = useState<XiaozhiScene | null>(null);
-  const [commandDialogOpen, setCommandDialogOpen] = useState(false);
-  const [editingCommand, setEditingCommand] = useState<XiaozhiQuickCommand | null>(null);
   const [applyTarget, setApplyTarget] = useState<XiaozhiScene | null>(null);
   const [applyAgentIds, setApplyAgentIds] = useState<Set<string>>(new Set());
   const [execution, setExecution] = useState<SceneApplyExecution | null>(null);
@@ -417,18 +437,26 @@ export function XiaozhiAutomationSetting({
       setExecution(result);
     },
   });
-  const removeCommand = useRemoveXiaozhiQuickCommandMutation({
-    onSuccess: () => toast.success("快捷指令已删除"),
-  });
-  const executeCommand = useExecuteXiaozhiQuickCommandMutation({
-    onSuccess: (result: SceneApplyExecution) => setExecution(result),
-  });
 
-  const sceneNames = new Map(scenes.map((scene) => [scene.id, scene.name]));
+  const createButton = canManage ? (
+    <Button
+      size="sm"
+      onClick={() => {
+        setEditingScene(null);
+        setDialogOpen(true);
+      }}
+    >
+      <Plus /> 新建场景
+    </Button>
+  ) : null;
 
   return (
-    <div className="space-y-6">
-      <section>
+    <section>
+      {hideHeading ? (
+        createButton ? (
+          <div className="mb-3 flex justify-end">{createButton}</div>
+        ) : null
+      ) : (
         <div className="mb-3 flex items-center justify-between gap-3">
           <div>
             <p className="font-medium">场景</p>
@@ -436,210 +464,90 @@ export function XiaozhiAutomationSetting({
               保存完整角色配置，一键覆盖到任意智能体。
             </p>
           </div>
-          {canManage ? (
-            <Button
-              size="sm"
-              onClick={() => {
-                setEditingScene(null);
-                setSceneDialogOpen(true);
-              }}
-            >
-              <Plus /> 新建场景
-            </Button>
-          ) : null}
+          {createButton}
         </div>
-        {scenesLoading ? (
-          <div className="flex min-h-24 items-center justify-center border-y">
-            <LoaderCircle className="size-5 animate-spin" />
-          </div>
-        ) : scenes.length ? (
-          <div className="divide-y border-y">
-            {scenes.map((scene) => (
-              <div className="flex items-center gap-3 px-2 py-2.5" key={scene.id}>
-                <div className="bg-muted flex size-8 shrink-0 items-center justify-center rounded-md">
-                  <Blocks className="size-4" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="truncate font-medium">{scene.name}</p>
-                  <p className="text-muted-foreground truncate text-xs">
-                    {scene.description || "无备注"}
-                    {scene.sourceAgentName ? ` · 复制自 ${scene.sourceAgentName}` : ""} · 更新于{" "}
-                    {formatDateTime(scene.updatedAt)}
-                  </p>
-                </div>
-                {canManage ? (
-                  <div className="flex shrink-0 items-center gap-1">
-                    <Button
-                      size="icon-xs"
-                      variant="ghost"
-                      title="应用到智能体"
-                      onClick={() => {
-                        setApplyTarget(scene);
-                        setApplyAgentIds(new Set());
-                      }}
-                    >
-                      <Play />
-                    </Button>
-                    <Button
-                      size="icon-xs"
-                      variant="ghost"
-                      title="编辑场景"
-                      onClick={() => {
-                        setEditingScene(scene);
-                        setSceneDialogOpen(true);
-                      }}
-                    >
-                      <Pencil />
-                    </Button>
-                    <Button
-                      size="icon-xs"
-                      variant="ghost"
-                      title="删除场景"
-                      loading={removeScene.isPending}
-                      onClick={() => {
-                        if (
-                          window.confirm(
-                            `确定删除场景「${scene.name}」吗？引用它的快捷指令也会一并删除。`,
-                          )
-                        ) {
-                          removeScene.mutate(scene.id);
-                        }
-                      }}
-                    >
-                      <Trash2 />
-                    </Button>
-                  </div>
-                ) : null}
-              </div>
-            ))}
-          </div>
-        ) : (
-          <div className="flex min-h-24 flex-col items-center justify-center gap-1 border-y py-4 text-center">
-            <Blocks className="text-muted-foreground size-6" />
-            <p className="text-sm font-medium">还没有场景</p>
-            <p className="text-muted-foreground text-xs">
-              独立设置完整配置，也可以从现有智能体一键复制。
-            </p>
-          </div>
-        )}
-      </section>
+      )}
 
-      <section>
-        <div className="mb-3 flex items-center justify-between gap-3">
-          <div>
-            <p className="font-medium">快捷指令</p>
-            <p className="text-muted-foreground text-xs">
-              组合一个场景和一组目标智能体，一次执行批量切换。
-            </p>
-          </div>
-          {canManage ? (
-            <Button
-              size="sm"
-              variant="outline"
-              disabled={!scenes.length}
-              onClick={() => {
-                setEditingCommand(null);
-                setCommandDialogOpen(true);
-              }}
-            >
-              <Plus /> 新建指令
-            </Button>
-          ) : null}
+      {isLoading ? (
+        <div className="flex min-h-24 items-center justify-center border-y">
+          <LoaderCircle className="size-5 animate-spin" />
         </div>
-        {commandsLoading ? (
-          <div className="flex min-h-24 items-center justify-center border-y">
-            <LoaderCircle className="size-5 animate-spin" />
-          </div>
-        ) : commands.length ? (
-          <div className="divide-y border-y">
-            {commands.map((command) => (
-              <div className="flex items-center gap-3 px-2 py-2.5" key={command.id}>
-                <div className="bg-muted flex size-8 shrink-0 items-center justify-center rounded-md">
-                  <Zap className="size-4" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-2">
-                    <p className="truncate font-medium">{command.name}</p>
-                    {command.pinned ? (
-                      <Badge variant="secondary">
-                        <Pin className="size-3" /> 固定
-                      </Badge>
-                    ) : null}
-                  </div>
-                  <p className="text-muted-foreground truncate text-xs">
-                    场景：{sceneNames.get(command.sceneId) || "已删除"} · {command.targets.length}{" "}
-                    个目标
-                  </p>
-                </div>
-                {canManage ? (
-                  <div className="flex shrink-0 items-center gap-1">
-                    <Button
-                      size="icon-xs"
-                      variant="ghost"
-                      title="立即执行"
-                      loading={executeCommand.isPending}
-                      onClick={() => {
-                        if (
-                          window.confirm(
-                            `确定执行「${command.name}」吗？将把场景应用到 ${command.targets.length} 个智能体。`,
-                          )
-                        ) {
-                          executeCommand.mutate(command.id);
-                        }
-                      }}
-                    >
-                      <Play />
-                    </Button>
-                    <Button
-                      size="icon-xs"
-                      variant="ghost"
-                      title="编辑指令"
-                      onClick={() => {
-                        setEditingCommand(command);
-                        setCommandDialogOpen(true);
-                      }}
-                    >
-                      <Pencil />
-                    </Button>
-                    <Button
-                      size="icon-xs"
-                      variant="ghost"
-                      title="删除指令"
-                      loading={removeCommand.isPending}
-                      onClick={() => {
-                        if (window.confirm(`确定删除快捷指令「${command.name}」吗？`)) {
-                          removeCommand.mutate(command.id);
-                        }
-                      }}
-                    >
-                      <Trash2 />
-                    </Button>
-                  </div>
-                ) : null}
+      ) : scenes.length ? (
+        <div className="divide-y border-y">
+          {scenes.map((scene) => (
+            <div className="flex items-center gap-3 px-2 py-2.5" key={scene.id}>
+              <div className="bg-muted flex size-8 shrink-0 items-center justify-center rounded-md">
+                <Blocks className="size-4" />
               </div>
-            ))}
-          </div>
-        ) : (
-          <div className="flex min-h-24 flex-col items-center justify-center gap-1 border-y py-4 text-center">
-            <Zap className="text-muted-foreground size-6" />
-            <p className="text-sm font-medium">还没有快捷指令</p>
-            <p className="text-muted-foreground text-xs">先创建场景，再把它和目标智能体组合。</p>
-          </div>
-        )}
-      </section>
+              <div className="min-w-0 flex-1">
+                <p className="truncate font-medium">{scene.name}</p>
+                <p className="text-muted-foreground truncate text-xs">
+                  {scene.description || "无备注"}
+                  {scene.sourceAgentName ? ` · 复制自 ${scene.sourceAgentName}` : ""} · 更新于{" "}
+                  {formatDateTime(scene.updatedAt)}
+                </p>
+              </div>
+              {canManage ? (
+                <div className="flex shrink-0 items-center gap-1">
+                  <Button
+                    size="icon-xs"
+                    variant="ghost"
+                    title="应用到智能体"
+                    onClick={() => {
+                      setApplyTarget(scene);
+                      setApplyAgentIds(new Set());
+                    }}
+                  >
+                    <Play />
+                  </Button>
+                  <Button
+                    size="icon-xs"
+                    variant="ghost"
+                    title="编辑场景"
+                    onClick={() => {
+                      setEditingScene(scene);
+                      setDialogOpen(true);
+                    }}
+                  >
+                    <Pencil />
+                  </Button>
+                  <Button
+                    size="icon-xs"
+                    variant="ghost"
+                    title="删除场景"
+                    loading={removeScene.isPending}
+                    onClick={() => {
+                      if (
+                        window.confirm(
+                          `确定删除场景「${scene.name}」吗？引用它的快捷指令也会一并删除。`,
+                        )
+                      ) {
+                        removeScene.mutate(scene.id);
+                      }
+                    }}
+                  >
+                    <Trash2 />
+                  </Button>
+                </div>
+              ) : null}
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div className="flex min-h-24 flex-col items-center justify-center gap-1 border-y py-4 text-center">
+          <Blocks className="text-muted-foreground size-6" />
+          <p className="text-sm font-medium">还没有场景</p>
+          <p className="text-muted-foreground text-xs">
+            独立设置完整配置，也可以从现有智能体一键复制。
+          </p>
+        </div>
+      )}
 
       <SceneDialog
         scene={editingScene}
         agents={agents}
-        open={sceneDialogOpen}
-        onOpenChange={setSceneDialogOpen}
-      />
-      <CommandDialog
-        command={editingCommand}
-        scenes={scenes}
-        agents={agents}
-        open={commandDialogOpen}
-        onOpenChange={setCommandDialogOpen}
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
       />
 
       <Dialog
@@ -676,25 +584,177 @@ export function XiaozhiAutomationSetting({
         </DialogContent>
       </Dialog>
 
-      <Dialog
-        open={Boolean(execution)}
-        onOpenChange={(next) => {
-          if (!next) setExecution(null);
-        }}
-      >
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>执行结果</DialogTitle>
-            <DialogDescription>批量应用完成，失败的目标可单独重试。</DialogDescription>
-          </DialogHeader>
-          {execution ? <ExecutionSummary execution={execution} /> : null}
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setExecution(null)}>
-              关闭
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <ExecutionDialog execution={execution} onClose={() => setExecution(null)} />
+    </section>
+  );
+}
+
+/**
+ * 快捷指令管理：把一个场景和一组目标智能体绑定，一次执行批量切换。
+ */
+export function XiaozhiQuickCommandManager({
+  canManage,
+  agents,
+  hideHeading,
+}: {
+  canManage: boolean;
+  agents: XiaozhiAgent[];
+  hideHeading?: boolean;
+}) {
+  const { data: scenes = [] } = useXiaozhiScenesQuery();
+  const { data: commands = [], isLoading } = useXiaozhiQuickCommandsQuery();
+
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [editingCommand, setEditingCommand] = useState<XiaozhiQuickCommand | null>(null);
+  const [execution, setExecution] = useState<SceneApplyExecution | null>(null);
+
+  const removeCommand = useRemoveXiaozhiQuickCommandMutation({
+    onSuccess: () => toast.success("快捷指令已删除"),
+  });
+  const executeCommand = useExecuteXiaozhiQuickCommandMutation({
+    onSuccess: (result: SceneApplyExecution) => setExecution(result),
+  });
+
+  const sceneNames = new Map(scenes.map((scene) => [scene.id, scene.name]));
+
+  const createButton = canManage ? (
+    <Button
+      size="sm"
+      variant="outline"
+      disabled={!scenes.length}
+      onClick={() => {
+        setEditingCommand(null);
+        setDialogOpen(true);
+      }}
+    >
+      <Plus /> 新建指令
+    </Button>
+  ) : null;
+
+  return (
+    <section>
+      {hideHeading ? (
+        createButton ? (
+          <div className="mb-3 flex justify-end">{createButton}</div>
+        ) : null
+      ) : (
+        <div className="mb-3 flex items-center justify-between gap-3">
+          <div>
+            <p className="font-medium">快捷指令</p>
+            <p className="text-muted-foreground text-xs">
+              组合一个场景和一组目标智能体，一次执行批量切换。
+            </p>
+          </div>
+          {createButton}
+        </div>
+      )}
+
+      {isLoading ? (
+        <div className="flex min-h-24 items-center justify-center border-y">
+          <LoaderCircle className="size-5 animate-spin" />
+        </div>
+      ) : commands.length ? (
+        <div className="divide-y border-y">
+          {commands.map((command) => (
+            <div className="flex items-center gap-3 px-2 py-2.5" key={command.id}>
+              <div className="bg-muted flex size-8 shrink-0 items-center justify-center rounded-md">
+                <Zap className="size-4" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-2">
+                  <p className="truncate font-medium">{command.name}</p>
+                  {command.pinned ? (
+                    <Badge variant="secondary">
+                      <Pin className="size-3" /> 固定
+                    </Badge>
+                  ) : null}
+                </div>
+                <p className="text-muted-foreground truncate text-xs">
+                  场景：{sceneNames.get(command.sceneId) || "已删除"} · {command.targets.length}{" "}
+                  个目标
+                </p>
+              </div>
+              {canManage ? (
+                <div className="flex shrink-0 items-center gap-1">
+                  <Button
+                    size="icon-xs"
+                    variant="ghost"
+                    title="立即执行"
+                    loading={executeCommand.isPending}
+                    onClick={() => {
+                      if (
+                        window.confirm(
+                          `确定执行「${command.name}」吗？将把场景应用到 ${command.targets.length} 个智能体。`,
+                        )
+                      ) {
+                        executeCommand.mutate(command.id);
+                      }
+                    }}
+                  >
+                    <Play />
+                  </Button>
+                  <Button
+                    size="icon-xs"
+                    variant="ghost"
+                    title="编辑指令"
+                    onClick={() => {
+                      setEditingCommand(command);
+                      setDialogOpen(true);
+                    }}
+                  >
+                    <Pencil />
+                  </Button>
+                  <Button
+                    size="icon-xs"
+                    variant="ghost"
+                    title="删除指令"
+                    loading={removeCommand.isPending}
+                    onClick={() => {
+                      if (window.confirm(`确定删除快捷指令「${command.name}」吗？`)) {
+                        removeCommand.mutate(command.id);
+                      }
+                    }}
+                  >
+                    <Trash2 />
+                  </Button>
+                </div>
+              ) : null}
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div className="flex min-h-24 flex-col items-center justify-center gap-1 border-y py-4 text-center">
+          <Zap className="text-muted-foreground size-6" />
+          <p className="text-sm font-medium">还没有快捷指令</p>
+          <p className="text-muted-foreground text-xs">先创建场景，再把它和目标智能体组合。</p>
+        </div>
+      )}
+
+      <CommandDialog
+        command={editingCommand}
+        scenes={scenes}
+        agents={agents}
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+      />
+
+      <ExecutionDialog execution={execution} onClose={() => setExecution(null)} />
+    </section>
+  );
+}
+
+/** 设置弹窗里的「自动化」页：场景与快捷指令并列展示。 */
+export function XiaozhiAutomationSetting({
+  canManage,
+  agents,
+}: {
+  canManage: boolean;
+  agents: XiaozhiAgent[];
+}) {
+  return (
+    <div className="space-y-6">
+      <XiaozhiSceneManager canManage={canManage} agents={agents} />
+      <XiaozhiQuickCommandManager canManage={canManage} agents={agents} />
     </div>
   );
 }

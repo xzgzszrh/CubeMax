@@ -37,7 +37,7 @@ export function ConsoleLogo() {
               <div className="flex flex-1 flex-col justify-center text-left text-sm">
                 <span className="truncate font-medium">{appName}</span>
                 <span className="flex items-center gap-1 truncate text-xs">
-                  工作台 ·{" "}
+                  管理员工作台 ·{" "}
                   <span className="text-muted-foreground">
                     v{websiteConfig?.webinfo.version || "26.0.0"}
                   </span>

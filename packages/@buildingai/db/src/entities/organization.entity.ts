@@ -17,4 +17,11 @@ export class Organization extends SoftDeleteBaseEntity {
 
     @Column({ type: "boolean", default: true, comment: "是否启用" })
     isActive: boolean;
+
+    @Column({
+        type: "boolean",
+        default: false,
+        comment: "开启后成员只能看到被授权的应用，关闭时沿用全站应用中心",
+    })
+    appWhitelistEnabled: boolean;
 }

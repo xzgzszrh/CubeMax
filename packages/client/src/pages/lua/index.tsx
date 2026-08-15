@@ -516,6 +516,7 @@ export default function LuaModulesPage() {
       return;
     }
     try {
+      const usesDisplay = /\bxiaozhi\s*\.\s*ui\b/.test(editor.draftCode);
       createDeviceRunMutation.mutate({
         deviceId: physicalDeviceId,
         dto: {
@@ -523,8 +524,8 @@ export default function LuaModulesPage() {
           moduleId: selectedId,
           source: editor.draftCode,
           params: parseObject(editor.testParams, "测试参数"),
-          requiredCapabilities: ["lua", "xiaozhi"],
-          timeoutMs: 10_000,
+          requiredCapabilities: usesDisplay ? ["lua", "xiaozhi", "display"] : ["lua", "xiaozhi"],
+          timeoutMs: usesDisplay ? 60_000 : 10_000,
         },
       });
     } catch (error) {
@@ -588,6 +589,7 @@ export default function LuaModulesPage() {
       setPrompt("");
       setGenerating(true);
       const generated = await generateLuaModule({
+        target: physicalDeviceId !== "none" ? "device" : "simulator",
         modelId,
         message: userMessage,
         messages: history,
