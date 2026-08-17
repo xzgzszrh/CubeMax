@@ -82,6 +82,23 @@ describe("XiaomiHomeService", () => {
         expect(deviceRepository.find).not.toHaveBeenCalled();
     });
 
+    it("lists devices only through accounts owned by the current user", async () => {
+        const { service, accountRepository, deviceRepository } = createService();
+        accountRepository.find = jest.fn().mockResolvedValue([{ id: "account-a" }]);
+        deviceRepository.find = jest.fn().mockResolvedValue([]);
+
+        await service.listAllDevices("user-a", {});
+
+        expect(accountRepository.find).toHaveBeenCalledWith({
+            where: { ownerUserId: "user-a" },
+            select: { id: true },
+        });
+        expect(deviceRepository.find).toHaveBeenCalledWith({
+            where: { accountId: ["account-a"] },
+            order: { homeName: "ASC", roomName: "ASC", name: "ASC" },
+        });
+    });
+
     it("blocks cross-user device reads and controls", async () => {
         const { service, accountRepository, deviceRepository } = createService();
         deviceRepository.findOne = jest.fn().mockResolvedValue({

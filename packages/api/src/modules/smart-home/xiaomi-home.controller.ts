@@ -181,6 +181,14 @@ export class XiaomiHomeController {
         return this.xiaomiHomeService.listDevices(user.id, accountId, filters);
     }
 
+    @Get("xiaomi/devices")
+    listAllDevices(
+        @Playground() user: UserPlayground,
+        @Query() filters: QueryXiaomiHomeDevicesDto,
+    ) {
+        return this.xiaomiHomeService.listAllDevices(user.id, filters);
+    }
+
     @Get("xiaomi/devices/:deviceId")
     getDevice(
         @Playground() user: UserPlayground,

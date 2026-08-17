@@ -34,6 +34,7 @@ export default {
     account: {
       label: "Account",
       profile: "Profile",
+      smartHome: "My Smart Home",
       workspace: "Workspace",
       wallet: "My Points",
       subscribe: "Subscription",

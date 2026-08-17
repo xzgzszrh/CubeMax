@@ -2,6 +2,7 @@ import {
   BookmarkCheck,
   Building2,
   Hammer,
+  HousePlug,
   Info,
   type LucideIcon,
   Settings,
@@ -13,6 +14,7 @@ import {
 
 export type SettingsPage =
   | "profile"
+  | "smartHome"
   | "workspace"
   | "general"
   | "wallet"
@@ -38,6 +40,11 @@ export const SETTINGS_NAV: SettingsNavGroup[] = [
     label: "settings.nav.account.label",
     items: [
       { id: "profile", name: "settings.nav.account.profile", icon: UserCircle },
+      {
+        id: "smartHome",
+        name: "settings.nav.account.smartHome",
+        icon: HousePlug,
+      },
       { id: "workspace", name: "settings.nav.account.workspace", icon: Building2 },
       { id: "wallet", name: "settings.nav.account.wallet", icon: Wallet },
       {

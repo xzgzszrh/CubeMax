@@ -361,10 +361,30 @@ export class XiaomiHomeService {
 
     async listDevices(userId: string, accountId: string, filters: XiaomiHomeDeviceFilters) {
         await this.getOwnedAccount(userId, accountId);
+        return this.listOwnedDevices({ accountIds: [accountId], filters });
+    }
+
+    async listAllDevices(userId: string, filters: XiaomiHomeDeviceFilters) {
+        const accounts = await this.accountRepository.find({
+            where: { ownerUserId: userId },
+            select: { id: true },
+        });
+        if (!accounts.length) return [];
+        return this.listOwnedDevices({
+            accountIds: accounts.map((account) => account.id),
+            filters,
+        });
+    }
+
+    private async listOwnedDevices(params: {
+        accountIds: string[];
+        filters: XiaomiHomeDeviceFilters;
+    }) {
         let devices = await this.deviceRepository.find({
-            where: { accountId },
+            where: { accountId: In(params.accountIds) },
             order: { homeName: "ASC", roomName: "ASC", name: "ASC" },
         });
+        const { filters } = params;
         if (filters.homeId) devices = devices.filter((device) => device.homeId === filters.homeId);
         if (filters.roomId) devices = devices.filter((device) => device.roomId === filters.roomId);
         if (filters.category) {

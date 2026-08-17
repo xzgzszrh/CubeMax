@@ -137,6 +137,8 @@ export type XiaomiHomeOAuthMessage = {
 export const xiaomiHomeQueryKeys = {
     all: ["xiaomi-home"] as const,
     accounts: () => ["xiaomi-home", "accounts"] as const,
+    allDevices: (filters?: XiaomiHomeDeviceFilters) =>
+        ["xiaomi-home", "devices", "all", filters] as const,
     devices: (accountId: string | undefined, filters?: XiaomiHomeDeviceFilters) =>
         ["xiaomi-home", "devices", accountId, filters] as const,
     device: (deviceId: string | undefined) => ["xiaomi-home", "device", deviceId] as const,
@@ -183,6 +185,12 @@ export function listXiaomiHomeDevices(
     });
 }
 
+export function listAllXiaomiHomeDevices(
+    filters?: XiaomiHomeDeviceFilters,
+): Promise<XiaomiHomeDevice[]> {
+    return apiHttpClient.get(`${XIAOMI_HOME_PATH}/devices`, { params: filters });
+}
+
 export function getXiaomiHomeDevice(deviceId: string): Promise<XiaomiHomeDevice> {
     return apiHttpClient.get(`${XIAOMI_HOME_PATH}/devices/${deviceId}`);
 }
@@ -222,6 +230,17 @@ export function useXiaomiHomeDevicesQuery(
         queryKey: xiaomiHomeQueryKeys.devices(accountId, filters),
         queryFn: () => listXiaomiHomeDevices(accountId!, filters),
         enabled: Boolean(accountId),
+        ...options,
+    });
+}
+
+export function useAllXiaomiHomeDevicesQuery(
+    filters?: XiaomiHomeDeviceFilters,
+    options?: QueryOptionsUtil<XiaomiHomeDevice[]>,
+) {
+    return useQuery({
+        queryKey: xiaomiHomeQueryKeys.allDevices(filters),
+        queryFn: () => listAllXiaomiHomeDevices(filters),
         ...options,
     });
 }
