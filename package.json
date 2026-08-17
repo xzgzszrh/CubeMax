@@ -1,7 +1,7 @@
 {
     "name": "buildingai-monorepo",
     "title": "BuildingAI",
-    "version": "26.5.4",
+    "version": "26.5.5",
     "description": "BuildingAI Monorepo",
     "author": {
         "name": "BuildingAI Teams",
@@ -50,6 +50,7 @@
         "clean": "rimraf ./.turbo && turbo run clean",
         "sync-env": "node scripts/sync-env.mjs",
         "skills": "node scripts/sync-skills.mjs",
+        "xiaomi-home:oauth-token": "node scripts/xiaomi-home-oauth-token.mjs",
         "buildingai": "node packages/cli/bin/cli.js",
         "pm2:start": "node packages/cli/bin/cli.js pm2:start",
         "pm2:reset": "rimraf logs/pm2 && pnpm delete && pnpm start",

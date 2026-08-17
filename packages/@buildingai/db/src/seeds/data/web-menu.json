@@ -53,6 +53,19 @@
             }
         },
         {
+            "id": "menu_smart-home",
+            "icon": "house-plug",
+            "title": "智能家居",
+            "link": {
+                "label": "智能家居",
+                "path": "/smart-home",
+                "type": "system",
+                "query": {},
+                "component": "/src/pages/smart-home/index.tsx",
+                "target": "_self"
+            }
+        },
+        {
             "id": "menu_datasets",
             "icon": "book-search",
             "title": "知识库",

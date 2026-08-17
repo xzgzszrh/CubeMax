@@ -17,6 +17,16 @@ export { AiUserMcpServer } from "./ai-user-mcp-server.entity";
 export { UserMemory } from "./ai-user-memory.entity";
 export { AiWorkflow } from "./ai-workflow.entity";
 export {
+    XiaomiHomeAccount,
+    XiaomiHomeAccountStatus,
+    XiaomiHomeDevice,
+    XiaomiHomeOAuthSession,
+    type XiaomiHomeAccountStatusType,
+    type XiaomiHomeCapability,
+    type XiaomiHomeServer,
+    type XiaomiHomeSummary,
+} from "./xiaomi-home.entity";
+export {
     ProgrammingProject,
     ProgrammingProjectTool,
     type ProgrammingProjectLuaSnapshot,

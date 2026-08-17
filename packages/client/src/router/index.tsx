@@ -26,6 +26,7 @@ import ProgrammingToolsPage from "@/pages/programming/tools";
 import ProgrammingWorkspaceLayout from "@/pages/programming/layout";
 import LuaModulesPage from "@/pages/lua";
 import SimulatorPage from "@/pages/simulator";
+import SmartHomePage from "@/pages/smart-home";
 
 import ConsoleLayout from "../layouts/console";
 import PodiumLayout from "../layouts/podium";
@@ -224,6 +225,14 @@ export const router = createBrowserRouter([
             element: (
               <AuthGuard>
                 <ProgrammingProjectsPage />
+              </AuthGuard>
+            ),
+          },
+          {
+            path: "/smart-home",
+            element: (
+              <AuthGuard>
+                <SmartHomePage />
               </AuthGuard>
             ),
           },

@@ -27,6 +27,7 @@ export * from "./task-award";
 export * from "./user";
 export * from "./user-memory";
 export * from "./workflow";
+export * from "./xiaomi-home";
 export * from "./lua-module";
 export * from "./lua-device";
 export * from "./simulator";

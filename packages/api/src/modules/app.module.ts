@@ -54,6 +54,7 @@ import { Pm2Module } from "./pm2/pm2.module";
 import { RechargeModule } from "./recharge/recharge.module";
 import { RoleModule } from "./role/role.module";
 import { ScheduleModule } from "./schedule/schedule.module";
+import { SmartHomeModule } from "./smart-home/smart-home.module";
 import { SystemModule } from "./system/system.module";
 import { TagModule } from "./tag/tag.module";
 import { UploadModule } from "./upload/upload.module";
@@ -158,6 +159,7 @@ export class AppModule {
                 OrganizationModule,
                 NotificationModule,
                 SimulatorModule,
+                SmartHomeModule,
                 WorkflowModule,
                 await ExtensionCoreModule.register(),
             ],
