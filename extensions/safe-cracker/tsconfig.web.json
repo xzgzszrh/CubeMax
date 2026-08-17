@@ -1,25 +1,5 @@
 {
     "compilerOptions": {
-        "target": "ES2022",
-        "lib": ["ES2022", "DOM", "DOM.Iterable"],
-        "module": "ESNext",
-        // 必须是 bundler：宿主的 @buildingai/* 包直接导出 .ts 源码，靠打包器解析。
-        // 用 NodeNext 会因为缺少显式扩展名而在这些包里报出成百上千条噪音，
-        // 把应用自己的真实类型错误淹掉。这与 packages/client 的配置一致。
-        "moduleResolution": "bundler",
-        "jsx": "react-jsx",
-        "allowImportingTsExtensions": true,
-        "resolveJsonModule": true,
-        "isolatedModules": true,
-        "moduleDetection": "force",
-        "strict": true,
-        "noUnusedLocals": true,
-        "noUnusedParameters": true,
-        "noFallthroughCasesInSwitch": true,
-        "skipLibCheck": true,
-        "noEmit": true,
-        "types": ["vite/client"],
         "tsBuildInfoFile": "./.temp/tsconfig.web.tsbuildinfo"
-    },
-    "include": ["src/web/**/*", "src/shared/**/*", "src/api/shared/**/*"]
+    }
 }

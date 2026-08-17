@@ -19,7 +19,9 @@ services:
             REDIS_PASSWORD: ${REDIS_PASSWORD:-}
             QUICK_START_MODE: ${QUICK_START_MODE:-false}
         ports:
-            - "${REDIS_EXTERNAL_PORT:-}${REDIS_EXTERNAL_PORT:+:}6379"
+            # Keep the host port deterministic for local development. Override
+            # REDIS_EXTERNAL_PORT when another service already uses 6379.
+            - "${REDIS_EXTERNAL_PORT:-6379}:6379"
         volumes:
             - ./docker/data/redis:/data
         networks:
@@ -41,7 +43,9 @@ services:
             POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
             POSTGRES_DB: ${DB_DATABASE:-buildingai}
         ports:
-            - "${POSTGRES_EXTERNAL_PORT:-}${POSTGRES_EXTERNAL_PORT:+:}5432"
+            # Keep the host port deterministic for local development. Override
+            # POSTGRES_EXTERNAL_PORT when another service already uses 5432.
+            - "${POSTGRES_EXTERNAL_PORT:-5432}:5432"
         volumes:
             - ./docker/data/postgres/postgres_data:/var/lib/postgresql/data
         networks:
@@ -149,7 +153,11 @@ services:
             postgres:
                 condition: service_healthy
         healthcheck:
-            test: ["CMD-SHELL", "curl -f http://localhost:${SERVER_PORT:-4090}/consoleapi/health || pnpm pm2 describe ${PM2_APP_NAME:-buildingai-api} | grep -q 'online' || exit 1"]
+            test:
+                - CMD-SHELL
+                - >-
+                    curl -f http://localhost:${SERVER_PORT:-4090}/consoleapi/health || pnpm pm2
+                    describe ${PM2_APP_NAME:-buildingai-api} | grep -q 'online' || exit 1
             interval: 30s
             timeout: 10s
             retries: 3

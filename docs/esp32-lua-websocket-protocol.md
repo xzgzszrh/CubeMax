@@ -646,7 +646,7 @@ run.prepare 声明了设备不支持的 required_capabilities 时，设备必须
 2. 实现 hello 自动登记、连接注册、心跳和单连接替换。
 3. 增加物理设备与运行任务持久化、管理员设备列表、每设备串行投递状态机、日志和状态查询/SSE。
 4. Web 增加在线物理设备选择和“发送并运行”；UI 展示服务端持久化状态，不展示乐观的 socket write 状态。
-5. 当前 ecosystem.config.js 只有一个 API 实例，可以先使用进程内 device_id -> socket 注册表；扩展为多实例前，必须增加 Redis 连接归属/发布订阅或独立 Device Gateway，不能假定任意 API 进程都持有目标 socket。
+5. 当前 API 默认使用单实例运行，可以先使用进程内 device_id -> socket 注册表；扩展为多实例前，必须增加 Redis 连接归属/发布订阅或独立 Device Gateway，不能假定任意 API 进程都持有目标 socket。
 
 ESP32 端：
 

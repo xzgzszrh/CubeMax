@@ -122,17 +122,6 @@ buildingai pm2:save
 buildingai pm2:flush
 ```
 
-## PM2 配置
-
-PM2 配置文件位于 `packages/cli/ecosystem.config.js`,主要配置包括:
-
-- **应用名称**: `buildingai-api`
-- **入口文件**: `./packages/api/dist/main.js`
-- **实例数量**: 1 (cluster 模式)
-- **自动重启**: 启用
-- **内存限制**: 1GB
-- **日志目录**: `./logs/pm2/`
-
 ## 使用流程
 
 ### 首次部署

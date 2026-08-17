@@ -107,7 +107,6 @@ export { User } from "./user.entity";
 export { UserDict } from "./user-dict.entity";
 export { UserSubscription } from "./user-subscription.entity";
 export { UserToken } from "./user-token.entity";
-export { AiWorkflow } from "./ai-workflow.entity";
 export {
     LuaModule,
     type LuaAssistantMessage,
@@ -134,16 +133,6 @@ export {
     type XiaozhiMcpConnectionStatusType,
     XiaozhiMcpSettings,
 } from "./xiaozhi-mcp-connection.entity";
-export { ClassroomEvent } from "./classroom-event.entity";
-export {
-    ClassroomInteraction,
-    ClassroomInteractionStatus,
-    type ClassroomInteractionStatusType,
-    type ClassroomInteractionTarget,
-    type ClassroomDisplayConfig,
-    type ClassroomDisplayLayout,
-    type ClassroomDisplaySortBy,
-} from "./classroom-interaction.entity";
 export {
     type XiaozhiQuickCommandTarget,
     XiaozhiQuickCommand,
