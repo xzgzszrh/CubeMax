@@ -1,0 +1,259 @@
+import Foundation
+
+enum APIClientError: LocalizedError {
+    case invalidBaseURL
+    case invalidResponse
+    case server(message: String, code: Int?)
+    case decoding(Error)
+
+    var errorDescription: String? {
+        switch self {
+        case .invalidBaseURL: return "API 地址无效，请检查服务器地址"
+        case .invalidResponse: return "服务器返回了无效响应"
+        case .server(let message, _): return message
+        case .decoding(let error): return "数据解析失败：\(error.localizedDescription)"
+        }
+    }
+}
+
+struct ChatSendRequest: Encodable {
+    let modelId: String
+    let conversationId: String?
+    let messages: [ChatInputMessage]
+    let title: String?
+}
+
+struct ChatInputMessage: Encodable {
+    let id: String
+    let role: String
+    let parts: [ChatInputPart]
+}
+
+struct ChatInputPart: Encodable {
+    let type: String
+    let text: String
+}
+
+actor APIClient {
+    private let session: URLSession
+    private(set) var baseURL: URL
+    private(set) var token: String?
+    private(set) var organizationId: String?
+
+    init(baseURLString: String, token: String? = nil) {
+        self.session = URLSession(configuration: .default)
+        self.baseURL = URL(string: baseURLString.trimmingCharacters(in: CharacterSet(charactersIn: "/"))) ?? URL(string: "http://127.0.0.1:4090/api")!
+        self.token = token
+    }
+
+    func updateBaseURL(_ value: String) throws {
+        guard let url = URL(string: value.trimmingCharacters(in: CharacterSet(charactersIn: "/"))),
+              let scheme = url.scheme,
+              ["http", "https"].contains(scheme.lowercased()),
+              url.host != nil else { throw APIClientError.invalidBaseURL }
+        baseURL = url
+    }
+
+    func setToken(_ value: String?) { token = value }
+    func setOrganizationId(_ value: String?) { organizationId = value }
+
+    func login(username: String, password: String) async throws -> LoginResponse {
+        try await request("/auth/login", method: "POST", body: LoginRequest(username: username, password: password, terminal: 4))
+    }
+
+    func userInfo() async throws -> UserInfo { try await request("/user/info") }
+    func workspaceContext() async throws -> WorkspaceContext { try await request("/organizations/context") }
+
+    func triggers() async throws -> Paginated<ProgrammingTriggerItem> {
+        try await request("/programming-triggers", query: ["page": "1", "pageSize": "100"])
+    }
+
+    func createTrigger(name: String, description: String?, projectId: String, pinned: Bool) async throws -> ProgrammingTriggerItem {
+        return try await request("/programming-triggers", method: "POST", body: CreateTriggerRequest(name: name, description: description, projectId: projectId, triggerType: "form", isPinned: pinned))
+    }
+
+    func executeTrigger(id: String, inputs: [String: JSONValue]) async throws -> ExecuteTriggerResponse {
+        try await request("/programming-triggers/\(id)/execute", method: "POST", body: ExecuteTriggerRequest(inputs: inputs))
+    }
+
+    func projects() async throws -> Paginated<ProgrammingProject> {
+        try await request("/programming-projects", query: ["page": "1", "pageSize": "100"])
+    }
+
+    func cubeCatDevices() async throws -> [CubeCatDevice] { try await request("/devices") }
+    func luaRuns(deviceId: String) async throws -> [LuaDeviceRun] {
+        try await request("/devices/\(deviceId)/lua-runs")
+    }
+    func luaRunLogs(deviceId: String, runId: String) async throws -> [LuaDeviceRunLog] {
+        try await request("/devices/\(deviceId)/lua-runs/\(runId)/logs", query: ["after": "0"])
+    }
+    func stopLuaRun(deviceId: String, runId: String) async throws -> LuaDeviceRun {
+        try await request("/devices/\(deviceId)/lua-runs/\(runId)/stop", method: "POST")
+    }
+
+    func conversations() async throws -> Paginated<ConversationRecord> {
+        try await request("/ai-conversations", query: ["page": "1", "pageSize": "50"])
+    }
+
+    func createConversation(title: String?) async throws -> ConversationRecord {
+        return try await request("/ai-conversations", method: "POST", body: CreateConversationRequest(title: title))
+    }
+
+    func messages(conversationId: String) async throws -> Paginated<ChatMessage> {
+        try await request("/ai-conversations/\(conversationId)/messages", query: ["page": "1", "pageSize": "100"])
+    }
+
+    /// Consumes the AI SDK data stream and returns the accumulated assistant text.
+    /// The endpoint remains stream based so this can be changed to incremental UI updates later.
+    func sendChat(_ payload: ChatSendRequest) async throws -> String {
+        var request = try makeRequest("/ai-chat", method: "POST", body: payload)
+        request.setValue("text/event-stream", forHTTPHeaderField: "Accept")
+        let (bytes, response) = try await session.bytes(for: request)
+        try validate(response)
+
+        var result = ""
+        for try await line in bytes.lines {
+            guard line.hasPrefix("data:") else { continue }
+            let value = String(line.dropFirst(5)).trimmingCharacters(in: .whitespaces)
+            if value == "[DONE]" { break }
+            result += streamText(from: value)
+        }
+        return result
+    }
+
+    func xiaomiAccounts() async throws -> [XiaomiHomeAccount] { try await request("/smart-home/xiaomi/accounts") }
+    func importXiaomiCredentials(_ credentials: String) async throws -> XiaomiHomeAccount {
+        try await request("/smart-home/xiaomi/import", method: "POST", body: ImportXiaomiRequest(credentials: credentials))
+    }
+    func syncXiaomiAccount(_ id: String) async throws -> XiaomiHomeAccount {
+        try await request("/smart-home/xiaomi/accounts/\(id)/sync", method: "POST")
+    }
+    func deleteXiaomiAccount(_ id: String) async throws {
+        try await requestVoid("/smart-home/xiaomi/accounts/\(id)", method: "DELETE")
+    }
+    func xiaomiDevices() async throws -> [XiaomiDevice] { try await request("/smart-home/xiaomi/devices") }
+    func refreshXiaomiDevice(_ id: String) async throws -> XiaomiDevice {
+        try await request("/smart-home/xiaomi/devices/\(id)/refresh", method: "POST")
+    }
+    func setXiaomiProperty(_ id: String, siid: Int, piid: Int, value: JSONValue) async throws -> XiaomiDevice {
+        try await request("/smart-home/xiaomi/devices/\(id)/properties", method: "POST", body: XiaomiPropertyRequest(siid: siid, piid: piid, value: value))
+    }
+    func executeXiaomiAction(_ id: String, siid: Int, aiid: Int, inputs: [JSONValue]) async throws -> XiaomiDevice {
+        try await request("/smart-home/xiaomi/devices/\(id)/actions", method: "POST", body: XiaomiActionRequest(siid: siid, aiid: aiid, inputs: inputs))
+    }
+
+    func logout() async {
+        try? await requestVoid("/auth/logout", method: "POST")
+        token = nil
+    }
+
+    private func makeRequest<Body: Encodable>(_ path: String, method: String = "GET", body: Body? = nil, query: [String: String] = [:]) throws -> URLRequest {
+        guard var components = URLComponents(url: baseURL.appendingPathComponent(path.trimmingCharacters(in: CharacterSet(charactersIn: "/"))), resolvingAgainstBaseURL: false) else {
+            throw APIClientError.invalidBaseURL
+        }
+        if !query.isEmpty { components.queryItems = query.map { URLQueryItem(name: $0.key, value: $0.value) } }
+        guard let url = components.url else { throw APIClientError.invalidBaseURL }
+        var request = URLRequest(url: url)
+        request.httpMethod = method
+        request.setValue("application/json", forHTTPHeaderField: "Accept")
+        if body != nil { request.setValue("application/json", forHTTPHeaderField: "Content-Type") }
+        if let token { request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization") }
+        if let organizationId { request.setValue(organizationId, forHTTPHeaderField: "x-organization-id") }
+        if let body { request.httpBody = try JSONEncoder().encode(body) }
+        return request
+    }
+
+    private func request<T: Decodable & Sendable, Body: Encodable>(_ path: String, method: String = "GET", body: Body? = nil, query: [String: String] = [:]) async throws -> T {
+        let request = try makeRequest(path, method: method, body: body, query: query)
+        let (data, response) = try await session.data(for: request)
+        try validate(response, data: data)
+        do {
+            if let envelope = try? JSONDecoder().decode(APIEnvelope<T>.self, from: data) { return envelope.data }
+            return try JSONDecoder().decode(T.self, from: data)
+        } catch {
+            throw APIClientError.decoding(error)
+        }
+    }
+
+    private func request<T: Decodable & Sendable>(_ path: String, method: String = "GET", query: [String: String] = [:]) async throws -> T {
+        try await request(path, method: method, body: Optional<EmptyRequest>.none, query: query)
+    }
+
+    private func requestVoid(_ path: String, method: String = "GET") async throws {
+        let request = try makeRequest(path, method: method, body: Optional<EmptyRequest>.none)
+        let (data, response) = try await session.data(for: request)
+        try validate(response, data: data)
+    }
+
+    private func validate(_ response: URLResponse, data: Data? = nil) throws {
+        guard let response = response as? HTTPURLResponse else { throw APIClientError.invalidResponse }
+        guard (200..<300).contains(response.statusCode) else {
+            var message = HTTPURLResponse.localizedString(forStatusCode: response.statusCode)
+            var code: Int?
+            if let data, let object = try? JSONSerialization.jsonObject(with: data) as? [String: Any] {
+                message = object["message"] as? String ?? message
+                code = object["code"] as? Int
+            }
+            throw APIClientError.server(message: message, code: code)
+        }
+    }
+
+    private func streamText(from value: String) -> String {
+        if let data = value.data(using: .utf8),
+           let object = try? JSONSerialization.jsonObject(with: data) as? [String: Any] {
+            if let delta = object["delta"] as? String { return delta }
+            if let text = object["text"] as? String { return text }
+            if let nested = object["data"] as? [String: Any] {
+                return (nested["delta"] as? String) ?? (nested["text"] as? String) ?? ""
+            }
+        }
+        if let data = value.data(using: .utf8), let string = try? JSONDecoder().decode(String.self, from: data) { return string }
+        return value.hasPrefix("0:") ? String(value.dropFirst(2)).trimmingCharacters(in: CharacterSet(charactersIn: "\"")) : ""
+    }
+}
+
+private struct EmptyRequest: Encodable {}
+
+private struct LoginRequest: Encodable {
+    let username: String
+    let password: String
+    let terminal: Int
+}
+
+private struct CreateTriggerRequest: Encodable {
+    let name: String
+    let description: String?
+    let projectId: String
+    let triggerType: String
+    let isPinned: Bool
+}
+
+private struct ExecuteTriggerRequest: Encodable {
+    let inputs: [String: JSONValue]
+}
+
+private struct CreateConversationRequest: Encodable {
+    let title: String?
+}
+
+private struct ImportXiaomiRequest: Encodable {
+    let credentials: String
+}
+
+private struct XiaomiPropertyRequest: Encodable {
+    let siid: Int
+    let piid: Int
+    let value: JSONValue
+}
+
+private struct XiaomiActionRequest: Encodable {
+    let siid: Int
+    let aiid: Int
+    let `in`: [JSONValue]
+
+    init(siid: Int, aiid: Int, inputs: [JSONValue]) {
+        self.siid = siid
+        self.aiid = aiid
+        self.in = inputs
+    }
+}

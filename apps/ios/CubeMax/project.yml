@@ -1,0 +1,28 @@
+name: CubeMax
+options:
+  bundleIdPrefix: com.cubemax
+  deploymentTarget:
+    iOS: "17.0"
+  createIntermediateGroups: true
+settings:
+  base:
+    SWIFT_VERSION: "6.0"
+    DEVELOPMENT_TEAM: ""
+targets:
+  CubeMax:
+    type: application
+    platform: iOS
+    deploymentTarget: "17.0"
+    sources:
+      - path: CubeMax
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.cubemax.mobile
+        GENERATE_INFOPLIST_FILE: true
+        INFOPLIST_KEY_CFBundleDisplayName: CubeMax
+        INFOPLIST_KEY_LSApplicationCategoryType: public.app-category.utilities
+        INFOPLIST_KEY_UILaunchScreen_Generation: true
+        SUPPORTS_MACCATALYST: false
+    scheme:
+      gatherCoverageData: false
+      testTargets: []

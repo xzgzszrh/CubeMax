@@ -1,0 +1,374 @@
+import Foundation
+
+struct APIEnvelope<Value: Decodable & Sendable>: Decodable, Sendable {
+    let code: Int
+    let message: String
+    let data: Value
+}
+
+struct EmptyResponse: Decodable, Sendable {}
+
+struct LoginResponse: Decodable, Sendable {
+    let token: String
+    let expiresAt: String?
+    let user: UserInfo
+}
+
+struct UserInfo: Codable, Identifiable, Sendable {
+    let id: String
+    let username: String
+    let nickname: String?
+    let realName: String?
+    let avatar: String?
+    let hasPersonalWorkspace: Bool?
+
+    var displayName: String { nickname?.isEmpty == false ? nickname! : username }
+
+    enum CodingKeys: String, CodingKey {
+        case id, username, nickname, realName, avatar, hasPersonalWorkspace
+    }
+}
+
+struct WorkspaceContext: Codable, Sendable {
+    let personalWorkspace: PersonalWorkspace?
+    let organizations: [OrganizationWorkspace]
+
+    var choices: [WorkspaceChoice] {
+        var result = personalWorkspace.map { [WorkspaceChoice.personal($0)] } ?? []
+        result.append(contentsOf: organizations.map(WorkspaceChoice.organization))
+        return result
+    }
+}
+
+struct PersonalWorkspace: Codable, Sendable {
+    let id: String?
+    let type: String
+    let name: String
+    let roles: [String]
+    let permissions: [String]
+}
+
+struct OrganizationWorkspace: Codable, Identifiable, Sendable {
+    let id: String
+    let type: String
+    let name: String
+    let code: String
+    let roles: [String]
+    let permissions: [String]
+    let memberType: String
+    let canLeave: Bool
+}
+
+enum WorkspaceChoice: Identifiable, Hashable, Sendable {
+    case personal(PersonalWorkspace)
+    case organization(OrganizationWorkspace)
+
+    var id: String {
+        switch self {
+        case .personal: return "personal"
+        case .organization(let workspace): return workspace.id
+        }
+    }
+
+    var name: String {
+        switch self {
+        case .personal(let workspace): return workspace.name
+        case .organization(let workspace): return workspace.name
+        }
+    }
+
+    var organizationId: String? {
+        if case .organization(let workspace) = self { return workspace.id }
+        return nil
+    }
+
+    static func == (lhs: WorkspaceChoice, rhs: WorkspaceChoice) -> Bool { lhs.id == rhs.id }
+    func hash(into hasher: inout Hasher) { hasher.combine(id) }
+}
+
+final class JSONSchema: Codable, @unchecked Sendable {
+    let type: String?
+    let title: String?
+    let description: String?
+    let defaultValue: JSONValue?
+    let enumValues: [JSONValue]?
+    let properties: [String: JSONSchema]?
+    let required: [String]?
+    let items: JSONSchema?
+    let format: String?
+
+    enum CodingKeys: String, CodingKey {
+        case type, title, description
+        case defaultValue = "default"
+        case enumValues = "enum"
+        case properties, required, items, format
+    }
+
+    init(type: String?, title: String?, description: String?, defaultValue: JSONValue?, enumValues: [JSONValue]?, properties: [String: JSONSchema]?, required: [String]?, items: JSONSchema?, format: String?) {
+        self.type = type
+        self.title = title
+        self.description = description
+        self.defaultValue = defaultValue
+        self.enumValues = enumValues
+        self.properties = properties
+        self.required = required
+        self.items = items
+        self.format = format
+    }
+
+    var isObject: Bool { type == "object" || type == "map" || properties != nil }
+    var isBoolean: Bool { type == "boolean" }
+    var isNumber: Bool { type == "number" || type == "integer" }
+}
+
+struct ProgrammingTriggerProject: Codable, Sendable {
+    let id: String
+    let name: String
+    let isPublished: Bool
+    let runtimeTarget: String
+    let mainWorkflowId: String
+}
+
+struct ProgrammingTriggerItem: Codable, Identifiable, Sendable {
+    let id: String
+    let name: String
+    let description: String?
+    let projectId: String
+    let triggerType: String
+    let inputSchema: JSONSchema
+    let isEnabled: Bool
+    let isPinned: Bool
+    let homeOrder: Int
+    let createdAt: String
+    let updatedAt: String
+    let project: ProgrammingTriggerProject
+
+    var fieldCount: Int { inputSchema.properties?.count ?? 0 }
+}
+
+struct ProgrammingProject: Codable, Identifiable, Sendable {
+    let id: String
+    let name: String
+    let description: String?
+    let isPublished: Bool
+    let mainWorkflowId: String
+    let runtimeTarget: String
+}
+
+struct CubeCatDevice: Codable, Identifiable, Sendable {
+    let id: String
+    let deviceId: String
+    let displayName: String
+    let online: Bool
+    let firmwareVersion: String?
+    let bootId: String?
+    let capabilities: [String]
+    let limits: CubeCatDeviceLimits?
+    let runtime: CubeCatDeviceRuntime?
+    let lastSeenAt: String?
+    let createdAt: String?
+    let updatedAt: String?
+}
+
+struct CubeCatDeviceLimits: Codable, Sendable {
+    let maxScriptBytes: Int
+    let maxParamsBytes: Int
+    let maxChunkBytes: Int
+    let maxMessageBytes: Int
+    let maxLogBytes: Int
+}
+
+struct CubeCatDeviceRuntime: Codable, Sendable {
+    let executionModel: String
+    let apiVersion: String
+    let transferStorage: String
+    let maxRunTimeoutMs: Int
+}
+
+enum LuaDeviceRunStatus: String, Codable, Sendable {
+    case queued, preparing, transferring, running, stopping, waitingForDevice = "waiting_for_device"
+    case succeeded, failed, stopped, timedOut = "timed_out"
+}
+
+struct LuaDeviceRun: Codable, Identifiable, Sendable {
+    let id: String
+    let deviceId: String
+    let moduleId: String?
+    let projectId: String?
+    let name: String
+    let sourceSha256: String
+    let params: [String: JSONValue]
+    let requiredCapabilities: [String]
+    let status: LuaDeviceRunStatus
+    let timeoutMs: Int
+    let nextChunkIndex: Int
+    let result: JSONValue?
+    let error: LuaDeviceRunError?
+    let startedAt: String?
+    let finishedAt: String?
+    let createdAt: String
+    let updatedAt: String
+}
+
+struct LuaDeviceRunError: Codable, Sendable {
+    let code: String
+    let message: String
+    let line: Int?
+}
+
+struct LuaDeviceRunLog: Codable, Identifiable, Sendable {
+    let id: String
+    let runId: String
+    let sequence: Int
+    let level: String
+    let text: String
+    let createdAt: String
+}
+
+struct Paginated<Value: Decodable & Sendable>: Decodable, Sendable {
+    let items: [Value]
+    let total: Int
+    let page: Int
+    let pageSize: Int
+    let totalPages: Int
+}
+
+struct ExecuteTriggerResponse: Decodable, Sendable {
+    let taskID: String
+}
+
+struct ConversationRecord: Codable, Identifiable, Sendable {
+    let id: String
+    let title: String?
+    let userId: String
+    let modelId: String?
+    let summary: String?
+    let messageCount: Int
+    let totalTokens: Int?
+    let status: String
+    let isPinned: Bool
+    let createdAt: String
+    let updatedAt: String
+}
+
+struct MessagePart: Codable, Identifiable, Sendable {
+    let type: String
+    let text: String?
+    let content: String?
+
+    var id: String { "\(type)-\(text ?? content ?? UUID().uuidString)" }
+    var renderedText: String? { text ?? content }
+}
+
+struct ChatMessage: Codable, Identifiable, Sendable {
+    let id: String
+    let conversationId: String
+    let sequence: Int
+    let message: MessagePayload
+    let status: String
+    let createdAt: String
+
+    struct MessagePayload: Codable, Sendable {
+        let role: String
+        let parts: [MessagePart]
+    }
+
+    var role: String { message.role }
+    var text: String { message.parts.compactMap(\.renderedText).joined() }
+}
+
+struct XiaomiHomeAccount: Codable, Identifiable, Sendable {
+    let id: String
+    let label: String
+    let cloudServer: String
+    let cloudServerLabel: String
+    let upstreamUserId: String?
+    let nickname: String?
+    let status: String
+    let homes: [XiaomiHomeSummary]
+    let deviceCount: Int
+    let onlineDeviceCount: Int
+    let lastSyncAt: String?
+    let lastError: String?
+    let createdAt: String
+    let updatedAt: String
+}
+
+struct XiaomiHomeSummary: Codable, Identifiable, Sendable {
+    let id: String
+    let name: String
+    let uid: String?
+    let roomCount: Int
+    let deviceCount: Int
+}
+
+struct XiaomiCapability: Codable, Identifiable, Hashable, Sendable {
+    let kind: String
+    let siid: Int
+    let piid: Int?
+    let aiid: Int?
+    let serviceName: String
+    let serviceDescription: String?
+    let name: String
+    let description: String?
+    let format: String?
+    let access: [String]?
+    let unit: String?
+    let valueRange: XiaomiValueRange?
+    let valueList: [XiaomiValueOption]?
+    let input: [XiaomiActionInput]?
+
+    var id: String { "\(kind)-\(siid)-\(piid ?? aiid ?? 0)" }
+    var canWrite: Bool { access?.contains("write") == true }
+}
+
+struct XiaomiValueRange: Codable, Hashable, Sendable {
+    let min: Double
+    let max: Double
+    let step: Double
+}
+
+struct XiaomiValueOption: Codable, Hashable, Identifiable, Sendable {
+    let value: JSONValue
+    let description: String
+    var id: String { value.prettyString }
+}
+
+struct XiaomiActionInput: Codable, Hashable, Sendable {
+    let piid: Int
+    let name: String
+    let description: String?
+    let format: String?
+    let valueRange: XiaomiValueRange?
+    let valueList: [XiaomiValueOption]?
+}
+
+struct XiaomiDevice: Codable, Identifiable, Sendable {
+    let id: String
+    let accountId: String
+    let did: String
+    let name: String
+    let model: String?
+    let urn: String?
+    let manufacturer: String?
+    let icon: String?
+    let category: String
+    let categoryLabel: String
+    let online: Bool
+    let connectType: Int?
+    let homeId: String?
+    let homeName: String?
+    let roomId: String?
+    let roomName: String?
+    let capabilities: [XiaomiCapability]
+    let state: [String: JSONValue]
+    let metadata: [String: JSONValue]
+    let lastStateAt: String?
+    let createdAt: String
+    let updatedAt: String
+
+    func stateValue(for capability: XiaomiCapability) -> JSONValue? {
+        guard let piid = capability.piid else { return nil }
+        return state["\(capability.siid).\(piid)"]
+    }
+}
