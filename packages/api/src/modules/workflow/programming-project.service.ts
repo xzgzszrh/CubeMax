@@ -4,6 +4,7 @@ import {
     LuaModule,
     ProgrammingProject,
     ProgrammingProjectTool,
+    ProgrammingTrigger,
     type ProgrammingProjectPublishedSnapshot,
     type ProgrammingProjectToolSnapshot,
     type ProgrammingRuntimeTarget,
@@ -322,6 +323,7 @@ export class ProgrammingProjectService {
         this.simulatorService.removeForProject(project.id, userId);
         await this.projectRepository.manager.transaction(async (manager) => {
             await manager.getRepository(ProgrammingProjectTool).delete({ projectId: project.id });
+            await manager.getRepository(ProgrammingTrigger).delete({ projectId: project.id, createBy: userId });
             await manager.getRepository(LuaModule).delete({ projectId: project.id });
             await manager.getRepository(AiWorkflow).delete({ projectId: project.id });
             await manager.getRepository(ProgrammingProject).delete({ id: project.id, createBy: userId });

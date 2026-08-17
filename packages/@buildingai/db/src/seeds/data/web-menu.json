@@ -53,6 +53,19 @@
             }
         },
         {
+            "id": "menu_triggers",
+            "icon": "zap",
+            "title": "触发器",
+            "link": {
+                "label": "触发器",
+                "path": "/triggers",
+                "type": "system",
+                "query": {},
+                "component": "/src/pages/triggers/index.tsx",
+                "target": "_self"
+            }
+        },
+        {
             "id": "menu_smart-home",
             "icon": "house-plug",
             "title": "智能家居",

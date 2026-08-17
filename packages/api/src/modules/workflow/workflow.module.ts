@@ -10,6 +10,7 @@ import {
     LuaModule,
     ProgrammingProject,
     ProgrammingProjectTool,
+    ProgrammingTrigger,
     Secret,
     SecretTemplate,
 } from "@buildingai/db/entities";
@@ -21,6 +22,8 @@ import { Module } from "@nestjs/common";
 import { SimulatorModule } from "../simulator/simulator.module";
 import { ProgrammingProjectController } from "./programming-project.controller";
 import { ProgrammingProjectService } from "./programming-project.service";
+import { ProgrammingTriggerController } from "./programming-trigger.controller";
+import { ProgrammingTriggerService } from "./programming-trigger.service";
 import { WorkflowController } from "./workflow.controller";
 import { WorkflowService } from "./workflow.service";
 import { WorkflowEmbeddedExecutorService } from "./workflow-embedded-executor.service";
@@ -28,6 +31,7 @@ import { WorkflowLlmExecutorService } from "./workflow-llm-executor.service";
 import { WorkflowLuaExecutorService } from "./workflow-lua-executor.service";
 import { WorkflowMcpExecutorService } from "./workflow-mcp-executor.service";
 import { WorkflowRuntimeController } from "./workflow-runtime.controller";
+import { WorkflowRuntimeExecutionService } from "./workflow-runtime-execution.service";
 
 @Module({
     imports: [
@@ -39,6 +43,7 @@ import { WorkflowRuntimeController } from "./workflow-runtime.controller";
             AiWorkflow,
             ProgrammingProject,
             ProgrammingProjectTool,
+            ProgrammingTrigger,
             LuaModule,
             AiMcpServer,
             AiMcpTool,
@@ -49,14 +54,21 @@ import { WorkflowRuntimeController } from "./workflow-runtime.controller";
             SecretTemplate,
         ]),
     ],
-    controllers: [WorkflowController, ProgrammingProjectController, WorkflowRuntimeController],
+    controllers: [
+        WorkflowController,
+        ProgrammingProjectController,
+        ProgrammingTriggerController,
+        WorkflowRuntimeController,
+    ],
     providers: [
         WorkflowService,
         ProgrammingProjectService,
+        ProgrammingTriggerService,
         WorkflowMcpExecutorService,
         WorkflowEmbeddedExecutorService,
         WorkflowLlmExecutorService,
         WorkflowLuaExecutorService,
+        WorkflowRuntimeExecutionService,
         SecretService,
     ],
 })

@@ -27,6 +27,7 @@ import ProgrammingWorkspaceLayout from "@/pages/programming/layout";
 import LuaModulesPage from "@/pages/lua";
 import SimulatorPage from "@/pages/simulator";
 import SmartHomePage from "@/pages/smart-home";
+import TriggersPage from "@/pages/triggers";
 
 import ConsoleLayout from "../layouts/console";
 import PodiumLayout from "../layouts/podium";
@@ -233,6 +234,14 @@ export const router = createBrowserRouter([
             element: (
               <AuthGuard>
                 <SmartHomePage />
+              </AuthGuard>
+            ),
+          },
+          {
+            path: "/triggers",
+            element: (
+              <AuthGuard>
+                <TriggersPage />
               </AuthGuard>
             ),
           },
