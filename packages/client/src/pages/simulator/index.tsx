@@ -4,6 +4,8 @@ import {
   useApplySimulatorOperationsMutation,
   useCreateSimulatorSessionMutation,
   useDeleteSimulatorSessionMutation,
+  useLuaModulesQuery,
+  useProjectSimulatorSessionsQuery,
   useResetSimulatorSessionMutation,
   useSimulatorSessionQuery,
   useSimulatorSessionsQuery,
@@ -41,6 +43,7 @@ import {
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
+import { useOptionalProgrammingProject } from "../programming/context";
 import { EspClawRuntime, type SimulatorDraft } from "./esp-claw-runtime";
 
 const EXAMPLE_LUA_SOURCE = "example";
@@ -190,9 +193,16 @@ function PeripheralStatus({ session }: { session: SimulatorSession }) {
   );
 }
 
-export default function SimulatorPage() {
-  const sessionsQuery = useSimulatorSessionsQuery();
-  const sessions = sessionsQuery.data ?? [];
+export default function SimulatorPage({ projectId: projectIdProp }: { projectId?: string } = {}) {
+  const project = useOptionalProgrammingProject();
+  const projectId = projectIdProp ?? project?.id;
+  const sessionsQuery = useSimulatorSessionsQuery({ enabled: !projectId });
+  const projectSessionsQuery = useProjectSimulatorSessionsQuery(projectId);
+  const modulesQuery = useLuaModulesQuery(projectId ? { projectId } : undefined, {
+    enabled: Boolean(projectId),
+  });
+  const sessions = projectId ? (projectSessionsQuery.data ?? []) : (sessionsQuery.data ?? []);
+  const modules = modulesQuery.data?.items ?? [];
   const [selectedId, setSelectedId] = useState<string>();
   const [potentiometer, setPotentiometer] = useState(2048);
   const [serialInput, setSerialInput] = useState("");
@@ -206,14 +216,17 @@ export default function SimulatorPage() {
   const sessionQuery = useSimulatorSessionQuery(selectedId, { refetchInterval: 1000 });
   const session = sessionQuery.data;
 
-  const createMutation = useCreateSimulatorSessionMutation({
-    onSuccess: (created) => {
-      setSelectedId(created.id);
-      setPreferredBoardType(created.board.type);
-      toast.success("虚拟开发板已创建");
+  const createMutation = useCreateSimulatorSessionMutation(
+    {
+      onSuccess: (created) => {
+        setSelectedId(created.id);
+        setPreferredBoardType(created.board.type);
+        toast.success("虚拟开发板已创建");
+      },
+      onError: (error) => toast.error(error.message),
     },
-    onError: (error) => toast.error(error.message),
-  });
+    projectId,
+  );
   const resetMutation = useResetSimulatorSessionMutation({
     onSuccess: () => {
       setRuntimeResetVersion((version) => version + 1);
@@ -245,21 +258,27 @@ export default function SimulatorPage() {
     },
     onError: (error) => toast.error(error.message),
   });
+  const sessionsLoaded = projectId ? projectSessionsQuery.isSuccess : sessionsQuery.isSuccess;
+  const createSession = createMutation.mutate;
+  const createPending = createMutation.isPending;
 
   useEffect(() => {
-    if (sessionsQuery.isSuccess && sessions.length > 0 && !selectedId) {
+    if (sessionsLoaded && sessions.length > 0 && !selectedId) {
       setSelectedId(sessions[0].id);
     }
-    if (
-      sessionsQuery.isSuccess &&
-      sessions.length === 0 &&
-      !didCreateDefault.current &&
-      !createMutation.isPending
-    ) {
+    if (sessionsLoaded && sessions.length === 0 && !didCreateDefault.current && !createPending) {
       didCreateDefault.current = true;
-      createMutation.mutate({ boardType: preferredBoardType });
+      createSession({ boardType: preferredBoardType });
     }
-  }, [createMutation, preferredBoardType, selectedId, sessions, sessionsQuery.isSuccess]);
+  }, [
+    createPending,
+    createSession,
+    preferredBoardType,
+    projectId,
+    selectedId,
+    sessions.length,
+    sessionsLoaded,
+  ]);
 
   useEffect(() => {
     if (session) setPotentiometer(session.peripherals.potentiometer.value);
@@ -301,7 +320,16 @@ export default function SimulatorPage() {
     if (value === EXAMPLE_LUA_SOURCE) {
       setSimulatorDraft({ ...DEFAULT_DISPLAY_DRAFT, params: { ...DEFAULT_DISPLAY_DRAFT.params } });
       setLuaSource(value);
+      return;
     }
+    const module = modules.find((item) => item.id === value);
+    if (!module) return;
+    setSimulatorDraft({
+      name: module.name,
+      code: module.draftCode,
+      params: module.testParams ?? {},
+    });
+    setLuaSource(value);
   };
 
   return (
@@ -309,7 +337,9 @@ export default function SimulatorPage() {
       <header className="flex min-h-16 flex-wrap items-center gap-3 border-b px-4 py-2.5">
         <Cpu className="text-primary size-5" />
         <div className="mr-auto min-w-0">
-          <h1 className="truncate text-base font-semibold">硬件仿真</h1>
+          <h1 className="truncate text-base font-semibold">
+            {projectId ? "工程仿真" : "硬件仿真"}
+          </h1>
           <p className="text-muted-foreground truncate text-xs">Lua + LVGL 应用层仿真</p>
         </div>
         <div className="flex min-w-0 items-center gap-1.5 max-md:order-3 max-md:w-full">
@@ -323,6 +353,11 @@ export default function SimulatorPage() {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value={EXAMPLE_LUA_SOURCE}>虚拟屏幕示例</SelectItem>
+              {modules.map((module) => (
+                <SelectItem key={module.id} value={module.id}>
+                  {module.name}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
         </div>
@@ -334,7 +369,7 @@ export default function SimulatorPage() {
           onClick={() => {
             if (!session) return;
             void navigator.clipboard.writeText(session.id);
-            toast.success("会话 ID 已复制，可粘贴到工作流节点");
+            toast.success("会话 ID 已复制");
           }}
         >
           <Copy />
@@ -351,7 +386,7 @@ export default function SimulatorPage() {
       </header>
 
       <div className="grid min-h-0 flex-1 grid-cols-1 overflow-y-auto xl:grid-cols-[minmax(0,1fr)_380px] xl:overflow-hidden">
-        <main className="min-h-0 p-4 xl:overflow-y-auto">
+        <main className="p-4 xl:min-h-0 xl:overflow-y-auto">
           <div className="mx-auto flex min-h-full max-w-[1080px] flex-col gap-3">
             <div>
               <h2 className="text-sm font-semibold">{simulatorDraft.name}</h2>
@@ -372,7 +407,7 @@ export default function SimulatorPage() {
           </div>
         </main>
 
-        <aside className="flex min-h-0 flex-col border-t xl:border-t-0 xl:border-l">
+        <aside className="flex flex-col border-t xl:min-h-0 xl:border-t-0 xl:border-l">
           <div className="border-b">
             <div className="flex items-center gap-2 p-3">
               <Cpu className="size-4 shrink-0" />

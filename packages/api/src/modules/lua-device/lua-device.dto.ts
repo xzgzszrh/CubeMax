@@ -24,6 +24,10 @@ export class CreateLuaDeviceRunDto {
     @IsUUID()
     moduleId?: string;
 
+    @IsOptional()
+    @IsUUID()
+    projectId?: string;
+
     @IsString()
     @IsNotEmpty()
     @MaxLength(65536)

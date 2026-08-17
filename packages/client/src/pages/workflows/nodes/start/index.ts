@@ -23,7 +23,7 @@ export const StartNodeRegistry: FlowNodeRegistry = {
   },
   info: {
     icon: iconStart,
-    description: "工作流的开始节点，用于配置启动工作流所需的输入信息。",
+    description: "主流程的开始节点，用于配置程序启动时所需的输入信息。",
   },
   /**
    * Render node via formMeta

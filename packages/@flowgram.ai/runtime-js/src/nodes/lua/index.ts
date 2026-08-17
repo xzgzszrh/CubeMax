@@ -7,6 +7,13 @@ import type {
 
 export type LuaExecutorInput = {
     userId?: string;
+    runtimeContext?: {
+        projectId?: string;
+        runtimeTarget?: "local" | "simulator" | "device";
+        simulatorSessionId?: string;
+        deviceId?: string;
+        publishedSnapshot?: unknown;
+    };
     node: { id: string; type: string; data?: Record<string, unknown> };
     inputs: Record<string, unknown>;
 };
@@ -28,6 +35,7 @@ export class LuaExecutor implements INodeExecutor {
         if (!workflowRuntimeLuaExecutor) throw new Error("Lua executor is not registered");
         const outputs = await workflowRuntimeLuaExecutor({
             userId: getWorkflowRuntimeUserId(context),
+            runtimeContext: getWorkflowRuntimeContext(context),
             node: {
                 id: context.node.id,
                 type: context.node.type,
@@ -42,6 +50,24 @@ export class LuaExecutor implements INodeExecutor {
 function getWorkflowRuntimeUserId(context: ExecutionContext): string | undefined {
     const runtime = context.runtime as { metadata?: { userId?: unknown } };
     return typeof runtime.metadata?.userId === "string" ? runtime.metadata.userId : undefined;
+}
+
+function getWorkflowRuntimeContext(context: ExecutionContext): LuaExecutorInput["runtimeContext"] {
+    const runtime = context.runtime as { metadata?: Record<string, unknown> };
+    const metadata = runtime.metadata ?? {};
+    return {
+        ...(typeof metadata.projectId === "string" ? { projectId: metadata.projectId } : {}),
+        ...(metadata.runtimeTarget === "local" ||
+        metadata.runtimeTarget === "simulator" ||
+        metadata.runtimeTarget === "device"
+            ? { runtimeTarget: metadata.runtimeTarget }
+            : {}),
+        ...(typeof metadata.simulatorSessionId === "string"
+            ? { simulatorSessionId: metadata.simulatorSessionId }
+            : {}),
+        ...(typeof metadata.deviceId === "string" ? { deviceId: metadata.deviceId } : {}),
+        ...(metadata.publishedSnapshot ? { publishedSnapshot: metadata.publishedSnapshot } : {}),
+    };
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

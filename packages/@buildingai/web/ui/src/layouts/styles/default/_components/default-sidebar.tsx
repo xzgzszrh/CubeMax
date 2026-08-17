@@ -140,28 +140,6 @@ export function DefaultAppSidebar({ ...props }: React.ComponentProps<typeof Side
 
   const navMain = useMenuItems(menuConfig?.menus ?? [], conversationItems, homeAction);
 
-  // Lua 创作是工作流的配套开发入口。旧版本的菜单配置可能还没有该项，
-  // 因此在前台菜单缺失时补入固定入口，避免需要重新装修或重建数据库。
-  const navWithLua = useMemo<NavItem[]>(() => {
-    if (navMain.some((item) => item.path === "/lua" || item.id === "menu_lua")) {
-      return navMain;
-    }
-
-    const workflowIndex = navMain.findIndex(
-      (item) => item.path === "/workflows" || item.id === "menu_workflows",
-    );
-    const luaItem: NavItem = {
-      id: "menu_lua_fixed",
-      title: "Lua 创作",
-      icon: "code-2",
-      path: "/lua",
-    };
-
-    if (workflowIndex < 0) return [...navMain, luaItem];
-
-    return [...navMain.slice(0, workflowIndex + 1), luaItem, ...navMain.slice(workflowIndex + 1)];
-  }, [navMain]);
-
   // 老师/管理员在任一组织有教学身份时，课堂入口以底部「讲台」按钮呈现；
   // 学生和个人空间用户仍从主导航的「课堂」项进入。
   const { data: workspaceContext } = useWorkspaceContextQuery({ enabled: isLogin() });
@@ -178,31 +156,13 @@ export function DefaultAppSidebar({ ...props }: React.ComponentProps<typeof Side
     [workspaceContext],
   );
 
-  // 课堂、硬件仿真与我的任务是固定入口，不走后台装修菜单配置。
+  // 课堂与我的任务是固定入口，不走后台装修菜单配置。
   // 「课堂」只给学生看（老师从底部「讲台」进）；「我的任务」只要属于任一班级就显示，
   // 因为老师也可能同时是别的班的学生。
-  const navWithSimulator = useMemo<NavItem[]>(() => {
-    if (navWithLua.some((item) => item.path === "/simulator" || item.id === "menu_simulator")) {
-      return navWithLua;
-    }
-
-    const luaIndex = navWithLua.findIndex(
-      (item) => item.path === "/lua" || item.id === "menu_lua_fixed",
-    );
-    const simulatorItem: NavItem = {
-      id: "menu_simulator_fixed",
-      title: "硬件仿真",
-      icon: "microchip",
-      path: "/simulator",
-    };
-    if (luaIndex < 0) return [...navWithLua, simulatorItem];
-    return [...navWithLua.slice(0, luaIndex + 1), simulatorItem, ...navWithLua.slice(luaIndex + 1)];
-  }, [navWithLua]);
-
   const inOrganization = (workspaceContext?.organizations.length ?? 0) > 0;
   const navWithClassroom = useMemo<NavItem[]>(() => {
-    if (!isLogin()) return navWithSimulator;
-    const items = [...navWithSimulator];
+    if (!isLogin()) return navMain;
+    const items = [...navMain];
     if (!isTeacher) {
       items.push({
         id: "menu_classroom_fixed",
@@ -220,7 +180,7 @@ export function DefaultAppSidebar({ ...props }: React.ComponentProps<typeof Side
       });
     }
     return items;
-  }, [navWithSimulator, isLogin, isTeacher, inOrganization]);
+  }, [navMain, isLogin, isTeacher, inOrganization]);
 
   const consoleLink = useMemo(() => {
     const menus = userInfo?.menus || [];

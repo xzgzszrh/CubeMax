@@ -18,14 +18,15 @@ import type { FlowDocumentJSON } from "./typings";
 export interface EditorProps {
   workflowId: string;
   initialData: FlowDocumentJSON;
+  projectId?: string;
 }
 
-export const Editor = ({ workflowId, initialData }: EditorProps) => {
-  const editorProps = useEditorProps(initialData, nodeRegistries);
+export const Editor = ({ workflowId, initialData, projectId }: EditorProps) => {
+  const editorProps = useEditorProps(initialData, nodeRegistries, projectId);
 
   return (
     <div className="doc-free-feature-overview">
-      <WorkflowSaveProvider workflowId={workflowId}>
+      <WorkflowSaveProvider workflowId={workflowId} projectId={projectId}>
         <FreeLayoutEditorProvider {...editorProps}>
           <WorkflowAutoSave />
           <div className="demo-container">

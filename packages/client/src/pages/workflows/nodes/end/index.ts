@@ -22,7 +22,7 @@ export const EndNodeRegistry: FlowNodeRegistry = {
   },
   info: {
     icon: iconEnd,
-    description: "工作流的结束节点，用于返回工作流运行后的结果信息。",
+    description: "主流程的结束节点，用于返回程序运行后的结果信息。",
   },
   /**
    * Render node via formMeta

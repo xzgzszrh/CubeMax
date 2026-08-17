@@ -3,7 +3,11 @@
  * SPDX-License-Identifier: MIT
  */
 
-import { updateWorkflow, workflowQueryKeys } from "@buildingai/services/web";
+import {
+  programmingProjectQueryKeys,
+  updateWorkflow,
+  workflowQueryKeys,
+} from "@buildingai/services/web";
 import type { FreeLayoutPluginContext } from "@flowgram.ai/free-layout-editor";
 import { useQueryClient } from "@tanstack/react-query";
 import {
@@ -27,6 +31,7 @@ interface SaveSchemaOptions {
 
 interface WorkflowSaveContextValue {
   workflowId: string;
+  projectId?: string;
   saving: boolean;
   queueSave: (schema: FlowDocumentJSON) => void;
   saveSchema: (schema: FlowDocumentJSON, options?: SaveSchemaOptions) => Promise<void>;
@@ -44,9 +49,11 @@ export function serializeWorkflowSchema(ctx: FreeLayoutPluginContext): FlowDocum
 export function WorkflowSaveProvider({
   children,
   workflowId,
+  projectId,
 }: {
   children: React.ReactNode;
   workflowId: string;
+  projectId?: string;
 }) {
   const queryClient = useQueryClient();
   const [saving, setSaving] = useState(false);
@@ -84,16 +91,21 @@ export function WorkflowSaveProvider({
 
             queryClient.setQueryData(workflowQueryKeys.detail(workflow.id), workflow);
             void queryClient.invalidateQueries({ queryKey: workflowQueryKeys.listRoot() });
+            if (projectId) {
+              void queryClient.invalidateQueries({
+                queryKey: programmingProjectQueryKeys.detail(projectId),
+              });
+            }
           }
 
           if (showSuccessToastRef.current) {
-            toast.success("工作流已保存");
+            toast.success(projectId ? "编程画布已保存" : "工作流已保存");
             showSuccessToastRef.current = false;
           }
         } catch (error) {
           showSuccessToastRef.current = false;
           console.error("[Workflow] save failed", error);
-          toast.error("工作流保存失败");
+          toast.error(projectId ? "编程画布保存失败" : "工作流保存失败");
           throw error;
         } finally {
           saveTaskRef.current = null;
@@ -111,7 +123,7 @@ export function WorkflowSaveProvider({
       saveTaskRef.current = task;
       return task;
     },
-    [queryClient, workflowId],
+    [projectId, queryClient, workflowId],
   );
 
   const queueSave = useCallback(
@@ -142,8 +154,9 @@ export function WorkflowSaveProvider({
       saveSchema,
       saving,
       workflowId,
+      projectId,
     }),
-    [queueSave, saveSchema, saving, workflowId],
+    [projectId, queueSave, saveSchema, saving, workflowId],
   );
 
   return <WorkflowSaveContext.Provider value={value}>{children}</WorkflowSaveContext.Provider>;

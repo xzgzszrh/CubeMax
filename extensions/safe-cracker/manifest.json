@@ -2,7 +2,7 @@
     "identifier": "safe-cracker",
     "name": "破解保险箱",
     "type": "application",
-    "version": "0.0.1",
+    "version": "0.0.2",
     "description": "课堂互动游戏：学生通过与自己的方糖猫对话套出保险箱密码，最快破解者上榜",
     "homepage": "",
     "author": {
@@ -10,7 +10,12 @@
         "name": "BuildingAI Teams",
         "homepage": ""
     },
-    "changelog": [],
+    "changelog": [
+        {
+            "version": "0.0.2",
+            "description": "修复历史数据库列名与当前命名策略不一致的问题"
+        }
+    ],
     "engine": {
         "buildingai": ">=26.5.2"
     }

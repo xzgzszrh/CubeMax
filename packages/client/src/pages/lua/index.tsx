@@ -12,10 +12,13 @@ import {
   useLuaDeviceRunLogsQuery,
   useLuaDeviceRunQuery,
   useLuaDevicesQuery,
+  useImportProjectLuaModuleMutation,
   useLuaModulesQuery,
   usePublishLuaModuleMutation,
+  useProjectSimulatorSessionsQuery,
   useSimulatorSessionsQuery,
   useStopLuaDeviceRunMutation,
+  useUnassignedProjectLuaModulesQuery,
   useUnpublishLuaModuleMutation,
   useUpdateLuaModuleMutation,
 } from "@buildingai/services/web";
@@ -41,6 +44,7 @@ import {
 } from "@buildingai/ui/components/ui/select";
 import { Textarea } from "@buildingai/ui/components/ui/textarea";
 import { useAlertDialog } from "@buildingai/ui/hooks/use-alert-dialog";
+import { useIsMobile } from "@buildingai/ui/hooks/use-mobile";
 import {
   Bot,
   Braces,
@@ -49,6 +53,7 @@ import {
   Code2,
   Cpu,
   FileCode2,
+  FolderInput,
   Loader2,
   PanelLeftClose,
   PanelLeftOpen,
@@ -67,9 +72,10 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 
+import { useOptionalProgrammingProject } from "../programming/context";
 import { createLuaCodeDiff, type LuaCodeDiff, LuaCodeDiffView } from "./lua-code-diff";
 
-const DEFAULT_CODE = `-- params 是工作流传入的参数表
+const DEFAULT_CODE = `-- params 是主流程传入的参数表
 function main(params)
   local name = params.name or "同学"
 
@@ -268,9 +274,16 @@ const DEVICE_RUN_STATUS_LABELS: Record<string, string> = {
 
 const DEVICE_RUN_TERMINAL = new Set(["succeeded", "failed", "stopped", "timed_out"]);
 
-export default function LuaModulesPage() {
-  const modulesQuery = useLuaModulesQuery();
-  const simulatorSessionsQuery = useSimulatorSessionsQuery();
+export default function LuaModulesPage({ projectId: projectIdProp }: { projectId?: string } = {}) {
+  const project = useOptionalProgrammingProject();
+  const projectId = projectIdProp ?? project?.id;
+  const isMobile = useIsMobile();
+  const modulesQuery = useLuaModulesQuery(projectId ? { projectId } : undefined);
+  const simulatorSessionsQuery = useSimulatorSessionsQuery({ enabled: !projectId });
+  const projectSimulatorSessionsQuery = useProjectSimulatorSessionsQuery(projectId);
+  const simulatorSessions = projectId
+    ? (projectSimulatorSessionsQuery.data ?? [])
+    : (simulatorSessionsQuery.data ?? []);
   const physicalDevicesQuery = useLuaDevicesQuery();
   const navigate = useNavigate();
   const { confirm } = useAlertDialog();
@@ -291,11 +304,16 @@ export default function LuaModulesPage() {
   const [physicalDeviceId, setPhysicalDeviceId] = useState<string>("none");
   const [physicalRunId, setPhysicalRunId] = useState<string>();
   const [newModuleDialogOpen, setNewModuleDialogOpen] = useState(false);
+  const [importModuleDialogOpen, setImportModuleDialogOpen] = useState(false);
   const [newModuleName, setNewModuleName] = useState("");
   const moduleDraftsRef = useRef(
     new Map<string, { editor: EditorState; messages: LuaChatMessage[] }>(),
   );
   const moduleSaveQueueRef = useRef(new Map<string, Promise<unknown>>());
+
+  useEffect(() => {
+    if (isMobile) setFileSidebarOpen(false);
+  }, [isMobile]);
   const cacheModuleDraft = useCallback(
     (id: string, nextEditor: EditorState, nextMessages: LuaChatMessage[]) => {
       moduleDraftsRef.current.set(id, { editor: nextEditor, messages: nextMessages });
@@ -354,8 +372,14 @@ export default function LuaModulesPage() {
     if (!modelId && models[0]) setModelId(models[0].id);
   }, [modelId, models]);
 
-  const createMutation = useCreateLuaModuleMutation({
-    onSuccess: (module) => {
+  useEffect(() => {
+    if (!project) return;
+    setSimulatorSessionId(project.simulatorSessionId ?? "none");
+    setPhysicalDeviceId(project.deviceId ?? "none");
+  }, [project]);
+
+  const selectCreatedModule = useCallback(
+    (module: LuaModuleItem) => {
       const nextEditor = moduleToEditor(module);
       const nextMessages = normalizeMessages(module.assistantMessages ?? []);
       setEditor(nextEditor);
@@ -363,9 +387,31 @@ export default function LuaModulesPage() {
       cacheModuleDraft(module.id, nextEditor, nextMessages);
       setEditorModuleId(module.id);
       setSelectedId(module.id);
-      setNewModuleDialogOpen(false);
-      setNewModuleName("");
-      toast.success("Lua 模块已创建");
+    },
+    [cacheModuleDraft],
+  );
+
+  const createMutation = useCreateLuaModuleMutation(
+    {
+      onSuccess: (module) => {
+        selectCreatedModule(module);
+        setNewModuleDialogOpen(false);
+        setNewModuleName("");
+        toast.success("Lua 模块已创建");
+      },
+      onError: (error) => toast.error(error.message),
+    },
+    projectId,
+  );
+  const unassignedModulesQuery = useUnassignedProjectLuaModulesQuery(projectId, {
+    enabled: Boolean(projectId && importModuleDialogOpen),
+  });
+  const importMutation = useImportProjectLuaModuleMutation({
+    onSuccess: (module) => {
+      selectCreatedModule(module);
+      setImportModuleDialogOpen(false);
+      void modulesQuery.refetch();
+      toast.success("Lua 模块已导入工程");
     },
     onError: (error) => toast.error(error.message),
   });
@@ -373,7 +419,7 @@ export default function LuaModulesPage() {
     onError: (error) => toast.error(`自动保存失败：${error.message}`),
   });
   const publishMutation = usePublishLuaModuleMutation({
-    onSuccess: () => toast.success("模块已发布，可在工作流中使用"),
+    onSuccess: () => toast.success("模块已发布，可在编程中使用"),
     onError: (error) => toast.error(error.message),
   });
   const unpublishMutation = useUnpublishLuaModuleMutation({
@@ -456,10 +502,14 @@ export default function LuaModulesPage() {
   };
 
   const selectModule = async (id: string) => {
-    if (id === selectedId) return;
+    if (id === selectedId) {
+      if (isMobile) setFileSidebarOpen(false);
+      return;
+    }
     await persistCurrentModule();
     setEditorModuleId(undefined);
     setSelectedId(id);
+    if (isMobile) setFileSidebarOpen(false);
   };
 
   const createModule = () => {
@@ -470,7 +520,7 @@ export default function LuaModulesPage() {
     createMutation.mutate(editorToDto(initialEditor, []));
   };
 
-  const run = async () => {
+  const run = async (targetSimulatorSessionId?: string) => {
     try {
       if (!selectedId) {
         toast.error("请先新建模块");
@@ -481,7 +531,7 @@ export default function LuaModulesPage() {
         selectedId,
         parseObject(editor.testParams, "测试参数"),
         editor.draftCode,
-        simulatorSessionId === "none" ? undefined : simulatorSessionId,
+        targetSimulatorSessionId,
       );
       setResult(JSON.stringify(response, null, 2));
       setDetailsOpen(true);
@@ -504,6 +554,7 @@ export default function LuaModulesPage() {
         dto: {
           name: editor.name.trim() || "未命名 Lua 模块",
           moduleId: selectedId,
+          projectId,
           source: editor.draftCode,
           params: parseObject(editor.testParams, "测试参数"),
           requiredCapabilities: usesDisplay ? ["lua", "xiaozhi", "display"] : ["lua", "xiaozhi"],
@@ -513,6 +564,22 @@ export default function LuaModulesPage() {
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "测试参数格式错误");
     }
+  };
+
+  const runOnProjectTarget = () => {
+    if (!project || project.runtimeTarget === "local") {
+      void run();
+      return;
+    }
+    if (project.runtimeTarget === "simulator") {
+      if (!project.simulatorSessionId) {
+        toast.error("工程尚未选择仿真会话");
+        return;
+      }
+      void run(project.simulatorSessionId);
+      return;
+    }
+    runOnPhysicalDevice();
   };
 
   const publish = async () => {
@@ -626,11 +693,13 @@ export default function LuaModulesPage() {
           <div className="flex items-center gap-2">
             <h1 className="truncate text-base font-semibold">{editor.name || "未命名模块"}</h1>
             {selected && (
-              <Badge variant="outline">{selected.isPublished ? "已发布" : "草稿"}</Badge>
+              <Badge variant="outline">
+                {projectId ? "工程模块" : selected.isPublished ? "已发布" : "草稿"}
+              </Badge>
             )}
           </div>
           <p className="text-muted-foreground truncate text-xs">
-            {editor.description || "Lua 创作"}
+            {editor.description || "Lua 模块"}
           </p>
         </div>
         <Button
@@ -640,54 +709,80 @@ export default function LuaModulesPage() {
           <Braces /> 代码与配置
           {detailsOpen ? <ChevronRight /> : <ChevronLeft />}
         </Button>
-        <Button variant="outline" onClick={run} disabled={running || !selectedId}>
-          <Play /> {running ? "运行中" : "运行"}
-        </Button>
-        <Select
-          value={physicalDeviceId}
-          onValueChange={(value) => {
-            setPhysicalDeviceId(value);
-            setPhysicalRunId(undefined);
-          }}
-        >
-          <SelectTrigger className="w-44">
-            <SelectValue placeholder="选择物理设备" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="none">选择物理设备</SelectItem>
-            {(physicalDevicesQuery.data ?? []).map((device) => (
-              <SelectItem key={device.deviceId} value={device.deviceId}>
-                {device.displayName} · {device.online ? "在线" : "离线"}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
         <Button
           variant="outline"
-          onClick={runOnPhysicalDevice}
+          onClick={() =>
+            projectId
+              ? runOnProjectTarget()
+              : void run(simulatorSessionId === "none" ? undefined : simulatorSessionId)
+          }
           disabled={
-            physicalDeviceId === "none" ||
-            !editor.draftCode.trim() ||
-            createDeviceRunMutation.isPending
+            running ||
+            !selectedId ||
+            (project?.runtimeTarget === "device" && createDeviceRunMutation.isPending)
           }
         >
-          <RadioTower />
-          {createDeviceRunMutation.isPending ? "发送中" : "发送并运行"}
+          <Play /> {running ? "运行中" : "运行"}
         </Button>
-        {selected?.isPublished && (
+        {!projectId && (
+          <>
+            <Select
+              value={physicalDeviceId}
+              onValueChange={(value) => {
+                setPhysicalDeviceId(value);
+                setPhysicalRunId(undefined);
+              }}
+            >
+              <SelectTrigger className="w-44">
+                <SelectValue placeholder="选择物理设备" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">选择物理设备</SelectItem>
+                {(physicalDevicesQuery.data ?? []).map((device) => (
+                  <SelectItem key={device.deviceId} value={device.deviceId}>
+                    {device.displayName} · {device.online ? "在线" : "离线"}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Button
+              variant="outline"
+              onClick={runOnPhysicalDevice}
+              disabled={
+                physicalDeviceId === "none" ||
+                !editor.draftCode.trim() ||
+                createDeviceRunMutation.isPending
+              }
+            >
+              <RadioTower />
+              {createDeviceRunMutation.isPending ? "发送中" : "发送并运行"}
+            </Button>
+          </>
+        )}
+        {!projectId && selected?.isPublished && (
           <Button variant="outline" onClick={() => unpublishMutation.mutate(selected.id)}>
             取消发布
           </Button>
         )}
-        <Button onClick={publish} disabled={!selectedId || publishMutation.isPending}>
-          <Rocket /> {selected?.isPublished ? "重新发布" : "发布"}
-        </Button>
+        {!projectId && (
+          <Button onClick={publish} disabled={!selectedId || publishMutation.isPending}>
+            <Rocket /> {selected?.isPublished ? "重新发布" : "发布"}
+          </Button>
+        )}
       </header>
 
       <div className="relative flex min-h-0 flex-1 overflow-hidden">
+        {fileSidebarOpen && (
+          <button
+            type="button"
+            aria-label="关闭模块列表"
+            className="absolute inset-0 z-10 bg-black/20 md:hidden"
+            onClick={() => setFileSidebarOpen(false)}
+          />
+        )}
         <aside
-          className={`bg-background flex shrink-0 flex-col border-r shadow-sm transition-[width] duration-200 max-md:absolute max-md:inset-y-0 max-md:left-0 max-md:z-20 ${
-            fileSidebarOpen ? "w-60" : "w-14"
+          className={`bg-background flex shrink-0 flex-col border-r shadow-sm transition-[width,transform] duration-200 max-md:absolute max-md:inset-y-0 max-md:left-0 max-md:z-20 max-md:w-60 ${
+            fileSidebarOpen ? "w-60" : "w-14 max-md:-translate-x-full"
           }`}
         >
           <div
@@ -705,7 +800,9 @@ export default function LuaModulesPage() {
               {fileSidebarOpen ? <PanelLeftClose /> : <PanelLeftOpen />}
             </Button>
           </div>
-          <div className={fileSidebarOpen ? "p-3" : "flex justify-center py-3"}>
+          <div
+            className={fileSidebarOpen ? "grid gap-2 p-3" : "flex flex-col items-center gap-2 py-3"}
+          >
             <Button
               className={fileSidebarOpen ? "w-full" : undefined}
               variant="outline"
@@ -720,6 +817,19 @@ export default function LuaModulesPage() {
               <Plus />
               {fileSidebarOpen && "新建模块"}
             </Button>
+            {projectId && (
+              <Button
+                className={fileSidebarOpen ? "w-full" : undefined}
+                variant="ghost"
+                size={fileSidebarOpen ? "default" : "icon"}
+                title="导入未归属模块"
+                disabled={generating}
+                onClick={() => setImportModuleDialogOpen(true)}
+              >
+                <FolderInput />
+                {fileSidebarOpen && "导入模块"}
+              </Button>
+            )}
           </div>
           <div
             className={`min-h-0 flex-1 space-y-1 overflow-y-auto ${fileSidebarOpen ? "px-3 pb-3" : "px-2 pb-3"}`}
@@ -739,10 +849,12 @@ export default function LuaModulesPage() {
                 {fileSidebarOpen && (
                   <>
                     <span className="min-w-0 flex-1 truncate">{module.name}</span>
-                    {module.isPublished && <span className="size-2 rounded-full bg-emerald-500" />}
+                    {!projectId && module.isPublished && (
+                      <span className="size-2 rounded-full bg-emerald-500" />
+                    )}
                   </>
                 )}
-                {!fileSidebarOpen && module.isPublished && (
+                {!projectId && !fileSidebarOpen && module.isPublished && (
                   <span className="absolute top-1.5 right-1.5 size-1.5 rounded-full bg-emerald-500" />
                 )}
               </button>
@@ -751,7 +863,16 @@ export default function LuaModulesPage() {
         </aside>
 
         <main className="flex min-w-0 flex-1 flex-col">
-          <div className="flex h-14 shrink-0 items-center gap-3 border-b px-5">
+          <div className="flex min-h-14 shrink-0 flex-wrap items-center gap-2 border-b px-3 py-2 md:h-14 md:flex-nowrap md:gap-3 md:px-5 md:py-0">
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              className="md:hidden"
+              onClick={() => setFileSidebarOpen(true)}
+              title="打开模块列表"
+            >
+              <PanelLeftOpen />
+            </Button>
             <Sparkles className="text-primary size-5" />
             <div className="mr-auto min-w-0">
               <h2 className="text-sm font-semibold">AI 模块助手</h2>
@@ -762,11 +883,12 @@ export default function LuaModulesPage() {
               onClick={() => void clearMessages()}
               disabled={!selectedId || messages.length === 0 || generating}
               title="清空当前模块的对话记录"
+              className="max-md:size-8 max-md:p-0"
             >
-              <Trash2 /> 清空对话
+              <Trash2 /> <span className="max-md:sr-only">清空对话</span>
             </Button>
             <Select value={modelId} onValueChange={setModelId}>
-              <SelectTrigger className="w-56">
+              <SelectTrigger className="w-56 max-md:order-2 max-md:w-full">
                 <SelectValue placeholder="选择模型" />
               </SelectTrigger>
               <SelectContent>
@@ -958,7 +1080,9 @@ export default function LuaModulesPage() {
                       variant="ghost"
                       size="sm"
                       className="h-6 px-1.5 text-xs"
-                      onClick={() => navigate("/simulator")}
+                      onClick={() =>
+                        navigate(projectId ? `/programming/${projectId}/simulator` : "/simulator")
+                      }
                     >
                       <Cpu className="size-3" /> 打开硬件仿真
                     </Button>
@@ -969,7 +1093,7 @@ export default function LuaModulesPage() {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="none">不使用仿真设备</SelectItem>
-                      {(simulatorSessionsQuery.data ?? []).map((session) => (
+                      {simulatorSessions.map((session) => (
                         <SelectItem key={session.id} value={session.id}>
                           {session.name} · {session.id.slice(0, 8)}
                         </SelectItem>
@@ -1119,6 +1243,51 @@ export default function LuaModulesPage() {
               </Button>
             </DialogFooter>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={importModuleDialogOpen} onOpenChange={setImportModuleDialogOpen}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>导入 Lua 模块</DialogTitle>
+            <DialogDescription>选择一个尚未归属工程的模块。</DialogDescription>
+          </DialogHeader>
+          <ScrollArea className="max-h-80 border">
+            <div className="divide-y">
+              {unassignedModulesQuery.isLoading ? (
+                <div className="text-muted-foreground p-6 text-center text-sm">正在加载模块</div>
+              ) : (unassignedModulesQuery.data?.items.length ?? 0) === 0 ? (
+                <div className="text-muted-foreground p-6 text-center text-sm">暂无可导入模块</div>
+              ) : (
+                unassignedModulesQuery.data?.items.map((module) => (
+                  <div key={module.id} className="flex items-center gap-3 px-4 py-3">
+                    <FileCode2 className="text-muted-foreground size-4 shrink-0" />
+                    <div className="min-w-0 flex-1">
+                      <div className="truncate text-sm font-medium">{module.name}</div>
+                      <div className="text-muted-foreground truncate text-xs">
+                        {module.description || "无说明"}
+                      </div>
+                    </div>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      disabled={!projectId || importMutation.isPending}
+                      onClick={() =>
+                        projectId && importMutation.mutate({ projectId, moduleId: module.id })
+                      }
+                    >
+                      <FolderInput /> 导入
+                    </Button>
+                  </div>
+                ))
+              )}
+            </div>
+          </ScrollArea>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setImportModuleDialogOpen(false)}>
+              关闭
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>

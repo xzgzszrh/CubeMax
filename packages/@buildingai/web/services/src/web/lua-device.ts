@@ -45,6 +45,7 @@ export interface LuaDeviceRunItem {
     id: string;
     deviceId: string;
     moduleId?: string | null;
+    projectId?: string | null;
     name: string;
     sourceSha256: string;
     params: Record<string, unknown>;
@@ -96,6 +97,7 @@ export function createLuaDeviceRun(
     dto: {
         name: string;
         moduleId?: string;
+        projectId?: string;
         source: string;
         params: Record<string, unknown>;
         requiredCapabilities?: string[];

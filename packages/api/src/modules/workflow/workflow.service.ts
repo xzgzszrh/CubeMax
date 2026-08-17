@@ -97,11 +97,9 @@ export class WorkflowService {
     async publish(id: string, userId: string): Promise<AiWorkflow> {
         const workflow = await this.findOne(id, userId);
         this.assertPublishableSchema(workflow.schema);
-
-        if (workflow.isPublished) return workflow;
-
         workflow.isPublished = true;
         workflow.publishedAt = new Date();
+        workflow.publishedSchema = workflow.schema;
 
         return this.workflowRepository.save(workflow);
     }
@@ -118,7 +116,7 @@ export class WorkflowService {
 
     async findPublished(id: string, userId: string): Promise<PublishedWorkflowResult> {
         const workflow = await this.findOne(id, userId);
-        if (!workflow.isPublished || !workflow.schema || !workflow.publishedAt) {
+        if (!workflow.isPublished || !workflow.publishedSchema || !workflow.publishedAt) {
             throw HttpErrorFactory.badRequest("该工作流当前未发布");
         }
 
@@ -126,12 +124,12 @@ export class WorkflowService {
             id: workflow.id,
             name: workflow.name,
             description: workflow.description,
-            schema: workflow.schema,
+            schema: workflow.publishedSchema,
             publishedAt: workflow.publishedAt,
         };
     }
 
-    private assertPublishableSchema(schema?: object): void {
+    assertPublishableSchema(schema?: object): void {
         if (!isRecord(schema) || !Array.isArray(schema.nodes) || !Array.isArray(schema.edges)) {
             throw HttpErrorFactory.badRequest("工作流结构不完整，无法发布");
         }
@@ -171,6 +169,9 @@ export class WorkflowService {
 
     async remove(id: string, userId: string): Promise<void> {
         const workflow = await this.findOne(id, userId);
+        if (workflow.projectId) {
+            throw HttpErrorFactory.badRequest("主流程由编程工程管理，请从工程列表删除");
+        }
         await this.workflowRepository.remove(workflow);
     }
 }

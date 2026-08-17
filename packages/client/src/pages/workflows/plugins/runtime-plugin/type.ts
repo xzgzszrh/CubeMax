@@ -6,6 +6,9 @@
 export interface RuntimePluginOptions {
   mode: "server";
   serverConfig: ServerConfig;
+  runtimeContext?: {
+    projectId?: string;
+  };
 }
 
 export interface ServerConfig {

@@ -20,6 +20,7 @@ export * from "./extension";
 export * from "./mcp";
 export * from "./membership";
 export * from "./organization";
+export * from "./programming-project";
 export * from "./recharge";
 export * from "./tag";
 export * from "./task-award";

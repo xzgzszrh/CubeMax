@@ -13,6 +13,7 @@ import type {
 import { Body, Get, Post, Put, Query } from "@nestjs/common";
 
 import { WorkflowService } from "./workflow.service";
+import { ProgrammingProjectService } from "./programming-project.service";
 import { WorkflowEmbeddedExecutorService } from "./workflow-embedded-executor.service";
 import { WorkflowLlmExecutorService } from "./workflow-llm-executor.service";
 import { WorkflowLuaExecutorService } from "./workflow-lua-executor.service";
@@ -43,6 +44,7 @@ export class WorkflowRuntimeController {
         private readonly workflowLlmExecutorService: WorkflowLlmExecutorService,
         private readonly workflowLuaExecutorService: WorkflowLuaExecutorService,
         private readonly workflowService: WorkflowService,
+        private readonly programmingProjectService: ProgrammingProjectService,
     ) {}
 
     private async loadConfiguredRuntime(): Promise<WorkflowRuntimeJsModule> {
@@ -62,9 +64,7 @@ export class WorkflowRuntimeController {
         const taskDto = this.workflowEmbeddedExecutorService.prepareTaskDto(dto);
         return TaskValidateAPI({
             ...taskDto,
-            context: {
-                userId: user.id,
-            },
+            context: await this.resolveDraftContext(dto, user.id),
         });
     }
 
@@ -77,9 +77,7 @@ export class WorkflowRuntimeController {
         const taskDto = this.workflowEmbeddedExecutorService.prepareTaskDto(dto);
         return TaskRunAPI({
             ...taskDto,
-            context: {
-                userId: user.id,
-            },
+            context: await this.resolveDraftContext(dto, user.id),
         });
     }
 
@@ -88,13 +86,32 @@ export class WorkflowRuntimeController {
         @Body() dto: PublishedWorkflowRuntimeTaskDto,
         @Playground() user: UserPlayground,
     ): Promise<TaskRunOutput> {
-        const publishedWorkflow = await this.workflowService.findPublished(dto.workflowId, user.id);
         const runtime = await this.loadConfiguredRuntime();
+        const workflow = await this.workflowService.findOne(dto.workflowId, user.id);
+        const projectPublished = workflow.projectId
+            ? await this.programmingProjectService.findPublished(workflow.projectId, user.id)
+            : undefined;
+        const publishedWorkflow = projectPublished
+            ? {
+                  schema: projectPublished.snapshot.workflow.schema,
+                  context: {
+                      userId: user.id,
+                      projectId: projectPublished.project.id,
+                      runtimeTarget: projectPublished.snapshot.runtime.target,
+                      simulatorSessionId: projectPublished.snapshot.runtime.simulatorSessionId,
+                      deviceId: projectPublished.snapshot.runtime.deviceId,
+                      publishedSnapshot: projectPublished.snapshot,
+                  },
+              }
+            : {
+                  ...(await this.workflowService.findPublished(dto.workflowId, user.id)),
+                  context: { userId: user.id },
+              };
         const taskDto = this.workflowEmbeddedExecutorService.prepareTaskDto({
             schema: JSON.stringify(publishedWorkflow.schema),
             inputs: dto.inputs,
         });
-        const context = { userId: user.id };
+        const context = publishedWorkflow.context;
         const validation = await runtime.TaskValidateAPI({ ...taskDto, context });
         if (!validation.valid) {
             throw HttpErrorFactory.badRequest(
@@ -103,6 +120,15 @@ export class WorkflowRuntimeController {
         }
 
         return runtime.TaskRunAPI({ ...taskDto, context });
+    }
+
+    private async resolveDraftContext(dto: WorkflowRuntimeTaskDto, userId: string) {
+        if (!dto.context?.projectId) return { userId };
+        const selection = await this.programmingProjectService.getRuntimeSelection(
+            dto.context.projectId,
+            userId,
+        );
+        return { userId, ...selection };
     }
 
     @Get("report")

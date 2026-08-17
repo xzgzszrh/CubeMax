@@ -16,6 +16,14 @@ export { AiProvider } from "./ai-provider.entity";
 export { AiUserMcpServer } from "./ai-user-mcp-server.entity";
 export { UserMemory } from "./ai-user-memory.entity";
 export { AiWorkflow } from "./ai-workflow.entity";
+export {
+    ProgrammingProject,
+    ProgrammingProjectTool,
+    type ProgrammingProjectLuaSnapshot,
+    type ProgrammingProjectPublishedSnapshot,
+    type ProgrammingProjectToolSnapshot,
+    type ProgrammingRuntimeTarget,
+} from "./programming-project.entity";
 export { Analyse, AnalyseActionType } from "./analyse.entity";
 export { CardBatch, CardRedeemType } from "./card-batch.entity";
 export { CardKeyStatus, CDK } from "./cdk.entity";

@@ -33,5 +33,6 @@ export const createRuntimePlugin = definePluginCreator<RuntimePluginOptions, Plu
 
     const serverClient = ctx.get<WorkflowRuntimeServerClient>(WorkflowRuntimeClient);
     serverClient.init(options.serverConfig);
+    ctx.get(WorkflowRuntimeService).setRuntimeContext(options.runtimeContext);
   },
 });

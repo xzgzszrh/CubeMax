@@ -29,6 +29,7 @@ import {
 import { defaultFormMeta } from "../default-form-meta";
 import { resolveMcpToolInputUi } from "./tool-input-ui/registry";
 import { McpToolValueInput } from "./tool-input-ui/tool-value-input";
+import { useOptionalProgrammingProject } from "../../../programming/context";
 
 function getServerLabel(server: McpServer): string {
   return server.alias || server.name;
@@ -45,10 +46,28 @@ function findTool(servers: McpServer[], serverId?: string, toolName?: string): M
     ?.tools?.find((tool) => tool.name === toolName);
 }
 
+function useAvailableMcpServers() {
+  const project = useOptionalProgrammingProject();
+  const query = useMcpServersAllQuery({ isDisabled: false });
+  const servers = useMemo(() => {
+    if (!project) return query.data ?? [];
+    const allowed = new Set(
+      project.tools.map((tool) => `${tool.mcpServerId}\u0000${tool.toolName}`),
+    );
+    return (query.data ?? [])
+      .map((server) => ({
+        ...server,
+        tools: (server.tools ?? []).filter((tool) => allowed.has(`${server.id}\u0000${tool.name}`)),
+      }))
+      .filter((server) => (server.tools?.length ?? 0) > 0);
+  }, [project, query.data]);
+  return { ...query, data: servers };
+}
+
 function McpConfig() {
   const { readonly } = useNodeRenderContext();
   const isSidebar = useIsSidebar();
-  const { data: servers = [], isLoading } = useMcpServersAllQuery({ isDisabled: false });
+  const { data: servers = [], isLoading } = useAvailableMcpServers();
 
   const serverOptions = useMemo(
     () =>
@@ -217,7 +236,7 @@ function McpOptions() {
 }
 
 function McpInputs() {
-  const { data: servers = [] } = useMcpServersAllQuery({ isDisabled: false });
+  const { data: servers = [] } = useAvailableMcpServers();
 
   return (
     <Field<string | undefined> name="mcpServerId">

@@ -51,7 +51,7 @@ export const DemoTools = () => {
 
   return (
     <ToolsLayer className="demo-free-layout-tools">
-      <LeftToolSection aria-label="工作流工具">
+      <LeftToolSection aria-label="编程工具">
         <AddNode compact disabled={playground.config.readonly} />
         <Save compact disabled={playground.config.readonly} />
         <DownloadTool />
@@ -65,7 +65,7 @@ export const DemoTools = () => {
         <TestRunButton compact disabled={playground.config.readonly} />
       </BottomCenterToolSection>
 
-      <TopRightToolSection aria-label="发布工作流">
+      <TopRightToolSection aria-label="发布编程工程">
         <SubmitAssignmentTool disabled={playground.config.readonly} />
         <PublishTool disabled={playground.config.readonly} />
       </TopRightToolSection>

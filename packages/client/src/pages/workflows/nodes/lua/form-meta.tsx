@@ -13,6 +13,7 @@ import {
 import { useIsSidebar, useNodeRenderContext } from "../../hooks";
 import type { JsonSchema } from "../../typings";
 import { defaultFormMeta } from "../default-form-meta";
+import { useOptionalProgrammingProject } from "../../../programming/context";
 
 function createInputValues(schema: JsonSchema): Record<string, IFlowValue> {
   return Object.fromEntries(
@@ -26,7 +27,10 @@ function createInputValues(schema: JsonSchema): Record<string, IFlowValue> {
 function LuaModuleSelect() {
   const isSidebar = useIsSidebar();
   const { readonly } = useNodeRenderContext();
-  const { data, isLoading } = useLuaModulesQuery({ isPublished: true });
+  const project = useOptionalProgrammingProject();
+  const { data, isLoading } = useLuaModulesQuery(
+    project ? { projectId: project.id } : { isPublished: true },
+  );
   const modules = data?.items ?? [];
 
   return (
@@ -51,17 +55,23 @@ function LuaModuleSelect() {
                         <Select
                           value={field.value}
                           disabled={readonly || isLoading}
-                          placeholder={isLoading ? "加载中..." : "选择已发布模块"}
-                          emptyContent="暂无已发布模块"
+                          placeholder={isLoading ? "加载中..." : "选择 Lua 模块"}
+                          emptyContent={project ? "当前工程暂无 Lua 模块" : "暂无已发布模块"}
                           optionList={modules.map((item) => ({ label: item.name, value: item.id }))}
                           onChange={(value) => {
                             const next = modules.find((item) => item.id === value);
                             field.onChange(value as string);
                             if (!next) return;
-                            const inputs = (next.publishedInputSchema ??
-                              next.inputSchema) as JsonSchema;
-                            const outputs = (next.publishedOutputSchema ??
-                              next.outputSchema) as JsonSchema;
+                            const inputs = (
+                              project
+                                ? next.inputSchema
+                                : (next.publishedInputSchema ?? next.inputSchema)
+                            ) as JsonSchema;
+                            const outputs = (
+                              project
+                                ? next.outputSchema
+                                : (next.publishedOutputSchema ?? next.outputSchema)
+                            ) as JsonSchema;
                             inputsField.onChange(inputs);
                             valuesField.onChange(createInputValues(inputs));
                             outputsField.onChange(outputs);

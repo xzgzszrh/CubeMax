@@ -3,7 +3,8 @@ import GlobalError from "@buildingai/ui/components/exception/global-error";
 import NotFoundPage from "@buildingai/ui/components/exception/not-found-page";
 import MainLayout from "@buildingai/ui/layouts/main/index";
 import DefaultLayout from "@buildingai/ui/layouts/styles/default/index";
-import { createBrowserRouter } from "react-router-dom";
+import { useWorkflowDetailQuery } from "@buildingai/services/web";
+import { createBrowserRouter, Navigate, useParams } from "react-router-dom";
 
 import AgentsIndexPage from "@/pages/agents";
 import AgentChatPage from "@/pages/agents/detail/chat";
@@ -19,8 +20,10 @@ import DatasetsIndexPage from "@/pages/datasets";
 import DatasetsLayout from "@/pages/datasets/_layouts";
 import DatasetsDetailPage from "@/pages/datasets/detail";
 import InstallPage from "@/pages/install";
-import WorkflowEditorApp from "@/pages/workflows/app";
-import WorkflowsIndexPage from "@/pages/workflows/index";
+import ProgrammingCanvasPage from "@/pages/programming/program";
+import ProgrammingProjectsPage from "@/pages/programming";
+import ProgrammingToolsPage from "@/pages/programming/tools";
+import ProgrammingWorkspaceLayout from "@/pages/programming/layout";
 import LuaModulesPage from "@/pages/lua";
 import SimulatorPage from "@/pages/simulator";
 
@@ -35,6 +38,21 @@ import { LoginPage } from "../pages/login";
 import { OAuthCallbackPage } from "../pages/login/oauth-callback";
 import MyAssignmentsPage from "../pages/my-assignments";
 import AlipayReturnPage from "../pages/payment/alipay-return";
+
+function LegacyWorkflowRedirect() {
+  const { id } = useParams<{ id: string }>();
+  const workflowQuery = useWorkflowDetailQuery(id);
+  if (!id) return <Navigate to="/programming" replace />;
+  if (workflowQuery.isLoading) {
+    return (
+      <div className="text-muted-foreground flex h-full items-center justify-center text-sm">
+        正在打开工程
+      </div>
+    );
+  }
+  const projectId = workflowQuery.data?.projectId ?? id;
+  return <Navigate to={`/programming/${projectId}/program`} replace />;
+}
 
 export const router = createBrowserRouter([
   {
@@ -202,34 +220,61 @@ export const router = createBrowserRouter([
             element: <AgentsWorkspacePage />,
           },
           {
-            path: "/workflows",
+            path: "/programming",
             element: (
               <AuthGuard>
-                <WorkflowsIndexPage />
+                <ProgrammingProjectsPage />
               </AuthGuard>
             ),
+          },
+          {
+            path: "/programming/:projectId",
+            element: (
+              <AuthGuard>
+                <ProgrammingWorkspaceLayout />
+              </AuthGuard>
+            ),
+            children: [
+              {
+                index: true,
+                element: <Navigate to="program" replace />,
+              },
+              {
+                path: "program",
+                element: <ProgrammingCanvasPage />,
+              },
+              {
+                path: "lua",
+                element: <LuaModulesPage />,
+              },
+              {
+                path: "simulator",
+                element: <SimulatorPage />,
+              },
+              {
+                path: "tools",
+                element: <ProgrammingToolsPage />,
+              },
+            ],
+          },
+          // Keep old bookmarks usable while the product vocabulary moves to 编程。
+          {
+            path: "/workflows",
+            element: <Navigate to="/programming" replace />,
           },
           {
             path: "/lua",
-            element: (
-              <AuthGuard>
-                <LuaModulesPage />
-              </AuthGuard>
-            ),
+            element: <Navigate to="/programming" replace />,
           },
           {
             path: "/simulator",
-            element: (
-              <AuthGuard>
-                <SimulatorPage />
-              </AuthGuard>
-            ),
+            element: <Navigate to="/programming" replace />,
           },
           {
             path: "/workflows/:id",
             element: (
               <AuthGuard>
-                <WorkflowEditorApp />
+                <LegacyWorkflowRedirect />
               </AuthGuard>
             ),
           },

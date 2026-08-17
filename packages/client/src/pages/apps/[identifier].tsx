@@ -1,4 +1,5 @@
 import { fetchWebExtensionDetail, getActiveOrganizationId } from "@buildingai/services/web";
+import { useAuthStore } from "@buildingai/stores";
 import NotFoundPage from "@buildingai/ui/components/exception/not-found-page";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -40,6 +41,7 @@ export default function AppIframePage({ basePath = "/apps", mode = "app" }: AppI
   const navigate = useNavigate();
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const isIframeNavigatingRef = useRef(false);
+  const token = useAuthStore((state) => state.auth.token);
   const [extensionRouteNotFoundUrl, setExtensionRouteNotFoundUrl] = useState<string | null>(null);
   const {
     error: extensionLoadError,
@@ -61,11 +63,12 @@ export default function AppIframePage({ basePath = "/apps", mode = "app" }: AppI
     // 开发环境宿主与扩展是不同端口，读不到，所以由宿主显式带过去。
     const organizationId = getActiveOrganizationId();
     if (organizationId) search.set("_org", organizationId);
+    if (import.meta.env.DEV && token) search.set("_t", btoa(token));
     const query = search.toString();
     return `${getExtensionBaseUrl()}/extension/${identifier}${subPath}${
       query ? `?${query}` : ""
     }${location.hash}`;
-  }, [identifier, wildcard, location.search, location.hash, mode]);
+  }, [identifier, wildcard, location.search, location.hash, mode, token]);
 
   // Listen for navigation messages from iframe (iframe → parent sync)
   useEffect(() => {

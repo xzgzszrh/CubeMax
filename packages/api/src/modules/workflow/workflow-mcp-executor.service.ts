@@ -6,6 +6,8 @@ import {
     AiUserMcpServer,
     McpCommunicationType,
     McpServerType,
+    ProgrammingProjectTool,
+    type ProgrammingProjectPublishedSnapshot,
 } from "@buildingai/db/entities";
 import { Repository } from "@buildingai/db/typeorm";
 import { BuiltinMcpRegistryService } from "@modules/ai/mcp/services/builtin-mcp-registry.service";
@@ -29,6 +31,10 @@ type WorkflowMcpNodeData = {
 
 export type WorkflowMcpExecutorInput = {
     userId?: string;
+    runtimeContext?: {
+        projectId?: string;
+        publishedSnapshot?: unknown;
+    };
     node: {
         id: string;
         type: string;
@@ -55,6 +61,8 @@ export class WorkflowMcpExecutorService {
         private readonly mcpToolRepository: Repository<AiMcpTool>,
         @InjectRepository(AiUserMcpServer)
         private readonly userMcpServerRepository: Repository<AiUserMcpServer>,
+        @InjectRepository(ProgrammingProjectTool)
+        private readonly projectToolRepository: Repository<ProgrammingProjectTool>,
         private readonly builtinMcpRegistryService: BuiltinMcpRegistryService,
     ) {}
 
@@ -76,6 +84,8 @@ export class WorkflowMcpExecutorService {
         if (!toolName) {
             throw new Error("MCP tool is required");
         }
+
+        await this.assertProjectToolAccess(input, mcpServerId, toolName);
 
         const target = await this.resolveTarget(mcpServerId, toolName, userId);
 
@@ -111,6 +121,40 @@ export class WorkflowMcpExecutorService {
                 await client.close().catch(() => undefined);
             }
         }
+    }
+
+    private async assertProjectToolAccess(
+        input: WorkflowMcpExecutorInput,
+        mcpServerId: string,
+        toolName: string,
+    ): Promise<void> {
+        if (this.isEmbeddedBuiltinTool(mcpServerId)) return;
+        const snapshot = input.runtimeContext?.publishedSnapshot;
+        if (this.isPublishedSnapshot(snapshot)) {
+            const allowed = snapshot.tools.some(
+                (tool) => tool.mcpServerId === mcpServerId && tool.toolName === toolName,
+            );
+            if (!allowed) throw new Error(`MCP tool "${toolName}" is not included in published project`);
+            return;
+        }
+        if (!input.runtimeContext?.projectId) return;
+        const enabled = await this.projectToolRepository.findOne({
+            where: { projectId: input.runtimeContext.projectId, mcpServerId, toolName },
+        });
+        if (!enabled) throw new Error(`MCP tool "${toolName}" is not enabled for this project`);
+    }
+
+    private isEmbeddedBuiltinTool(mcpServerId: string): boolean {
+        return this.builtinMcpRegistryService.getServer(mcpServerId)?.key === "embedded";
+    }
+
+    private isPublishedSnapshot(value: unknown): value is ProgrammingProjectPublishedSnapshot {
+        return (
+            !!value &&
+            typeof value === "object" &&
+            (value as ProgrammingProjectPublishedSnapshot).version === 1 &&
+            Array.isArray((value as ProgrammingProjectPublishedSnapshot).tools)
+        );
     }
 
     /**

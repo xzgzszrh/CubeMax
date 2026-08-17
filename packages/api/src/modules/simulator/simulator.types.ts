@@ -36,6 +36,7 @@ export type SimulatorBoardType = (typeof SIMULATOR_BOARD_TYPES)[number];
 export type SimulatorSession = {
     id: string;
     userId: string;
+    projectId?: string;
     name: string;
     board: {
         type: SimulatorBoardType;

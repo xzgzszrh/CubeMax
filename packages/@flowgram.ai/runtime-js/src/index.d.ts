@@ -51,8 +51,17 @@ export type LLMExecutorHandler = (
 
 export declare const registerLLMExecutor: (executor: LLMExecutorHandler) => void;
 
+export type WorkflowRuntimeExecutorContext = {
+    projectId?: string;
+    runtimeTarget?: "local" | "simulator" | "device";
+    simulatorSessionId?: string;
+    deviceId?: string;
+    publishedSnapshot?: unknown;
+};
+
 export type MCPExecutorInput = {
     userId?: string;
+    runtimeContext?: WorkflowRuntimeExecutorContext;
     node: {
         id: string;
         type: string;
@@ -69,6 +78,7 @@ export declare const registerMCPExecutor: (executor: MCPExecutorHandler) => void
 
 export type LuaExecutorInput = {
     userId?: string;
+    runtimeContext?: WorkflowRuntimeExecutorContext;
     node: { id: string; type: string; data?: Record<string, unknown> };
     inputs: Record<string, unknown>;
 };

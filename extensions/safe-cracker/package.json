@@ -1,6 +1,6 @@
 {
     "name": "safe-cracker",
-    "version": "0.0.1",
+    "version": "0.0.2",
     "description": "课堂互动游戏：破解保险箱",
     "author": "BuildingAI Teams",
     "private": true,
@@ -22,6 +22,7 @@
         "./*": "./*"
     },
     "scripts": {
+        "build": "pnpm build:publish",
         "build:clean": "rimraf build .nuxt .output .temp",
         "dev:web": "vite build --watch",
         "dev:api": "cross-env NODE_ENV=development tsup --watch src/api",

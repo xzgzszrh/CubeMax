@@ -46,6 +46,7 @@ function getWorkflowRuntimeServerConfig(): ServerConfig {
 export function useEditorProps(
   initialData: FlowDocumentJSON,
   nodeRegistries: FlowNodeRegistry[],
+  projectId?: string,
 ): FreeLayoutProps {
   return useMemo<FreeLayoutProps>(
     () => ({
@@ -344,6 +345,7 @@ export function useEditorProps(
         createRuntimePlugin({
           mode: "server",
           serverConfig: getWorkflowRuntimeServerConfig(),
+          runtimeContext: projectId ? { projectId } : undefined,
         }),
 
         /**
@@ -357,6 +359,6 @@ export function useEditorProps(
         createPanelManagerPlugin(),
       ],
     }),
-    [initialData, nodeRegistries],
+    [initialData, nodeRegistries, projectId],
   );
 }

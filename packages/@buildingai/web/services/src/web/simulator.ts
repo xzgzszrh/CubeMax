@@ -2,6 +2,10 @@ import type { MutationOptionsUtil, QueryOptionsUtil } from "@buildingai/web-type
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { apiHttpClient } from "../base";
+import {
+    createProjectSimulatorSession,
+    listProjectSimulatorSessions,
+} from "./programming-project";
 
 const SIMULATOR_PATH = "/simulator/sessions";
 
@@ -32,6 +36,7 @@ export type SimulatorBoardType = "esp32-devkit-v1" | "cubecat-s3" | "cubecat-p4"
 
 export interface SimulatorSession {
     id: string;
+    projectId?: string;
     name: string;
     board: { type: SimulatorBoardType; name: string; voltage: 3.3 };
     revision: number;
@@ -69,14 +74,17 @@ export const simulatorQueryKeys = {
     session: (id: string | undefined) => ["simulator", "session", id] as const,
 };
 
-export function listSimulatorSessions(): Promise<SimulatorSession[]> {
-    return apiHttpClient.get(SIMULATOR_PATH);
+export function listSimulatorSessions(projectId?: string): Promise<SimulatorSession[]> {
+    return projectId ? listProjectSimulatorSessions(projectId) : apiHttpClient.get(SIMULATOR_PATH);
 }
 
 export function createSimulatorSession(
     input: CreateSimulatorSessionInput = {},
+    projectId?: string,
 ): Promise<SimulatorSession> {
-    return apiHttpClient.post(SIMULATOR_PATH, input);
+    return projectId
+        ? createProjectSimulatorSession(projectId, input)
+        : apiHttpClient.post(SIMULATOR_PATH, input);
 }
 
 export function getSimulatorSession(id: string): Promise<SimulatorSession> {
@@ -119,7 +127,19 @@ export function deleteSimulatorSession(id: string): Promise<void> {
 export function useSimulatorSessionsQuery(options?: QueryOptionsUtil<SimulatorSession[]>) {
     return useQuery({
         queryKey: simulatorQueryKeys.sessions(),
-        queryFn: listSimulatorSessions,
+        queryFn: () => listSimulatorSessions(),
+        ...options,
+    });
+}
+
+export function useProjectSimulatorSessionsQuery(
+    projectId: string | undefined,
+    options?: QueryOptionsUtil<SimulatorSession[]>,
+) {
+    return useQuery({
+        queryKey: [...simulatorQueryKeys.sessions(), projectId],
+        queryFn: () => listSimulatorSessions(projectId),
+        enabled: !!projectId,
         ...options,
     });
 }
@@ -153,8 +173,9 @@ function useSimulatorMutation<TData, TVariables>(
 
 export function useCreateSimulatorSessionMutation(
     options?: MutationOptionsUtil<SimulatorSession, CreateSimulatorSessionInput | undefined>,
+    projectId?: string,
 ) {
-    return useSimulatorMutation((input) => createSimulatorSession(input), options);
+    return useSimulatorMutation((input) => createSimulatorSession(input, projectId), options);
 }
 
 export function useResetSimulatorSessionMutation(

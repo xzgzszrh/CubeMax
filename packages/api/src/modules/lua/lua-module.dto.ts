@@ -37,6 +37,15 @@ export class QueryLuaModuleDto {
     @Transform(({ value }) => value === true || value === "true")
     @IsBoolean()
     isPublished?: boolean;
+
+    @IsOptional()
+    @IsString()
+    projectId?: string;
+
+    @IsOptional()
+    @Transform(({ value }) => value === true || value === "true")
+    @IsBoolean()
+    unassigned?: boolean;
 }
 
 export class LuaCodeDiffLineDto {

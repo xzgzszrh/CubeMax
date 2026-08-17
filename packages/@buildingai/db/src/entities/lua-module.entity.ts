@@ -30,6 +30,7 @@ export type LuaCodeDiff = {
 
 @Entity("lua_module")
 @Index(["createBy", "name"])
+@Index(["projectId", "updatedAt"])
 export class LuaModule extends BaseEntity {
     @Column({ type: "varchar", length: 100 })
     name: string;
@@ -69,4 +70,7 @@ export class LuaModule extends BaseEntity {
 
     @Column({ name: "create_by", type: "varchar", length: 255 })
     createBy: string;
+
+    @Column({ name: "project_id", type: "uuid", nullable: true })
+    projectId?: string | null;
 }

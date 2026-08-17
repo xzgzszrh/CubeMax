@@ -88,6 +88,7 @@ export class LuaDeviceConnection extends BaseEntity {
 @Entity("lua_device_run")
 @Index(["deviceId", "createdAt"])
 @Index(["createBy", "createdAt"])
+@Index(["projectId", "createdAt"])
 export class LuaDeviceRun extends BaseEntity {
     @Column({ name: "device_id", type: "varchar", length: 36 })
     deviceId: string;
@@ -97,6 +98,9 @@ export class LuaDeviceRun extends BaseEntity {
 
     @Column({ name: "module_id", type: "uuid", nullable: true })
     moduleId?: string | null;
+
+    @Column({ name: "project_id", type: "uuid", nullable: true })
+    projectId?: string | null;
 
     @Column({ type: "varchar", length: 100 })
     name: string;

@@ -81,6 +81,9 @@ export interface WorkflowItem {
     name: string;
     description?: string | null;
     schema?: Record<string, unknown> | null;
+    publishedSchema?: Record<string, unknown> | null;
+    projectId?: string | null;
+    isMain: boolean;
     isPublished: boolean;
     publishedAt?: string | null;
     createBy: string;

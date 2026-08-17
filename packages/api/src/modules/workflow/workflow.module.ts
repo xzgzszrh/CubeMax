@@ -7,13 +7,20 @@ import {
     AiProvider,
     AiUserMcpServer,
     AiWorkflow,
+    LuaModule,
+    ProgrammingProject,
+    ProgrammingProjectTool,
     Secret,
     SecretTemplate,
 } from "@buildingai/db/entities";
 import { AiMcpModule } from "@modules/ai/mcp/ai-mcp.module";
 import { LuaModuleModule } from "@modules/lua/lua.module";
+import { LuaDeviceModule } from "@modules/lua-device/lua-device.module";
 import { Module } from "@nestjs/common";
 
+import { SimulatorModule } from "../simulator/simulator.module";
+import { ProgrammingProjectController } from "./programming-project.controller";
+import { ProgrammingProjectService } from "./programming-project.service";
 import { WorkflowController } from "./workflow.controller";
 import { WorkflowService } from "./workflow.service";
 import { WorkflowEmbeddedExecutorService } from "./workflow-embedded-executor.service";
@@ -26,8 +33,13 @@ import { WorkflowRuntimeController } from "./workflow-runtime.controller";
     imports: [
         AiMcpModule,
         LuaModuleModule,
+        LuaDeviceModule,
+        SimulatorModule,
         TypeOrmModule.forFeature([
             AiWorkflow,
+            ProgrammingProject,
+            ProgrammingProjectTool,
+            LuaModule,
             AiMcpServer,
             AiMcpTool,
             AiUserMcpServer,
@@ -37,9 +49,10 @@ import { WorkflowRuntimeController } from "./workflow-runtime.controller";
             SecretTemplate,
         ]),
     ],
-    controllers: [WorkflowController, WorkflowRuntimeController],
+    controllers: [WorkflowController, ProgrammingProjectController, WorkflowRuntimeController],
     providers: [
         WorkflowService,
+        ProgrammingProjectService,
         WorkflowMcpExecutorService,
         WorkflowEmbeddedExecutorService,
         WorkflowLlmExecutorService,

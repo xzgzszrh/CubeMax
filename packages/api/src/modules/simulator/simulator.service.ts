@@ -27,10 +27,14 @@ export class SimulatorService {
     private readonly sessions = new Map<string, SimulatorSession>();
     private nextSerialEntryId = 1;
 
-    list(userId: string): SimulatorSession[] {
+    list(userId: string, projectId?: string): SimulatorSession[] {
         this.removeExpiredSessions();
         return Array.from(this.sessions.values())
-            .filter((session) => session.userId === userId)
+            .filter(
+                (session) =>
+                    session.userId === userId &&
+                    (projectId === undefined || session.projectId === projectId),
+            )
             .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
     }
 
@@ -38,8 +42,9 @@ export class SimulatorService {
         userId: string,
         name?: string,
         boardType: SimulatorBoardType = "esp32-devkit-v1",
+        projectId?: string,
     ): SimulatorSession {
-        const existing = this.list(userId);
+        const existing = this.list(userId, projectId);
         if (existing.length >= MAX_SESSIONS_PER_USER) {
             this.sessions.delete(existing.at(-1)!.id);
         }
@@ -48,6 +53,7 @@ export class SimulatorService {
         const session: SimulatorSession = {
             id: randomUUID(),
             userId,
+            projectId,
             name: name?.trim() || `ESP32 仿真板 ${existing.length + 1}`,
             board: { ...BOARD_DEFINITIONS[boardType] },
             revision: 1,
@@ -75,6 +81,20 @@ export class SimulatorService {
             throw HttpErrorFactory.notFound("仿真会话不存在");
         }
         return session;
+    }
+
+    getForProjectUser(id: string, userId: string, projectId: string): SimulatorSession {
+        const session = this.getForUser(id, userId);
+        if (session.projectId !== projectId) {
+            throw HttpErrorFactory.notFound("当前工程的仿真会话不存在");
+        }
+        return session;
+    }
+
+    removeForProject(projectId: string, userId: string): void {
+        for (const [id, session] of this.sessions) {
+            if (session.projectId === projectId && session.userId === userId) this.sessions.delete(id);
+        }
     }
 
     get(id: string): SimulatorSession {

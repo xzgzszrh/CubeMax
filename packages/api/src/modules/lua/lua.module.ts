@@ -12,6 +12,6 @@ import { LuaRuntimeService } from "./lua-runtime.service";
     imports: [TypeOrmModule.forFeature([LuaModule, AiModel]), SimulatorModule],
     controllers: [LuaModuleController],
     providers: [LuaModuleService, LuaRuntimeService, LuaCodeAssistantService],
-    exports: [LuaModuleService],
+    exports: [LuaModuleService, LuaRuntimeService],
 })
 export class LuaModuleModule {}

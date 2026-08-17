@@ -192,6 +192,7 @@ export class LuaDeviceGatewayService implements OnApplicationBootstrap, OnApplic
                 deviceId,
                 createBy: userId,
                 moduleId: dto.moduleId,
+                projectId: dto.projectId,
                 name: dto.name.trim(),
                 source: dto.source,
                 sourceSha256: sha256(source),
@@ -232,6 +233,18 @@ export class LuaDeviceGatewayService implements OnApplicationBootstrap, OnApplic
         }
         await this.runRepository.save(run);
         return this.serializeRun(run);
+    }
+
+    async waitForRun(userId: string, deviceId: string, runId: string, maxWaitMs = 65_000) {
+        const deadline = Date.now() + maxWaitMs;
+        while (Date.now() < deadline) {
+            const run = await this.requireOwnedRun(userId, deviceId, runId);
+            if (TERMINAL_STATUSES.includes(run.status as (typeof TERMINAL_STATUSES)[number])) {
+                return this.serializeRun(run);
+            }
+            await new Promise<void>((resolve) => setTimeout(resolve, 250));
+        }
+        throw HttpErrorFactory.badRequest("等待 CubeCat 执行结果超时");
     }
 
     private readonly handleUpgrade = (

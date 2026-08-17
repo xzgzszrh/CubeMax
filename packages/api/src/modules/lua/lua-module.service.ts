@@ -44,6 +44,11 @@ export class LuaModuleService {
         if (query.isPublished !== undefined) {
             qb.andWhere("luaModule.isPublished = :isPublished", { isPublished: query.isPublished });
         }
+        if (query.projectId) {
+            qb.andWhere("luaModule.projectId = :projectId", { projectId: query.projectId });
+        } else if (query.unassigned) {
+            qb.andWhere("luaModule.projectId IS NULL");
+        }
 
         const [items, total] = await qb.getManyAndCount();
         return { items, total, page, pageSize, totalPages: Math.ceil(total / pageSize) };
@@ -57,11 +62,11 @@ export class LuaModuleService {
         return luaModule;
     }
 
-    async create(userId: string, dto: CreateLuaModuleDto): Promise<LuaModule> {
+    async create(userId: string, dto: CreateLuaModuleDto, projectId?: string): Promise<LuaModule> {
         this.assertSchema(dto.inputSchema, "输入");
         this.assertSchema(dto.outputSchema, "输出");
         return this.luaModuleRepository.save(
-            this.luaModuleRepository.create({ ...dto, createBy: userId }),
+            this.luaModuleRepository.create({ ...dto, createBy: userId, projectId }),
         );
     }
 
@@ -98,6 +103,35 @@ export class LuaModuleService {
         luaModule.isPublished = true;
         luaModule.publishedAt = new Date();
         return this.luaModuleRepository.save(luaModule);
+    }
+
+    async validateDraft(luaModule: LuaModule): Promise<void> {
+        await this.luaRuntimeService.validate(luaModule.draftCode);
+    }
+
+    async cloneIntoProject(id: string, userId: string, projectId: string): Promise<LuaModule> {
+        const source = await this.findOne(id, userId);
+        if (source.projectId) {
+            throw HttpErrorFactory.badRequest("只能导入尚未归属工程的 Lua 模块");
+        }
+        return this.luaModuleRepository.save(
+            this.luaModuleRepository.create({
+                name: source.name,
+                description: source.description,
+                draftCode: source.draftCode,
+                publishedCode: source.publishedCode,
+                inputSchema: source.inputSchema,
+                outputSchema: source.outputSchema,
+                assistantMessages: source.assistantMessages,
+                testParams: source.testParams,
+                publishedInputSchema: source.publishedInputSchema,
+                publishedOutputSchema: source.publishedOutputSchema,
+                isPublished: source.isPublished,
+                publishedAt: source.publishedAt,
+                createBy: userId,
+                projectId,
+            }),
+        );
     }
 
     async unpublish(id: string, userId: string): Promise<LuaModule> {

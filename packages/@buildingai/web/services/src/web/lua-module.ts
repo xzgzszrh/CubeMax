@@ -25,6 +25,7 @@ export interface LuaModuleItem {
     publishedOutputSchema?: LuaModuleSchema | null;
     isPublished: boolean;
     publishedAt?: string | null;
+    projectId?: string | null;
     createBy: string;
     createdAt: string;
     updatedAt: string;
@@ -101,7 +102,17 @@ export const luaModuleQueryKeys = {
     detail: (id: string | undefined) => ["lua-modules", "detail", id] as const,
 };
 
-export function listLuaModules(params?: { isPublished?: boolean }): Promise<LuaModuleListResult> {
+export function listLuaModules(params?: {
+    isPublished?: boolean;
+    projectId?: string;
+    unassigned?: boolean;
+}): Promise<LuaModuleListResult> {
+    if (params?.projectId) {
+        const { projectId, ...query } = params;
+        return apiHttpClient.get(`/programming-projects/${projectId}/lua-modules`, {
+            params: { page: 1, pageSize: 100, ...query },
+        });
+    }
     return apiHttpClient.get(LUA_MODULES_PATH, { params: { page: 1, pageSize: 100, ...params } });
 }
 
@@ -110,7 +121,7 @@ export function getLuaModule(id: string): Promise<LuaModuleItem> {
 }
 
 export function useLuaModulesQuery(
-    params?: { isPublished?: boolean },
+    params?: { isPublished?: boolean; projectId?: string; unassigned?: boolean },
     options?: QueryOptionsUtil<LuaModuleListResult>,
 ) {
     return useQuery({
@@ -149,8 +160,16 @@ function useLuaModuleMutation<TData, TVariables>(
 
 export function useCreateLuaModuleMutation(
     options?: MutationOptionsUtil<LuaModuleItem, LuaModuleDto>,
+    projectId?: string,
 ) {
-    return useLuaModuleMutation((dto) => apiHttpClient.post(LUA_MODULES_PATH, dto), options);
+    return useLuaModuleMutation(
+        (dto) =>
+            apiHttpClient.post(
+                projectId ? `/programming-projects/${projectId}/lua-modules` : LUA_MODULES_PATH,
+                dto,
+            ),
+        options,
+    );
 }
 
 export function useUpdateLuaModuleMutation(

@@ -25,6 +25,10 @@ import { WorkflowNodeType } from "../../../nodes";
 
 const SYNC_TASK_REPORT_INTERVAL = 500;
 
+type WorkflowRuntimeRequestContext = {
+  projectId?: string;
+};
+
 interface NodeRunningStatus {
   nodeID: string;
   status: WorkflowStatus;
@@ -61,6 +65,8 @@ export class WorkflowRuntimeService {
 
   private nodeRunningStatus: Map<string, NodeRunningStatus>;
 
+  private runtimeContext: WorkflowRuntimeRequestContext = {};
+
   public onNodeReportChange = this.reportEmitter.event;
 
   public onReset = this.resetEmitter.event;
@@ -69,6 +75,10 @@ export class WorkflowRuntimeService {
 
   public isFlowingLine(line: WorkflowLineEntity) {
     return this.runningNodes.some((node) => node.lines.inputLines.includes(line));
+  }
+
+  public setRuntimeContext(context?: WorkflowRuntimeRequestContext): void {
+    this.runtimeContext = context ?? {};
   }
 
   public async taskRun(inputs: WorkflowInputs): Promise<string | undefined> {
@@ -90,7 +100,8 @@ export class WorkflowRuntimeService {
     const validateResult = await this.runtimeClient.TaskValidate({
       schema: JSON.stringify(schema),
       inputs,
-    });
+      context: this.runtimeContext,
+    } as Parameters<WorkflowRuntimeClient["TaskValidate"]>[0]);
     if (!validateResult?.valid) {
       this.resultEmitter.fire({
         errors: validateResult?.errors ?? ["服务内部错误"],
@@ -103,7 +114,8 @@ export class WorkflowRuntimeService {
       const output = await this.runtimeClient.TaskRun({
         schema: JSON.stringify(schema),
         inputs,
-      });
+        context: this.runtimeContext,
+      } as Parameters<WorkflowRuntimeClient["TaskRun"]>[0]);
       taskID = output?.taskID;
     } catch (e) {
       this.resultEmitter.fire({

@@ -4,7 +4,10 @@
  */
 
 import {
+  useProgrammingProjectQuery,
+  usePublishProgrammingProjectMutation,
   usePublishWorkflowMutation,
+  useUnpublishProgrammingProjectMutation,
   useUnpublishWorkflowMutation,
   useWorkflowDetailQuery,
 } from "@buildingai/services/web";
@@ -24,23 +27,37 @@ export function PublishTool({ disabled = false }: { disabled?: boolean }) {
   const clientContext = useClientContext();
   const validateService = useService(ValidateService);
   const { open: openProblemPanel } = useProblemPanel();
-  const { workflowId, saveSchema, saving } = useWorkflowSave();
+  const { workflowId, projectId, saveSchema, saving } = useWorkflowSave();
   const [preparing, setPreparing] = useState(false);
 
   const workflowQuery = useWorkflowDetailQuery(workflowId);
   const workflow = workflowQuery.data;
+  const projectQuery = useProgrammingProjectQuery(projectId, { enabled: Boolean(projectId) });
+  const project = projectQuery.data;
   const publishMutation = usePublishWorkflowMutation();
   const unpublishMutation = useUnpublishWorkflowMutation();
+  const publishProjectMutation = usePublishProgrammingProjectMutation();
+  const unpublishProjectMutation = useUnpublishProgrammingProjectMutation();
 
-  const isPending = preparing || saving || publishMutation.isPending || unpublishMutation.isPending;
-  const publishLabel = workflow?.isPublished ? "已发布" : "发布";
+  const isProject = Boolean(projectId);
+  const isPublished = isProject ? project?.isPublished : workflow?.isPublished;
+  const isPending =
+    preparing ||
+    saving ||
+    publishMutation.isPending ||
+    unpublishMutation.isPending ||
+    publishProjectMutation.isPending ||
+    unpublishProjectMutation.isPending;
+  const publishLabel = isPublished ? (isProject ? "重新发布" : "已发布") : "发布";
 
   const handlePublish = useCallback(async () => {
-    if (workflow?.isPublished) return;
+    if (!isProject && workflow?.isPublished) return;
     try {
       await confirm({
-        title: "发布工作流？",
-        description: "发布后工作流将可被调用，后续保存的修改会直接作用于已发布工作流。",
+        title: isProject ? "发布编程工程？" : "发布工作流？",
+        description: isProject
+          ? "发布会固化主流程、Lua 模块、工具权限和运行目标。"
+          : "发布后工作流将可被调用，后续保存的修改会直接作用于已发布工作流。",
         confirmText: "确认发布",
       });
     } catch {
@@ -63,17 +80,25 @@ export function PublishTool({ disabled = false }: { disabled?: boolean }) {
       }
 
       await saveSchema(serializeWorkflowSchema(clientContext));
-      await publishMutation.mutateAsync(workflowId);
-      toast.success("工作流已发布");
+      if (projectId) {
+        await publishProjectMutation.mutateAsync(projectId);
+        toast.success("编程工程已发布");
+      } else {
+        await publishMutation.mutateAsync(workflowId);
+        toast.success("工作流已发布");
+      }
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "工作流发布失败");
+      toast.error(error instanceof Error ? error.message : "发布失败");
     } finally {
       setPreparing(false);
     }
   }, [
     clientContext,
     confirm,
+    isProject,
     openProblemPanel,
+    projectId,
+    publishProjectMutation,
     publishMutation,
     saveSchema,
     validateService,
@@ -84,25 +109,36 @@ export function PublishTool({ disabled = false }: { disabled?: boolean }) {
   const handleUnpublish = useCallback(async () => {
     try {
       await confirm({
-        title: "取消发布工作流？",
-        description: "取消发布后工作流将停止对外提供，工作流内容会继续保留。",
+        title: isProject ? "取消发布编程工程？" : "取消发布工作流？",
+        description: isProject
+          ? "取消发布后工程不会被调用，当前草稿和模块仍会保留。"
+          : "取消发布后工作流将停止对外提供，工作流内容会继续保留。",
         confirmText: "取消发布",
         confirmVariant: "destructive",
       });
-      await unpublishMutation.mutateAsync(workflowId);
-      toast.success("工作流已取消发布");
+      if (projectId) {
+        await unpublishProjectMutation.mutateAsync(projectId);
+        toast.success("编程工程已取消发布");
+      } else {
+        await unpublishMutation.mutateAsync(workflowId);
+        toast.success("工作流已取消发布");
+      }
     } catch (error) {
       if (error instanceof Error && error.message === "AlertDialog cancelled") return;
       toast.error(error instanceof Error ? error.message : "取消发布失败");
     }
-  }, [confirm, unpublishMutation, workflowId]);
+  }, [confirm, isProject, projectId, unpublishMutation, unpublishProjectMutation, workflowId]);
 
   const button = (
     <SemiButton
       aria-label={publishLabel}
-      disabled={disabled || !workflow || workflowQuery.isLoading || workflow.isPublished}
+      disabled={
+        disabled ||
+        (!isProject && (!workflow || workflowQuery.isLoading || workflow.isPublished)) ||
+        (isProject && (!project || projectQuery.isLoading))
+      }
       icon={
-        workflow?.isPublished ? (
+        isPublished ? (
           <CircleCheck aria-hidden="true" size={16} />
         ) : (
           <Rocket aria-hidden="true" size={16} />
@@ -120,8 +156,10 @@ export function PublishTool({ disabled = false }: { disabled?: boolean }) {
 
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 2 }}>
-      <Tooltip content={workflow?.isPublished ? "工作流已发布" : "发布工作流"}>{button}</Tooltip>
-      {workflow?.isPublished && (
+      <Tooltip content={isPublished ? (isProject ? "重新固化工程快照" : "工作流已发布") : "发布"}>
+        {button}
+      </Tooltip>
+      {isPublished && (
         <Dropdown
           trigger="click"
           position="bottomRight"

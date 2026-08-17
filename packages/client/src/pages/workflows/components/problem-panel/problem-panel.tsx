@@ -29,7 +29,7 @@ export const ProblemPanel = () => {
   const { open: openNodeFormPanel } = useNodeFormPanel();
 
   return (
-    <section className={styles.panel} aria-label="工作流检查清单">
+    <section className={styles.panel} aria-label="编程检查清单">
       <header className={styles.header}>
         <div className={styles["header-copy"]}>
           <div className={styles["title-row"]}>
@@ -53,7 +53,7 @@ export const ProblemPanel = () => {
           <div className={styles.empty}>
             <CheckCircle2 aria-hidden="true" size={30} />
             <strong>未发现问题</strong>
-            <span>当前工作流已通过检查</span>
+            <span>当前编程已通过检查</span>
           </div>
         ) : (
           results.map((result) => (
