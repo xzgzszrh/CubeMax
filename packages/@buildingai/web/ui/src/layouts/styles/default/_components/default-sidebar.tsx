@@ -66,6 +66,7 @@ function KeyboardShortcut({
 
 const MENU_HOME_FIXED = "menu_home_fixed";
 const MENU_HISTORY_FIXED = "menu_history_fixed";
+const MENU_TRIGGERS_FIXED = "menu_triggers_fixed";
 
 /**
  * Default chat component path used to identify if home page is the chat page.
@@ -163,6 +164,17 @@ export function DefaultAppSidebar({ ...props }: React.ComponentProps<typeof Side
   const navWithClassroom = useMemo<NavItem[]>(() => {
     if (!isLogin()) return navMain;
     const items = [...navMain];
+    // Keep the trigger workflow reachable when an older/custom menu configuration
+    // has not received the built-in menu item yet. The seeded item still controls
+    // its normal position and visibility whenever it is present.
+    if (!items.some((item) => item.path === "/triggers")) {
+      items.push({
+        id: MENU_TRIGGERS_FIXED,
+        title: "触发器",
+        icon: "zap",
+        path: "/triggers",
+      });
+    }
     if (!isTeacher) {
       items.push({
         id: "menu_classroom_fixed",
