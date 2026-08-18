@@ -1,4 +1,10 @@
-import { fetchWebExtensionDetail, getActiveOrganizationId } from "@buildingai/services/web";
+import {
+  fetchWebExtensionDetail,
+  getActiveOrganizationId,
+  getExtensionApplicationViews,
+  OrganizationRole,
+  useWorkspaceContextQuery,
+} from "@buildingai/services/web";
 import { useAuthStore } from "@buildingai/stores";
 import NotFoundPage from "@buildingai/ui/components/exception/not-found-page";
 import { useQuery } from "@tanstack/react-query";
@@ -21,6 +27,17 @@ function isNotFoundError(error: unknown) {
   return Boolean(error && typeof error === "object" && "status" in error && error.status === 404);
 }
 
+function isWithinApplicationView(route: string | undefined, view: string | undefined) {
+  if (typeof view !== "string") return false;
+  const normalizedRoute = (route ?? "").replace(/^\/+|\/+$/g, "");
+  const normalizedView = view.replace(/^\/+|\/+$/g, "");
+  return (
+    !normalizedView ||
+    normalizedRoute === normalizedView ||
+    normalizedRoute.startsWith(`${normalizedView}/`)
+  );
+}
+
 type AppIframePageProps = {
   /**
    * 宿主侧的路由前缀。`/apps` 是带侧边栏的常规入口，`/board` 是投到教室大屏的
@@ -32,10 +49,15 @@ type AppIframePageProps = {
    * 透传给应用的运行模式。应用据此决定渲染老师面板还是大屏排行榜，
    * 不必自己约定路径规范。
    */
-  mode?: "app" | "board";
+  mode?: "teacher" | "student" | "board";
+  className?: string;
 };
 
-export default function AppIframePage({ basePath = "/apps", mode = "app" }: AppIframePageProps) {
+export default function AppIframePage({
+  basePath = "/apps",
+  mode = "teacher",
+  className = "h-dvh w-full border-0",
+}: AppIframePageProps) {
   const { identifier, "*": wildcard } = useParams();
   const location = useLocation();
   const navigate = useNavigate();
@@ -44,6 +66,7 @@ export default function AppIframePage({ basePath = "/apps", mode = "app" }: AppI
   const token = useAuthStore((state) => state.auth.token);
   const [extensionRouteNotFoundUrl, setExtensionRouteNotFoundUrl] = useState<string | null>(null);
   const {
+    data: extension,
     error: extensionLoadError,
     isError: isExtensionLoadError,
     isLoading: isExtensionLoading,
@@ -53,12 +76,34 @@ export default function AppIframePage({ basePath = "/apps", mode = "app" }: AppI
     enabled: !!identifier,
     retry: false,
   });
+  const activeOrganizationId = getActiveOrganizationId();
+  const { data: workspaceContext, isLoading: isWorkspaceLoading } = useWorkspaceContextQuery();
+  const activeOrganization = workspaceContext?.organizations.find(
+    (organization) => organization.id === activeOrganizationId,
+  );
+  const isStudentOnly = Boolean(
+    activeOrganization &&
+    activeOrganization.roles.includes(OrganizationRole.STUDENT) &&
+    !activeOrganization.roles.some((role) =>
+      [OrganizationRole.TEACHER, OrganizationRole.ADMIN, OrganizationRole.SCHOOL_ADMIN].some(
+        (managedRole) => managedRole === role,
+      ),
+    ),
+  );
+  const views = getExtensionApplicationViews(extension);
+  // Student-only members enter the extension through its declared student
+  // route. Keep the wildcard intact so the iframe opens that route rather than
+  // accidentally falling back to the extension's teacher index page.
+  const effectiveMode = mode === "teacher" && isStudentOnly ? "student" : mode;
+  const viewUnavailable =
+    (effectiveMode === "student" && !isWithinApplicationView(wildcard, views.student)) ||
+    (effectiveMode === "board" && !isWithinApplicationView(wildcard, views.board));
   const currentUrl = `${location.pathname}${location.search}${location.hash}`;
   const iframeSrc = useMemo(() => {
     if (!identifier) return "";
     const subPath = wildcard ? `/${wildcard}` : "";
     const search = new URLSearchParams(location.search);
-    if (mode !== "app") search.set("_mode", mode);
+    if (effectiveMode !== "teacher") search.set("_mode", effectiveMode);
     // 应用要知道自己在为哪个班级运行。生产环境同源，扩展能自己读 localStorage；
     // 开发环境宿主与扩展是不同端口，读不到，所以由宿主显式带过去。
     const organizationId = getActiveOrganizationId();
@@ -68,7 +113,7 @@ export default function AppIframePage({ basePath = "/apps", mode = "app" }: AppI
     return `${getExtensionBaseUrl()}/extension/${identifier}${subPath}${
       query ? `?${query}` : ""
     }${location.hash}`;
-  }, [identifier, wildcard, location.search, location.hash, mode, token]);
+  }, [effectiveMode, identifier, wildcard, location.search, location.hash, token]);
 
   // Listen for navigation messages from iframe (iframe → parent sync)
   useEffect(() => {
@@ -137,16 +182,22 @@ export default function AppIframePage({ basePath = "/apps", mode = "app" }: AppI
     throw extensionLoadError;
   }
 
-  if (isExtensionLoading || extensionRouteNotFoundUrl === currentUrl) {
+  if (
+    isExtensionLoading ||
+    (Boolean(activeOrganizationId) && isWorkspaceLoading) ||
+    extensionRouteNotFoundUrl === currentUrl
+  ) {
     return extensionRouteNotFoundUrl === currentUrl ? <NotFoundPage /> : null;
   }
+
+  if (viewUnavailable) return <NotFoundPage />;
 
   return (
     <iframe
       key={identifier}
       ref={iframeRef}
       src={iframeSrc}
-      className="h-dvh w-full border-0"
+      className={className}
       title={identifier}
       allow="clipboard-read; clipboard-write"
     />

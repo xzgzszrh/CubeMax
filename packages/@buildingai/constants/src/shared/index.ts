@@ -9,6 +9,7 @@ export * from "./payconfig.constant";
 export * from "./sms.constant";
 export * from "./status-codes.constant";
 export * from "./storage-config.constant";
+export * from "./sidebar-application.constant";
 export * from "./tag.constant";
 export * from "./team-role.constants";
 export * from "./terminal.constants";

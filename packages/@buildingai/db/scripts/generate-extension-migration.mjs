@@ -9,7 +9,7 @@
  *   pnpm migration:generate:extension <identifier> <version> <description>
  *
  * Example:
- *   pnpm migration:generate:extension simple-blog 0.0.3 add-tags
+ *   pnpm migration:generate:extension my-extension 0.0.3 add-tags
  *
  * Prerequisites:
  *   1. Database must be running
@@ -100,7 +100,7 @@ if (!identifier || !version || !description) {
     console.log("  pnpm migration:generate:extension <identifier> <version> <description>");
     console.log("");
     console.log("Example:");
-    console.log("  pnpm migration:generate:extension simple-blog 0.0.3 add-tags");
+    console.log("  pnpm migration:generate:extension my-extension 0.0.3 add-tags");
     console.log("");
     console.log("This will:");
     console.log("  1. Compare extension entity definitions with current database schema");

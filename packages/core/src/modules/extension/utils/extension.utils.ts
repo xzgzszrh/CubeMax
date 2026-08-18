@@ -765,8 +765,8 @@ export async function getExtensionEnabledStatus(
  *
  * @example
  * ```ts
- * const name = await getExtensionName('simple-blog');
- * // Returns: 'Simple Blog'
+ * const name = await getExtensionName('my-extension');
+ * // Returns the name declared by the extension manifest
  *
  * const name = await getExtensionName('my-plugin', '/custom/path/extensions');
  * // Returns: 'My Plugin' or null if not found

@@ -245,9 +245,7 @@ export function setActiveOrganizationId(organizationId: string | null) {
     } else {
         window.localStorage.removeItem(ACTIVE_ORGANIZATION_STORAGE_KEY);
     }
-    window.dispatchEvent(
-        new CustomEvent(WORKSPACE_CHANGED_EVENT, { detail: { organizationId } }),
-    );
+    window.dispatchEvent(new CustomEvent(WORKSPACE_CHANGED_EVENT, { detail: { organizationId } }));
 }
 
 export function useWorkspaceContextQuery(options?: { enabled?: boolean }) {
@@ -291,7 +289,13 @@ export function useSearchOrganizationUsersQuery(
     options?: { enabled?: boolean },
 ) {
     return useQuery<
-        Array<{ id: string; username: string; nickname: string; realName?: string; avatar?: string }>
+        Array<{
+            id: string;
+            username: string;
+            nickname: string;
+            realName?: string;
+            avatar?: string;
+        }>
     >({
         queryKey: ["organizations", organizationId, "search-users", keyword],
         queryFn: () =>
@@ -317,10 +321,7 @@ export function useAddOrganizationMemberMutation(organizationId: string | null, 
     });
 }
 
-export function useUpdateOrganizationMemberMutation(
-    organizationId: string | null,
-    options?: any,
-) {
+export function useUpdateOrganizationMemberMutation(organizationId: string | null, options?: any) {
     const queryClient = useQueryClient();
     return useMutation({
         mutationFn: (data: { memberId: string; roles: OrganizationRoleType[] }) =>
@@ -351,10 +352,7 @@ export function useLeaveOrganizationMutation(options?: any) {
     });
 }
 
-export function useCreateManagedAccountsMutation(
-    organizationId: string | null,
-    options?: any,
-) {
+export function useCreateManagedAccountsMutation(organizationId: string | null, options?: any) {
     const queryClient = useQueryClient();
     return useMutation<ManagedAccountResult, Error, { accounts: ManagedAccountInput[] }>({
         mutationFn: (data) =>
@@ -369,16 +367,16 @@ export function useCreateManagedAccountsMutation(
     });
 }
 
-export function useImportManagedAccountsMutation(
-    organizationId: string | null,
-    options?: any,
-) {
+export function useImportManagedAccountsMutation(organizationId: string | null, options?: any) {
     const queryClient = useQueryClient();
     return useMutation<ManagedAccountResult, Error, File>({
         mutationFn: (file) => {
             const form = new FormData();
             form.append("file", file);
-            return apiHttpClient.upload(`/organizations/${organizationId}/subaccounts/import`, form);
+            return apiHttpClient.upload(
+                `/organizations/${organizationId}/subaccounts/import`,
+                form,
+            );
         },
         ...options,
         onSuccess: (...args) => {
@@ -601,10 +599,9 @@ export function useXiaozhiChatMessagesQuery(
     return useQuery<XiaozhiChatMessage[]>({
         queryKey: ["xiaozhi", organizationId, "chat-messages", agentId, chatId],
         queryFn: () =>
-            apiHttpClient.get(
-                `/organizations/xiaozhi/agents/${agentId}/chats/${chatId}/messages`,
-                { headers: organizationHeaders() },
-            ),
+            apiHttpClient.get(`/organizations/xiaozhi/agents/${agentId}/chats/${chatId}/messages`, {
+                headers: organizationHeaders(),
+            }),
         enabled: Boolean(agentId && chatId) && options?.enabled !== false,
     });
 }
@@ -1038,11 +1035,9 @@ export function useUpdateAssignmentStatusMutation(options?: any) {
         { assignmentId: string; action: "publish" | "close" }
     >({
         mutationFn: ({ assignmentId, action }) =>
-            apiHttpClient.post(
-                `/organizations/assignments/${assignmentId}/${action}`,
-                undefined,
-                { headers: organizationHeaders() },
-            ),
+            apiHttpClient.post(`/organizations/assignments/${assignmentId}/${action}`, undefined, {
+                headers: organizationHeaders(),
+            }),
         ...options,
         onSuccess: (...args: any[]) => {
             queryClient.invalidateQueries({ queryKey: ["organizations"] });
@@ -1074,11 +1069,9 @@ export function useReviewSubmissionMutation(options?: any) {
         { submissionId: string; score?: number | null; feedback?: string }
     >({
         mutationFn: ({ submissionId, ...payload }) =>
-            apiHttpClient.patch(
-                `/organizations/submissions/${submissionId}/review`,
-                payload,
-                { headers: organizationHeaders() },
-            ),
+            apiHttpClient.patch(`/organizations/submissions/${submissionId}/review`, payload, {
+                headers: organizationHeaders(),
+            }),
         ...options,
         onSuccess: (...args: any[]) => {
             queryClient.invalidateQueries({ queryKey: ["organizations"] });
@@ -1110,11 +1103,9 @@ export function useSubmitAssignmentMutation(options?: any) {
         }
     >({
         mutationFn: ({ assignmentId, ...payload }) =>
-            apiHttpClient.post(
-                `/organizations/my-assignments/${assignmentId}/submit`,
-                payload,
-                { headers: organizationHeaders() },
-            ),
+            apiHttpClient.post(`/organizations/my-assignments/${assignmentId}/submit`, payload, {
+                headers: organizationHeaders(),
+            }),
         ...options,
         onSuccess: (...args: any[]) => {
             queryClient.invalidateQueries({ queryKey: ["organizations"] });
@@ -1125,7 +1116,7 @@ export function useSubmitAssignmentMutation(options?: any) {
 
 // ==================== 班级应用管理 ====================
 
-export type OrganizationAppType = "extension" | "workflow";
+export type OrganizationAppType = "system" | "extension" | "workflow";
 
 export type GrantableApp = {
     appType: OrganizationAppType;
@@ -1133,8 +1124,13 @@ export type GrantableApp = {
     name: string;
     description: string;
     icon: string | null;
+    identifier?: string;
+    config?: Record<string, unknown>;
+    path?: string;
     grantedToClass: boolean;
     grantedUserIds: string[];
+    sidebarRequiredToClass: boolean;
+    sidebarRequiredUserIds: string[];
 };
 
 export type AppGrantMatrix = {
@@ -1146,6 +1142,7 @@ export type AppGrantInput = {
     appType: OrganizationAppType;
     appRefId: string;
     userId?: string | null;
+    sidebarRequired?: boolean;
 };
 
 export function useAppGrantsQuery(options?: { enabled?: boolean }) {
@@ -1194,8 +1191,14 @@ export function useUpdateAppWhitelistMutation(options?: any) {
 
 export type MyAppScope = {
     restricted: boolean;
+    systemIds: string[];
     extensionIds: string[];
     workflowIds: string[];
+    sidebar: {
+        systemIds: string[];
+        extensionIds: string[];
+        workflowIds: string[];
+    };
 };
 
 export function useMyAppScopeQuery(options?: { enabled?: boolean }) {
@@ -1243,7 +1246,8 @@ export function useQuotaOverviewQuery(options?: { enabled?: boolean }) {
     const organizationId = getActiveOrganizationId();
     return useQuery<QuotaOverview>({
         queryKey: ["organizations", organizationId, "quota"],
-        queryFn: () => apiHttpClient.get("/organizations/quota", { headers: organizationHeaders() }),
+        queryFn: () =>
+            apiHttpClient.get("/organizations/quota", { headers: organizationHeaders() }),
         enabled: Boolean(organizationId) && options?.enabled !== false,
     });
 }

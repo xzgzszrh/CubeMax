@@ -2,7 +2,7 @@
     "identifier": "safe-cracker",
     "name": "破解保险箱",
     "type": "application",
-    "version": "0.0.2",
+    "version": "0.0.4",
     "description": "课堂互动游戏：学生通过与自己的方糖猫对话套出保险箱密码，最快破解者上榜",
     "homepage": "",
     "author": {
@@ -12,10 +12,25 @@
     },
     "changelog": [
         {
+            "version": "0.0.4",
+            "description": "确保多端入口声明在已安装扩展上完成同步"
+        },
+        {
+            "version": "0.0.3",
+            "description": "声明教师端、学生端和白板端入口"
+        },
+        {
             "version": "0.0.2",
             "description": "修复历史数据库列名与当前命名策略不一致的问题"
         }
     ],
+    "config": {
+        "applicationViews": {
+            "teacher": "",
+            "student": "student",
+            "board": "board"
+        }
+    },
     "engine": {
         "buildingai": ">=26.5.2"
     }

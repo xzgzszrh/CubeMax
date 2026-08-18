@@ -6,7 +6,6 @@ packages/**/dist
 !packages/@flowgram.ai/runtime-js/dist
 !packages/@flowgram.ai/runtime-js/dist/**
 mcp-server/dist
-extensions/simple-blog/dist
 public
 logs
 coverage

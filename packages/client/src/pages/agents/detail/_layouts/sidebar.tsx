@@ -62,7 +62,7 @@ export function OrchestrationSidebar({ ...props }: React.ComponentProps<typeof S
             className="h-8 w-8"
             onClick={(e) => {
               e.stopPropagation();
-              navigate("/agents/workspace");
+              navigate("/agents");
             }}
           >
             <ChevronLeft className="size-4" />

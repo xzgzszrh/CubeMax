@@ -5,26 +5,26 @@ import { Avatar, AvatarFallback, AvatarImage } from "@buildingai/ui/components/u
 import { Badge } from "@buildingai/ui/components/ui/badge";
 import { Button } from "@buildingai/ui/components/ui/button";
 import {
+  Empty,
+  EmptyContent,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from "@buildingai/ui/components/ui/empty";
+import {
   InputGroup,
   InputGroupAddon,
   InputGroupInput,
 } from "@buildingai/ui/components/ui/input-group";
-import {
-  Item,
-  ItemActions,
-  ItemContent,
-  ItemDescription,
-  ItemMedia,
-  ItemTitle,
-} from "@buildingai/ui/components/ui/item";
-import { SidebarTrigger } from "@buildingai/ui/components/ui/sidebar";
 import { useAlertDialog } from "@buildingai/ui/hooks/use-alert-dialog";
 import { cn } from "@buildingai/ui/lib/utils";
 import { Bot, ChevronRight, Loader2, Plus, Search, Trash2 } from "lucide-react";
 import { useMemo, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 
+import { PageShell } from "../_components/page-shell";
 import { AgentModal } from "./_components/agent-modal";
 
 const PAGE_SIZE = 20;
@@ -157,122 +157,118 @@ const AgentsWorkspacePage = () => {
     );
 
   return (
-    <div className="flex w-full flex-col items-center">
-      <div className="bg-background sticky top-0 z-20 flex h-13 w-full items-center px-2">
-        <SidebarTrigger className="md:hidden" />
-        <div className="ml-auto">
-          <Button variant="ghost" size="sm" className="ml-auto" asChild>
-            <Link to="/agents">
-              <Bot />
-              智能体广场
-            </Link>
-          </Button>
+    <PageShell
+      icon={Bot}
+      eyebrow="智能体工作台"
+      title="我的智能体"
+      description="创建、配置并管理我的智能体应用"
+      className="max-w-7xl"
+      actions={
+        <div className="min-w-0 flex-1 sm:w-64 sm:flex-none">
+          <InputGroup>
+            <InputGroupAddon>
+              <Search />
+            </InputGroupAddon>
+            <InputGroupInput
+              placeholder="搜索智能体"
+              value={keyword}
+              onChange={(e) => setKeyword(e.target.value)}
+            />
+          </InputGroup>
         </div>
+      }
+    >
+      <div className="bg-background flex flex-col gap-3 rounded-lg border p-1.5 shadow-xs sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex gap-1">
+          <Badge className={badgeClass(status === "all")} onClick={() => setStatus("all")}>
+            全部
+          </Badge>
+          <Badge
+            className={badgeClass(status === "published")}
+            onClick={() => setStatus("published")}
+          >
+            已公开
+          </Badge>
+          <Badge
+            className={badgeClass(status === "unpublished")}
+            onClick={() => setStatus("unpublished")}
+          >
+            私有
+          </Badge>
+        </div>
+        <Button className="ml-auto rounded-md" onClick={() => setIsModalOpen(true)}>
+          <Plus />
+          创建智能体
+        </Button>
       </div>
 
-      <div className="w-full max-w-4xl px-4 py-8 pt-12 sm:pt-20 md:px-6">
-        <div className="flex flex-col items-center justify-between gap-4 max-sm:items-start sm:flex-row">
-          <div className="flex flex-col gap-2">
-            <h1 className="text-2xl">我的智能体</h1>
-            <p className="text-muted-foreground text-sm">管理我的智能体应用</p>
-          </div>
-          <div className="max-sm:w-full">
-            <InputGroup className="rounded-full">
-              <InputGroupInput
-                placeholder="搜索智能体"
-                value={keyword}
-                onChange={(e) => setKeyword(e.target.value)}
-              />
-              <InputGroupAddon>
-                <Search />
-              </InputGroupAddon>
-            </InputGroup>
-          </div>
-        </div>
+      <AgentModal
+        mode="create"
+        open={isModalOpen}
+        onOpenChange={setIsModalOpen}
+        onSuccess={handleCreateSuccess}
+      />
 
-        <div className="mt-8 flex items-center justify-between">
-          <div className="flex gap-2">
-            <Badge className={badgeClass(status === "all")} onClick={() => setStatus("all")}>
-              全部
-            </Badge>
-            <Badge
-              className={badgeClass(status === "published")}
-              onClick={() => setStatus("published")}
-            >
-              已公开
-            </Badge>
-            <Badge
-              className={badgeClass(status === "unpublished")}
-              onClick={() => setStatus("unpublished")}
-            >
-              私有
-            </Badge>
+      <div className="mt-5">
+        {myAgentsQuery.isLoading ? (
+          <div className="flex items-center justify-center py-12">
+            <Loader2 className="text-muted-foreground size-8 animate-spin" />
           </div>
-          <Button className="ml-auto rounded-full" onClick={() => setIsModalOpen(true)}>
-            <Plus />
-            创建智能体
-          </Button>
-        </div>
-
-        <AgentModal
-          mode="create"
-          open={isModalOpen}
-          onOpenChange={setIsModalOpen}
-          onSuccess={handleCreateSuccess}
-        />
-
-        <div className="mt-6">
-          {myAgentsQuery.isLoading ? (
-            <div className="flex items-center justify-center py-12">
-              <Loader2 className="text-muted-foreground size-8 animate-spin" />
-            </div>
-          ) : items.length === 0 ? (
-            <p className="text-muted-foreground py-12 text-center text-sm">暂无智能体</p>
-          ) : (
-            <InfiniteScroll
-              loading={isFetchingNextPage}
-              hasMore={hasNextPage}
-              onLoadMore={() => myAgentsQuery.fetchNextPage()}
-              emptyText=""
-              showEmptyText={!hasNextPage}
-            >
-              <div className="grid gap-x-4 sm:grid-cols-2">
-                {items.map((agent) => {
-                  const initial = agent.name.slice(0, 1).toUpperCase();
-                  const statusConfig = getAgentWorkspaceStatusConfig(agent);
-                  return (
-                    <Item
-                      key={agent.id}
-                      className="group/apps-item hover:bg-accent cursor-pointer px-0 transition-[padding] hover:px-4"
-                      onClick={() => navigate(`/agents/${agent.id}/configuration`)}
-                    >
-                      <ItemMedia>
-                        <Avatar className="size-10">
-                          <AvatarImage src={agent.avatar ?? undefined} />
-                          <AvatarFallback>{initial || <Bot />}</AvatarFallback>
-                        </Avatar>
-                      </ItemMedia>
-                      <ItemContent>
-                        <ItemTitle className="flex gap-2">
-                          {agent.name}
-                          {getAgentWorkspaceStatus(agent) !== "none" && (
-                            <Badge
-                              variant={statusConfig.variant}
-                              className={statusConfig.className}
-                            >
-                              {statusConfig.label}
-                            </Badge>
-                          )}
-                        </ItemTitle>
-                        <ItemDescription>
-                          {agent.description?.toString().trim() || "暂无描述"}
-                        </ItemDescription>
-                      </ItemContent>
-                      <ItemActions className="opacity-0 group-hover/apps-item:opacity-100">
+        ) : items.length === 0 ? (
+          <Empty className="bg-background min-h-72 rounded-lg border-dashed shadow-xs">
+            <EmptyHeader>
+              <EmptyMedia variant="icon">
+                <Bot />
+              </EmptyMedia>
+              <EmptyTitle>{keyword.trim() ? "没有匹配的智能体" : "暂无智能体"}</EmptyTitle>
+              <EmptyDescription>
+                {keyword.trim() ? "尝试调整搜索内容。" : "创建一个智能体后，它会显示在这里。"}
+              </EmptyDescription>
+            </EmptyHeader>
+            {!keyword.trim() ? (
+              <EmptyContent>
+                <Button onClick={() => setIsModalOpen(true)}>
+                  <Plus /> 创建智能体
+                </Button>
+              </EmptyContent>
+            ) : null}
+          </Empty>
+        ) : (
+          <InfiniteScroll
+            loading={isFetchingNextPage}
+            hasMore={hasNextPage}
+            onLoadMore={() => myAgentsQuery.fetchNextPage()}
+            emptyText=""
+            showEmptyText={!hasNextPage}
+          >
+            <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+              {items.map((agent) => {
+                const initial = agent.name.slice(0, 1).toUpperCase();
+                const statusConfig = getAgentWorkspaceStatusConfig(agent);
+                return (
+                  <article
+                    key={agent.id}
+                    className="group bg-background hover:border-foreground/25 relative flex min-h-44 cursor-pointer flex-col rounded-lg border p-4 shadow-xs transition-[border-color,box-shadow,transform] duration-200 hover:-translate-y-0.5 hover:shadow-sm"
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => navigate(`/agents/${agent.id}/configuration`)}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter" || event.key === " ") {
+                        event.preventDefault();
+                        navigate(`/agents/${agent.id}/configuration`);
+                      }
+                    }}
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <Avatar className="bg-muted size-11 rounded-lg after:rounded-lg">
+                        <AvatarImage src={agent.avatar ?? undefined} className="rounded-lg" />
+                        <AvatarFallback className="rounded-lg">{initial || <Bot />}</AvatarFallback>
+                      </Avatar>
+                      <div className="flex items-center gap-1 opacity-100 sm:opacity-0 sm:transition-opacity sm:group-focus-within:opacity-100 sm:group-hover:opacity-100">
                         <Button
                           size="icon-sm"
                           variant="ghost"
-                          className="text-destructive hover:bg-destructive/10 hover:text-destructive rounded-full"
+                          className="text-destructive hover:bg-destructive/10 hover:text-destructive rounded-md"
                           aria-label="删除"
                           disabled={deleteAgentMutation.isPending}
                           onClick={(e) => {
@@ -285,7 +281,7 @@ const AgentsWorkspacePage = () => {
                         <Button
                           size="icon-sm"
                           variant="outline"
-                          className="rounded-full"
+                          className="rounded-md"
                           aria-label="进入"
                           onClick={(e) => {
                             e.stopPropagation();
@@ -294,16 +290,30 @@ const AgentsWorkspacePage = () => {
                         >
                           <ChevronRight />
                         </Button>
-                      </ItemActions>
-                    </Item>
-                  );
-                })}
-              </div>
-            </InfiniteScroll>
-          )}
-        </div>
+                      </div>
+                    </div>
+                    <div className="mt-4 flex min-w-0 items-center gap-2">
+                      <h2 className="truncate text-sm font-semibold">{agent.name}</h2>
+                      {getAgentWorkspaceStatus(agent) !== "none" && (
+                        <Badge variant={statusConfig.variant} className={statusConfig.className}>
+                          {statusConfig.label}
+                        </Badge>
+                      )}
+                    </div>
+                    <p className="text-muted-foreground mt-1 line-clamp-2 text-xs leading-5">
+                      {agent.description?.toString().trim() || "暂无描述"}
+                    </p>
+                    <div className="text-muted-foreground mt-auto pt-4 text-[11px]">
+                      {getAgentWorkspaceStatus(agent) === "published" ? "已公开展示" : "仅自己可见"}
+                    </div>
+                  </article>
+                );
+              })}
+            </div>
+          </InfiniteScroll>
+        )}
       </div>
-    </div>
+    </PageShell>
   );
 };
 

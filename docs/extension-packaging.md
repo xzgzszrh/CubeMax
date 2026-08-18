@@ -17,8 +17,8 @@
 | `.output/public/` | `pnpm build:web`（vite） | `missing ".output/public" directory` |
 
 所以**打包前必须先 `pnpm build:publish`**，并且这两个目录要进 zip。
-仓库里 `simple-blog` 的 `.output/public/assets/*` 是纳入 git 版本管理的
-（`.gitignore` 里有 `!extensions/simple-blog/.output`），自研应用照此办理。
+应用包的 `.output/public/assets/*` 需要纳入 git 版本管理
+（`.gitignore` 中对自研应用保留了 `.output`），否则部署包会缺少前端资源。
 
 `resolvePluginRoot()`（:762）允许包根目录是 zip 的顶层，也允许是 zip 里唯一的一层子目录 ——
 `zip -r app.zip safe-cracker/` 和 `cd safe-cracker && zip -r ../app.zip .` 两种打法都认。
@@ -118,4 +118,4 @@
 | 控制台接口 | `packages/api/src/modules/extension/controllers/console/extension.controller.ts` |
 | tsup 默认配置 | `packages/@buildingai/extension-sdk/src/tsup.ts` |
 | 扩展 schema 隔离 | `packages/core/src/modules/extension/` |
-| 样板应用 | `extensions/simple-blog/` |
+| 示例应用 | `extensions/safe-cracker/` |

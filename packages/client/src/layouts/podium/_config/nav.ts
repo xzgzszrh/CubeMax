@@ -30,6 +30,13 @@ export const PODIUM_NAV: PodiumNavGroup[] = [
         requiredPermission: OrganizationPermission.MEMBER_READ,
       },
       {
+        path: "classroom-apps",
+        name: "课堂应用",
+        description: "启动课堂应用的教师控制端",
+        icon: "app-window",
+        requiredPermission: OrganizationPermission.ASSET_READ,
+      },
+      {
         path: "apps",
         name: "班级应用管理",
         description: "为学生安装应用，或按学生控制应用可见范围",
