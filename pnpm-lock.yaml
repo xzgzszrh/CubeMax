@@ -691,6 +691,9 @@ importers:
       '@types/react-dom':
         specifier: catalog:web
         version: 19.2.3(@types/react@19.2.14)
+      babel-plugin-react-compiler:
+        specifier: ^1.0.0
+        version: 1.0.0
       eslint-plugin-react-refresh:
         specifier: ^0.4.26
         version: 0.4.26(eslint@9.39.4(jiti@2.6.1))

@@ -68,6 +68,7 @@
         "@buildingai/web-types": "workspace:*",
         "@types/react": "catalog:web",
         "@types/react-dom": "catalog:web",
+        "babel-plugin-react-compiler": "^1.0.0",
         "eslint-plugin-react-refresh": "^0.4.26"
     },
     "engine": {
