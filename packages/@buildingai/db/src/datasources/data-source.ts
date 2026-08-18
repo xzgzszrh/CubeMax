@@ -11,7 +11,7 @@ const entitiesPattern = path.join(distDir, "..", "entities", "**", "*.entity.js"
 const entityFiles = globSync(entitiesPattern);
 
 export const AppDataSource = new DataSource({
-    type: process.env.DB_TYPE as "postgres",
+    type: (process.env.DB_TYPE || "postgres") as "postgres",
     host: process.env.DB_HOST || "localhost",
     port: Number(process.env.DB_PORT) || 5432,
     username: process.env.DB_USERNAME || "postgres",
