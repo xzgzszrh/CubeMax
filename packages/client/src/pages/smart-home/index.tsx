@@ -71,6 +71,8 @@ import { toast } from "sonner";
 
 import { useSettingsDialog } from "@/components/settings-dialog";
 
+import { PageShell } from "../_components/page-shell";
+
 const CATEGORY_ICONS: Record<string, LucideIcon> = {
   binary_sensor: ShieldAlert,
   button: CircleGauge,
@@ -787,225 +789,229 @@ export default function SmartHomePage() {
   };
 
   return (
-    <div className="bg-muted/15 h-full overflow-y-auto">
-      <div className="mx-auto flex min-h-full w-full max-w-7xl flex-col px-4 py-8 md:px-8 md:py-10">
-        <header className="flex flex-col gap-5 border-b pb-7 sm:flex-row sm:items-end sm:justify-between">
-          <div className="min-w-0">
-            <div className="text-muted-foreground mb-2 flex items-center gap-2 text-xs font-medium uppercase">
-              <Home className="size-4" /> 家居设备
-            </div>
-            <h1 className="text-2xl font-semibold">智能家居</h1>
-            <p className="text-muted-foreground mt-1 text-sm">查看并控制已连接的小米家庭设备</p>
-          </div>
-          <div className="flex w-full items-center gap-2 sm:w-auto">
-            <Button
-              type="button"
-              variant="outline"
-              size="icon"
-              onClick={() => devicesQuery.refetch()}
-              disabled={devicesQuery.isFetching}
-              aria-label="刷新设备列表"
-              title="刷新设备列表"
+    <PageShell
+      icon={Home}
+      eyebrow="家居设备"
+      title="智能家居"
+      description="查看并控制已连接的小米家庭设备"
+      className="max-w-7xl"
+      actions={
+        <Button
+          type="button"
+          variant="outline"
+          size="icon"
+          onClick={() => devicesQuery.refetch()}
+          disabled={devicesQuery.isFetching}
+          aria-label="刷新设备列表"
+          title="刷新设备列表"
+        >
+          <RefreshCw className={cn(devicesQuery.isFetching && "animate-spin")} />
+        </Button>
+      }
+    >
+      {devicesQuery.isLoading ? (
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+          {Array.from({ length: 6 }).map((_, index) => (
+            <div
+              key={index}
+              className="bg-background flex min-h-36 flex-col rounded-lg border p-4 shadow-xs"
             >
-              <RefreshCw className={cn(devicesQuery.isFetching && "animate-spin")} />
-            </Button>
-          </div>
-        </header>
-
-        {devicesQuery.isLoading ? (
-          <div className="grid gap-3 pt-5 sm:grid-cols-2 xl:grid-cols-3">
-            {Array.from({ length: 6 }).map((_, index) => (
-              <Skeleton key={index} className="h-36 w-full rounded-md" />
-            ))}
-          </div>
-        ) : devicesQuery.isError ? (
-          <Empty className="mt-5 min-h-96 border">
-            <EmptyHeader>
-              <EmptyMedia variant="icon">
-                <ShieldAlert />
-              </EmptyMedia>
-              <EmptyTitle>设备加载失败</EmptyTitle>
-              <EmptyDescription>智能家居服务暂时不可用，请稍后重试。</EmptyDescription>
-            </EmptyHeader>
-            <EmptyContent>
-              <Button variant="outline" onClick={() => devicesQuery.refetch()}>
-                <RefreshCw /> 重试
-              </Button>
-            </EmptyContent>
-          </Empty>
-        ) : !devices.length ? (
-          <Empty className="mt-5 min-h-96 border">
-            <EmptyHeader>
-              <EmptyMedia variant="icon">
-                <HouseEmptyIcon />
-              </EmptyMedia>
-              <EmptyTitle>暂无智能家居设备</EmptyTitle>
-              <EmptyDescription>
-                请先在“我的 → 我的智能家居”中连接小米账号并同步家庭设备。
-              </EmptyDescription>
-            </EmptyHeader>
-            <EmptyContent>
-              <Button onClick={() => settingsDialog.open("smartHome")}>
-                <Home /> 前往我的智能家居
-              </Button>
-            </EmptyContent>
-          </Empty>
-        ) : (
-          <div className="flex min-h-0 flex-1 flex-col gap-4 pt-5">
-            <section className="bg-background rounded-md border p-3">
-              <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
-                <div className="relative min-w-0 flex-1">
-                  <Search className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2" />
-                  <Input
-                    value={keyword}
-                    onChange={(event) => setKeyword(event.target.value)}
-                    placeholder="搜索设备、房间或家庭"
-                    className="pl-9"
-                  />
-                </div>
-                <div className="grid grid-cols-1 gap-2 sm:grid-cols-3 lg:w-[550px]">
-                  <Select
-                    value={selectedHomeId}
-                    onValueChange={(value) => {
-                      setSelectedHomeId(value);
-                      setSelectedRoomId("all");
-                    }}
-                  >
-                    <SelectTrigger aria-label="按家庭筛选">
-                      <SelectValue placeholder="全部家庭" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">全部家庭（{devices.length}）</SelectItem>
-                      {homes.map((home) => (
-                        <SelectItem key={home.id} value={home.id}>
-                          {home.name}（{home.count}）
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <Select value={selectedRoomId} onValueChange={setSelectedRoomId}>
-                    <SelectTrigger aria-label="按房间筛选">
-                      <SelectValue placeholder="全部房间" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">全部房间</SelectItem>
-                      {rooms.map((room) => (
-                        <SelectItem key={room.id} value={room.id}>
-                          {room.name}（{room.count}）
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-                    <SelectTrigger aria-label="按类型筛选">
-                      <SelectValue placeholder="全部类型" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">全部类型</SelectItem>
-                      {categories.map(([category, value]) => (
-                        <SelectItem key={category} value={category}>
-                          {value.label}（{value.count}）
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+              <div className="flex items-start justify-between">
+                <Skeleton className="size-10 rounded-lg" />
+                <Skeleton className="h-3 w-12" />
               </div>
-              <div className="text-muted-foreground mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs">
-                <span>共 {visibleDevices.length} 台设备</span>
-                <span>{devices.filter((device) => device.online).length} 台在线</span>
-                {(deferredKeyword ||
-                  selectedHomeId !== "all" ||
-                  selectedRoomId !== "all" ||
-                  selectedCategory !== "all") && (
+              <Skeleton className="mt-5 h-4 w-2/3" />
+              <Skeleton className="mt-2 h-3 w-1/2" />
+              <Skeleton className="mt-auto h-3 w-4/5" />
+            </div>
+          ))}
+        </div>
+      ) : devicesQuery.isError ? (
+        <Empty className="bg-background min-h-72 rounded-lg border-dashed shadow-xs">
+          <EmptyHeader>
+            <EmptyMedia variant="icon">
+              <ShieldAlert />
+            </EmptyMedia>
+            <EmptyTitle>设备加载失败</EmptyTitle>
+            <EmptyDescription>智能家居服务暂时不可用，请稍后重试。</EmptyDescription>
+          </EmptyHeader>
+          <EmptyContent>
+            <Button variant="outline" onClick={() => devicesQuery.refetch()}>
+              <RefreshCw /> 重试
+            </Button>
+          </EmptyContent>
+        </Empty>
+      ) : !devices.length ? (
+        <Empty className="bg-background min-h-72 rounded-lg border-dashed shadow-xs">
+          <EmptyHeader>
+            <EmptyMedia variant="icon">
+              <HouseEmptyIcon />
+            </EmptyMedia>
+            <EmptyTitle>暂无智能家居设备</EmptyTitle>
+            <EmptyDescription>
+              请先在“我的 → 我的智能家居”中连接小米账号并同步家庭设备。
+            </EmptyDescription>
+          </EmptyHeader>
+          <EmptyContent>
+            <Button onClick={() => settingsDialog.open("smartHome")}>
+              <Home /> 前往我的智能家居
+            </Button>
+          </EmptyContent>
+        </Empty>
+      ) : (
+        <div className="flex min-h-0 flex-1 flex-col gap-4">
+          <section className="bg-background rounded-lg border p-3 shadow-xs sm:p-4">
+            <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
+              <div className="relative min-w-0 flex-1">
+                <Search className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2" />
+                <Input
+                  value={keyword}
+                  onChange={(event) => setKeyword(event.target.value)}
+                  placeholder="搜索设备、房间或家庭"
+                  className="pl-9"
+                />
+              </div>
+              <div className="grid grid-cols-1 gap-2 sm:grid-cols-3 lg:w-[550px]">
+                <Select
+                  value={selectedHomeId}
+                  onValueChange={(value) => {
+                    setSelectedHomeId(value);
+                    setSelectedRoomId("all");
+                  }}
+                >
+                  <SelectTrigger aria-label="按家庭筛选">
+                    <SelectValue placeholder="全部家庭" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">全部家庭（{devices.length}）</SelectItem>
+                    {homes.map((home) => (
+                      <SelectItem key={home.id} value={home.id}>
+                        {home.name}（{home.count}）
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Select value={selectedRoomId} onValueChange={setSelectedRoomId}>
+                  <SelectTrigger aria-label="按房间筛选">
+                    <SelectValue placeholder="全部房间" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">全部房间</SelectItem>
+                    {rooms.map((room) => (
+                      <SelectItem key={room.id} value={room.id}>
+                        {room.name}（{room.count}）
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+                  <SelectTrigger aria-label="按类型筛选">
+                    <SelectValue placeholder="全部类型" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">全部类型</SelectItem>
+                    {categories.map(([category, value]) => (
+                      <SelectItem key={category} value={category}>
+                        {value.label}（{value.count}）
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="text-muted-foreground mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs">
+              <span>共 {visibleDevices.length} 台设备</span>
+              <span>{devices.filter((device) => device.online).length} 台在线</span>
+              {(deferredKeyword ||
+                selectedHomeId !== "all" ||
+                selectedRoomId !== "all" ||
+                selectedCategory !== "all") && (
+                <button
+                  type="button"
+                  className="text-foreground underline underline-offset-4"
+                  onClick={clearFilters}
+                >
+                  清除筛选
+                </button>
+              )}
+            </div>
+          </section>
+
+          {visibleDevices.length ? (
+            <div className="grid gap-3 pb-8 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
+              {visibleDevices.map((device) => {
+                const Icon = getDeviceIcon(device.category);
+                const preview = device.capabilities.find(
+                  (capability) =>
+                    capability.kind === "property" &&
+                    capability.access?.includes("read") &&
+                    getState(device, capability) !== undefined,
+                );
+                return (
                   <button
                     type="button"
-                    className="text-foreground underline underline-offset-4"
-                    onClick={clearFilters}
+                    key={device.id}
+                    onClick={() => setSelectedDeviceId(device.id)}
+                    className="bg-background hover:border-foreground/25 group focus-visible:ring-ring flex min-h-36 flex-col rounded-lg border p-4 text-left shadow-xs transition-[border-color,box-shadow,transform] duration-200 hover:-translate-y-0.5 hover:shadow-sm focus-visible:ring-2 focus-visible:outline-none"
                   >
-                    清除筛选
-                  </button>
-                )}
-              </div>
-            </section>
-
-            {visibleDevices.length ? (
-              <div className="grid gap-3 pb-8 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
-                {visibleDevices.map((device) => {
-                  const Icon = getDeviceIcon(device.category);
-                  const preview = device.capabilities.find(
-                    (capability) =>
-                      capability.kind === "property" &&
-                      capability.access?.includes("read") &&
-                      getState(device, capability) !== undefined,
-                  );
-                  return (
-                    <button
-                      type="button"
-                      key={device.id}
-                      onClick={() => setSelectedDeviceId(device.id)}
-                      className="bg-background hover:border-foreground/25 group focus-visible:ring-ring flex min-h-36 flex-col rounded-md border p-4 text-left transition-colors focus-visible:ring-2 focus-visible:outline-none"
-                    >
-                      <div className="flex items-start justify-between gap-3">
-                        <span className="bg-muted flex size-10 items-center justify-center rounded-md">
-                          <Icon className="size-5" />
-                        </span>
-                        <span className="text-muted-foreground flex items-center gap-1.5 text-xs">
-                          <span
-                            className={cn(
-                              "size-1.5 rounded-full",
-                              device.online ? "bg-emerald-500" : "bg-zinc-400",
-                            )}
-                          />
-                          {device.online ? "在线" : "离线"}
-                        </span>
-                      </div>
-                      <div className="mt-4 flex min-w-0 items-end gap-2">
-                        <div className="min-w-0 flex-1">
-                          <div className="truncate text-sm font-semibold">{device.name}</div>
-                          <div className="text-muted-foreground mt-1 truncate text-xs">
-                            {device.roomName || device.homeName || "未分配房间"}
-                          </div>
+                    <div className="flex items-start justify-between gap-3">
+                      <span className="bg-muted flex size-10 items-center justify-center rounded-lg">
+                        <Icon className="size-5" />
+                      </span>
+                      <span className="text-muted-foreground flex items-center gap-1.5 text-xs">
+                        <span
+                          className={cn(
+                            "size-1.5 rounded-full",
+                            device.online ? "bg-emerald-500" : "bg-zinc-400",
+                          )}
+                        />
+                        {device.online ? "在线" : "离线"}
+                      </span>
+                    </div>
+                    <div className="mt-4 flex min-w-0 items-end gap-2">
+                      <div className="min-w-0 flex-1">
+                        <div className="truncate text-sm font-semibold">{device.name}</div>
+                        <div className="text-muted-foreground mt-1 truncate text-xs">
+                          {device.roomName || device.homeName || "未分配房间"}
                         </div>
-                        <ChevronRight className="text-muted-foreground size-4 shrink-0 transition-transform group-hover:translate-x-0.5" />
                       </div>
-                      <div className="text-muted-foreground mt-3 flex items-center justify-between gap-2 text-xs">
-                        <span className="truncate">
-                          {getCategoryLabel(device.category, device.categoryLabel)}
+                      <ChevronRight className="text-muted-foreground size-4 shrink-0 transition-transform group-hover:translate-x-0.5" />
+                    </div>
+                    <div className="text-muted-foreground mt-3 flex items-center justify-between gap-2 text-xs">
+                      <span className="truncate">
+                        {getCategoryLabel(device.category, device.categoryLabel)}
+                      </span>
+                      {preview ? (
+                        <span className="max-w-24 truncate tabular-nums">
+                          {formatState(getState(device, preview))}
+                          {preview.unit ? ` ${preview.unit}` : ""}
                         </span>
-                        {preview ? (
-                          <span className="max-w-24 truncate tabular-nums">
-                            {formatState(getState(device, preview))}
-                            {preview.unit ? ` ${preview.unit}` : ""}
-                          </span>
-                        ) : (
-                          <span>{device.capabilities.length} 项能力</span>
-                        )}
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
-            ) : (
-              <Empty className="min-h-72 border">
-                <EmptyHeader>
-                  <EmptyMedia variant="icon">
-                    <Search />
-                  </EmptyMedia>
-                  <EmptyTitle>没有匹配的设备</EmptyTitle>
-                  <EmptyDescription>尝试调整搜索内容或筛选条件。</EmptyDescription>
-                </EmptyHeader>
-                <EmptyContent>
-                  <Button variant="outline" onClick={clearFilters}>
-                    <X /> 清除筛选
-                  </Button>
-                </EmptyContent>
-              </Empty>
-            )}
-          </div>
-        )}
-      </div>
-
+                      ) : (
+                        <span>{device.capabilities.length} 项能力</span>
+                      )}
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          ) : (
+            <Empty className="bg-background min-h-72 rounded-lg border-dashed shadow-xs">
+              <EmptyHeader>
+                <EmptyMedia variant="icon">
+                  <Search />
+                </EmptyMedia>
+                <EmptyTitle>没有匹配的设备</EmptyTitle>
+                <EmptyDescription>尝试调整搜索内容或筛选条件。</EmptyDescription>
+              </EmptyHeader>
+              <EmptyContent>
+                <Button variant="outline" onClick={clearFilters}>
+                  <X /> 清除筛选
+                </Button>
+              </EmptyContent>
+            </Empty>
+          )}
+        </div>
+      )}
       <DeviceControlDialog
         device={detailDevice}
         open={Boolean(selectedDeviceId)}
@@ -1018,7 +1024,7 @@ export default function SmartHomePage() {
         pendingKey={pendingKey}
         refreshing={refreshMutation.isPending || detailQuery.isFetching}
       />
-    </div>
+    </PageShell>
   );
 }
 

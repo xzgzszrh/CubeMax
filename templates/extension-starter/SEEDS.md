@@ -138,7 +138,7 @@ export class YourSeeder extends BaseSeeder {
 
 ## 示例
 
-参考 `simple-blog` 插件的种子实现：
+参考当前应用的种子实现：
 
 - `src/api/db/seeds/index.ts` - 种子入口
 - `src/api/db/seeds/seeders/category.seeder.ts` - 博客分类种子

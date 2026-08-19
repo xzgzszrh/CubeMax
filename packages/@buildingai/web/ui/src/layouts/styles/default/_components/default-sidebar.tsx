@@ -1,8 +1,18 @@
-import type { DecorateMenuItem } from "@buildingai/services/web";
+import { useUserConfigByGroupQuery } from "@buildingai/services/shared";
+import type { DecorateMenuGroup, DecorateMenuItem } from "@buildingai/services/web";
 import {
+  getActiveOrganizationId,
+  getExtensionApplicationViews,
+  normalizeSidebarApplicationRefs,
   OrganizationRole,
+  SIDEBAR_PREFERENCES_GROUP,
+  SIDEBAR_PREFERENCES_KEY,
+  SIDEBAR_SYSTEM_APPLICATIONS,
   useConversationsQuery,
   useDecorateMenuQuery,
+  useMyAppScopeQuery,
+  useWebAppsDecorateItemsInfiniteQuery,
+  useWorkflowListQuery,
   useWorkspaceContextQuery,
 } from "@buildingai/services/web";
 import { useAuthStore } from "@buildingai/stores";
@@ -66,7 +76,17 @@ function KeyboardShortcut({
 
 const MENU_HOME_FIXED = "menu_home_fixed";
 const MENU_HISTORY_FIXED = "menu_history_fixed";
-const MENU_TRIGGERS_FIXED = "menu_triggers_fixed";
+const APPLICATION_GROUP_ID = "group_default_apps";
+const APPLICATION_MENU_IDS = new Set([
+  "menu_datasets",
+  "menu_smart-home",
+  "menu_triggers",
+  "menu_my_assignments_fixed",
+  "menu_datasets_fixed",
+  "menu_smart-home_fixed",
+  "menu_my-assignments_fixed",
+  "menu_triggers_fixed",
+]);
 
 /**
  * Default chat component path used to identify if home page is the chat page.
@@ -84,7 +104,12 @@ function useMenuItems(
 ): NavItem[] {
   return useMemo(() => {
     return menus
-      .filter((menu) => !menu.isHidden)
+      .filter(
+        (menu) =>
+          !menu.isHidden &&
+          !APPLICATION_MENU_IDS.has(menu.id) &&
+          !menu.link.path.includes("/apps/simple-blog"),
+      )
       .map((menu): NavItem => {
         if (menu.id === MENU_HISTORY_FIXED) {
           return {
@@ -96,16 +121,170 @@ function useMenuItems(
           };
         }
 
+        const isMarketMenu = menu.id === "menu_app-center";
+        const isMyAgentsMenu = menu.id === "menu_agent-center";
+
         return {
           id: menu.id,
-          title: menu.title,
-          path: menu.link.path,
-          icon: menu.icon,
+          title: isMarketMenu ? "市场" : isMyAgentsMenu ? "我的智能体" : menu.title,
+          path: isMarketMenu ? "/market" : menu.link.path,
+          icon: isMarketMenu ? "store" : menu.icon,
           target: menu.link.target,
           ...(menu.id === MENU_HOME_FIXED && homeAction ? { action: homeAction } : {}),
         };
       });
   }, [menus, conversationItems, homeAction]);
+}
+
+function useSidebarApplicationGroup(
+  isLoggedIn: boolean,
+  workspaceContext: ReturnType<typeof useWorkspaceContextQuery>["data"],
+  appScope: ReturnType<typeof useMyAppScopeQuery>["data"],
+  configuredGroup?: DecorateMenuGroup,
+): DecorateMenuGroup {
+  const { data: sidebarConfig } = useUserConfigByGroupQuery(SIDEBAR_PREFERENCES_GROUP, {
+    enabled: isLoggedIn,
+  });
+  const { data: extensionData } = useWebAppsDecorateItemsInfiniteQuery(
+    { pageSize: 100 },
+    { enabled: isLoggedIn },
+  );
+  const { data: workflowData } = useWorkflowListQuery(
+    { page: 1, pageSize: 100, isPublished: true },
+    { enabled: isLoggedIn },
+  );
+
+  return useMemo(() => {
+    if (!isLoggedIn) {
+      return {
+        id: APPLICATION_GROUP_ID,
+        title: configuredGroup?.title || "应用",
+        isHidden: false,
+        items: [],
+      };
+    }
+
+    const activeOrganizationId = getActiveOrganizationId();
+    const activeOrganization = workspaceContext?.organizations.find(
+      (organization) => organization.id === activeOrganizationId,
+    );
+    const isStudentOnly = Boolean(
+      activeOrganization &&
+      activeOrganization.roles.includes(OrganizationRole.STUDENT) &&
+      !activeOrganization.roles.some((role) =>
+        [OrganizationRole.TEACHER, OrganizationRole.ADMIN, OrganizationRole.SCHOOL_ADMIN].some(
+          (managedRole) => managedRole === role,
+        ),
+      ),
+    );
+
+    const available = new Map<string, DecorateMenuItem>();
+    for (const system of SIDEBAR_SYSTEM_APPLICATIONS) {
+      if (system.appRefId === "my-assignments" && !activeOrganization) continue;
+      if (
+        appScope?.restricted &&
+        !appScope.systemIds.includes(system.appRefId) &&
+        !(appScope.sidebar?.systemIds ?? []).includes(system.appRefId)
+      ) {
+        continue;
+      }
+      available.set(`system:${system.appRefId}`, {
+        id: `menu_system_${system.appRefId}`,
+        icon: system.icon,
+        title: system.title,
+        link: {
+          label: system.title,
+          path: system.path,
+          type: "system",
+          query: {},
+          component: null,
+          target: "_self",
+        },
+      });
+    }
+
+    for (const extension of extensionData?.pages.flatMap((page) => page.items) ?? []) {
+      if (extension.identifier === "simple-blog") continue;
+      const views = getExtensionApplicationViews(extension);
+      if (extension.aliasShow === false || (isStudentOnly && typeof views.student !== "string"))
+        continue;
+      if (
+        appScope?.restricted &&
+        !appScope.extensionIds.includes(extension.id) &&
+        !(appScope.sidebar?.extensionIds ?? []).includes(extension.id)
+      ) {
+        continue;
+      }
+      available.set(`extension:${extension.id}`, {
+        id: `menu_extension_${extension.id}`,
+        icon: extension.aliasIcon || extension.icon || "puzzle",
+        title: extension.alias || extension.name,
+        link: {
+          label: extension.alias || extension.name,
+          path: `/apps/${extension.identifier}${isStudentOnly && views.student ? `/${views.student}` : ""}`,
+          type: "extension",
+          query: {},
+          component: null,
+          target: "_self",
+        },
+      });
+    }
+
+    for (const workflow of workflowData?.items ?? []) {
+      if (
+        appScope?.restricted &&
+        !appScope.workflowIds.includes(workflow.id) &&
+        !(appScope.sidebar?.workflowIds ?? []).includes(workflow.id)
+      ) {
+        continue;
+      }
+      available.set(`workflow:${workflow.id}`, {
+        id: `menu_workflow_${workflow.id}`,
+        icon: "code-2",
+        title: workflow.name,
+        link: {
+          label: workflow.name,
+          path: `/apps/workflows/${workflow.id}`,
+          type: "system",
+          query: {},
+          component: null,
+          target: "_self",
+        },
+      });
+    }
+
+    const configured = normalizeSidebarApplicationRefs(sidebarConfig?.[SIDEBAR_PREFERENCES_KEY]);
+    const defaultKeys = SIDEBAR_SYSTEM_APPLICATIONS.filter(
+      (item) => item.appRefId !== "my-assignments" || Boolean(activeOrganization),
+    ).map((item) => `system:${item.appRefId}`);
+    const selectedKeys =
+      sidebarConfig?.[SIDEBAR_PREFERENCES_KEY] === undefined
+        ? defaultKeys
+        : configured.map((item) => `${item.appType}:${item.appRefId}`);
+    const forcedKeys = [
+      ...(appScope?.sidebar?.systemIds.map((id) => `system:${id}`) ?? []),
+      ...(appScope?.sidebar?.extensionIds.map((id) => `extension:${id}`) ?? []),
+      ...(appScope?.sidebar?.workflowIds.map((id) => `workflow:${id}`) ?? []),
+    ];
+    const orderedKeys = [...selectedKeys, ...forcedKeys].filter(
+      (key, index, keys) => keys.indexOf(key) === index,
+    );
+
+    return {
+      id: APPLICATION_GROUP_ID,
+      title: configuredGroup?.title || "应用",
+      isHidden: false,
+      items: orderedKeys.map((key) => available.get(key)).filter(Boolean) as DecorateMenuItem[],
+    };
+  }, [
+    appScope,
+    configuredGroup?.title,
+    extensionData,
+    isLoggedIn,
+    sidebarConfig,
+    workflowData,
+    workspaceContext,
+  ]);
 }
 
 export function DefaultAppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
@@ -144,6 +323,7 @@ export function DefaultAppSidebar({ ...props }: React.ComponentProps<typeof Side
   // 老师/管理员在任一组织有教学身份时，课堂入口以底部「讲台」按钮呈现；
   // 学生和个人空间用户仍从主导航的「课堂」项进入。
   const { data: workspaceContext } = useWorkspaceContextQuery({ enabled: isLogin() });
+  const { data: appScope } = useMyAppScopeQuery({ enabled: isLogin() });
   const isTeacher = useMemo(
     () =>
       (workspaceContext?.organizations ?? []).some((organization) =>
@@ -157,24 +337,11 @@ export function DefaultAppSidebar({ ...props }: React.ComponentProps<typeof Side
     [workspaceContext],
   );
 
-  // 课堂与我的任务是固定入口，不走后台装修菜单配置。
-  // 「课堂」只给学生看（老师从底部「讲台」进）；「我的任务」只要属于任一班级就显示，
-  // 因为老师也可能同时是别的班的学生。
-  const inOrganization = (workspaceContext?.organizations.length ?? 0) > 0;
+  // 课堂只给学生看（老师从底部「讲台」进）；应用栏中的系统应用和普通应用
+  // 由个人置顶设置与组织强制置顶共同决定。
   const navWithClassroom = useMemo<NavItem[]>(() => {
     if (!isLogin()) return navMain;
     const items = [...navMain];
-    // Keep the trigger workflow reachable when an older/custom menu configuration
-    // has not received the built-in menu item yet. The seeded item still controls
-    // its normal position and visibility whenever it is present.
-    if (!items.some((item) => item.path === "/triggers")) {
-      items.push({
-        id: MENU_TRIGGERS_FIXED,
-        title: "触发器",
-        icon: "zap",
-        path: "/triggers",
-      });
-    }
     if (!isTeacher) {
       items.push({
         id: "menu_classroom_fixed",
@@ -183,16 +350,15 @@ export function DefaultAppSidebar({ ...props }: React.ComponentProps<typeof Side
         path: "/classroom",
       });
     }
-    if (inOrganization) {
-      items.push({
-        id: "menu_my_assignments_fixed",
-        title: "我的任务",
-        icon: "clipboard-list",
-        path: "/my-assignments",
-      });
-    }
     return items;
-  }, [navMain, isLogin, isTeacher, inOrganization]);
+  }, [navMain, isLogin, isTeacher]);
+
+  const applicationGroup = useSidebarApplicationGroup(
+    isLogin(),
+    workspaceContext,
+    appScope,
+    menuConfig?.groups?.find((group) => group.id === APPLICATION_GROUP_ID),
+  );
 
   const consoleLink = useMemo(() => {
     const menus = userInfo?.menus || [];
@@ -229,11 +395,16 @@ export function DefaultAppSidebar({ ...props }: React.ComponentProps<typeof Side
       </SidebarHeader>
       <SidebarContent>
         <DefaultNavMain items={navWithClassroom} isLoading={isMenuLoading} />
+        {applicationGroup.items.length > 0 && <DefaultNavGroup group={applicationGroup} />}
         {(menuConfig?.groups ?? [])
-          .filter((group) => !group.isHidden)
-          .map((group) => (
-            <DefaultNavGroup key={group.id} group={group} />
-          ))}
+          .filter((group) => !group.isHidden && group.id !== APPLICATION_GROUP_ID)
+          .map((group) => {
+            const items = group.items.filter(
+              (item) => !item.link.path.includes("/apps/simple-blog"),
+            );
+            if (!items.length) return null;
+            return <DefaultNavGroup key={group.id} group={{ ...group, items }} />;
+          })}
       </SidebarContent>
       <SidebarFooter className="in-data-[state=collapsed]:overflow-hidden">
         <SidebarMenu>

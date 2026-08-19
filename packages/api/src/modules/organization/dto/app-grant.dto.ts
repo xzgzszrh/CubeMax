@@ -6,7 +6,9 @@ import {
     IsBoolean,
     IsIn,
     IsOptional,
+    IsString,
     IsUUID,
+    MaxLength,
     ValidateNested,
 } from "class-validator";
 
@@ -16,13 +18,18 @@ export class AppGrantItemDto {
     @IsIn(APP_TYPES, { message: "应用类型不正确" })
     appType: OrganizationAppTypeValue;
 
-    @IsUUID(4, { message: "应用ID格式不正确" })
+    @IsString({ message: "应用标识格式不正确" })
+    @MaxLength(120, { message: "应用标识不能超过120个字符" })
     appRefId: string;
 
     /** 空值表示整班授权。 */
     @IsOptional()
     @IsUUID(4, { message: "学生ID格式不正确" })
     userId?: string | null;
+
+    @IsOptional()
+    @IsBoolean({ message: "侧边栏设置必须是布尔值" })
+    sidebarRequired?: boolean;
 }
 
 export class SaveAppGrantsDto {

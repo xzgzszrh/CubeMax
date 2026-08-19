@@ -6,6 +6,7 @@ export * from "./agent-message";
 export * from "./agents";
 export * from "./ai-provider";
 export * from "./apps-decorate";
+export * from "./applications";
 export * from "./auth";
 export * from "./cdk";
 export * from "./chat";

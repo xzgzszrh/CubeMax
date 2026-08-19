@@ -315,7 +315,7 @@ const PromptInputInner = memo(
 
     const handleExploreApps = useCallback(() => {
       // TODO: 跳转到全部应用页面
-      window.open("/apps", "_blank");
+      window.open("/market", "_blank");
     }, []);
 
     const selectedMenuItemConfig = useMemo(

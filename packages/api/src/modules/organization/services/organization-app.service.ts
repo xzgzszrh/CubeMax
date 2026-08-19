@@ -1,4 +1,8 @@
 import { ExtensionStatus } from "@buildingai/constants/shared/extension.constant";
+import {
+    SIDEBAR_SYSTEM_APPLICATIONS,
+    SidebarSystemApplicationType,
+} from "@buildingai/constants/shared/sidebar-application.constant";
 import { InjectRepository } from "@buildingai/db/@nestjs/typeorm";
 import {
     AiWorkflow,
@@ -23,10 +27,17 @@ export type GrantableApp = {
     name: string;
     description: string;
     icon: string | null;
+    identifier?: string;
+    config?: Record<string, unknown>;
+    path?: string;
     /** 已被整班授权。 */
     grantedToClass: boolean;
     /** 单独授权到的学生ID列表。 */
     grantedUserIds: string[];
+    /** 是否强制出现在整班成员的侧边栏。 */
+    sidebarRequiredToClass: boolean;
+    /** 强制出现在侧边栏的成员ID列表。 */
+    sidebarRequiredUserIds: string[];
 };
 
 function grantKey(appType: string, appRefId: string, userId: string | null) {
@@ -55,7 +66,7 @@ export class OrganizationAppService {
         return organization;
     }
 
-    /** 可授权的应用来源：已启用的应用中心插件 + 老师发布过的工作流。 */
+    /** 可授权的应用来源：系统应用、已启用的应用中心插件和老师发布过的工作流。 */
     private async listGrantableApps(teacherUserId: string) {
         const [extensions, workflows] = await Promise.all([
             this.extensionRepository.find({
@@ -68,6 +79,8 @@ export class OrganizationAppService {
                     "description",
                     "icon",
                     "aliasIcon",
+                    "identifier",
+                    "config",
                 ],
                 order: { appCenterSort: "ASC", createdAt: "DESC" },
             }),
@@ -78,20 +91,36 @@ export class OrganizationAppService {
             }),
         ]);
 
+        const systemApps = SIDEBAR_SYSTEM_APPLICATIONS.map((app) => ({
+            appType: SidebarSystemApplicationType,
+            appRefId: app.appRefId,
+            name: app.title,
+            description: app.description,
+            icon: null,
+            path: app.path,
+        }));
+
         return [
-            ...extensions.map((extension) => ({
-                appType: OrganizationAppType.EXTENSION as OrganizationAppTypeValue,
-                appRefId: extension.id,
-                name: extension.alias || extension.name,
-                description: extension.aliasDescription || extension.description || "",
-                icon: extension.aliasIcon || extension.icon || null,
-            })),
+            ...systemApps,
+            ...extensions
+                .filter((extension) => extension.identifier !== "simple-blog")
+                .map((extension) => ({
+                    appType: OrganizationAppType.EXTENSION as OrganizationAppTypeValue,
+                    appRefId: extension.id,
+                    name: extension.alias || extension.name,
+                    description: extension.aliasDescription || extension.description || "",
+                    icon: extension.aliasIcon || extension.icon || null,
+                    identifier: extension.identifier,
+                    config: extension.config,
+                    path: `/apps/${extension.identifier}`,
+                })),
             ...workflows.map((workflow) => ({
                 appType: OrganizationAppType.WORKFLOW as OrganizationAppTypeValue,
                 appRefId: workflow.id,
                 name: workflow.name,
                 description: workflow.description || "",
                 icon: null,
+                path: `/apps/workflows/${workflow.id}`,
             })),
         ];
     }
@@ -112,12 +141,21 @@ export class OrganizationAppService {
 
         const classGrants = new Set<string>();
         const userGrants = new Map<string, string[]>();
+        const classSidebarGrants = new Set<string>();
+        const userSidebarGrants = new Map<string, string[]>();
         for (const grant of grants) {
             const key = `${grant.appType}:${grant.appRefId}`;
             if (grant.userId) {
                 userGrants.set(key, [...(userGrants.get(key) ?? []), grant.userId]);
+                if (grant.sidebarRequired) {
+                    userSidebarGrants.set(key, [
+                        ...(userSidebarGrants.get(key) ?? []),
+                        grant.userId,
+                    ]);
+                }
             } else {
                 classGrants.add(key);
+                if (grant.sidebarRequired) classSidebarGrants.add(key);
             }
         }
 
@@ -127,6 +165,8 @@ export class OrganizationAppService {
                 ...app,
                 grantedToClass: classGrants.has(key),
                 grantedUserIds: userGrants.get(key) ?? [],
+                sidebarRequiredToClass: classSidebarGrants.has(key),
+                sidebarRequiredUserIds: userSidebarGrants.get(key) ?? [],
             };
         });
 
@@ -146,8 +186,20 @@ export class OrganizationAppService {
 
         const members = await this.organizationService.listMemberUserIds(organizationId);
         const memberIds = new Set(members);
-        const invalid = dto.grants.find((grant) => grant.userId && !memberIds.has(grant.userId));
-        if (invalid) throw HttpErrorFactory.badRequest("存在不属于本组织的成员");
+        const grantableApps = await this.listGrantableApps(userId);
+        const grantableKeys = new Set(grantableApps.map((app) => `${app.appType}:${app.appRefId}`));
+        const invalid = dto.grants.find(
+            (grant) =>
+                (grant.userId && !memberIds.has(grant.userId)) ||
+                !grantableKeys.has(`${grant.appType}:${grant.appRefId}`),
+        );
+        if (invalid) {
+            throw HttpErrorFactory.badRequest(
+                invalid.userId && !memberIds.has(invalid.userId)
+                    ? "存在不属于本组织的成员"
+                    : "存在不可授权的应用",
+            );
+        }
 
         return this.grantRepository.manager.transaction(async (manager) => {
             const repository = manager.getRepository(OrganizationAppGrant);
@@ -184,9 +236,30 @@ export class OrganizationAppService {
                         appType: grant.appType,
                         appRefId: grant.appRefId,
                         grantedByUserId: userId,
+                        sidebarRequired: grant.sidebarRequired ?? false,
                     }),
                 );
             if (toCreate.length) await repository.save(toCreate);
+
+            const toUpdate = dto.grants
+                .map((grant) =>
+                    existingByKey.get(
+                        grantKey(grant.appType, grant.appRefId, grant.userId ?? null),
+                    ),
+                )
+                .filter((grant): grant is NonNullable<typeof grant> => Boolean(grant))
+                .filter((grant) => {
+                    const input = dto.grants.find(
+                        (item) =>
+                            grantKey(item.appType, item.appRefId, item.userId ?? null) ===
+                            grantKey(grant.appType, grant.appRefId, grant.userId),
+                    );
+                    if (!input || input.sidebarRequired === undefined) return false;
+                    if (grant.sidebarRequired === input.sidebarRequired) return false;
+                    grant.sidebarRequired = input.sidebarRequired;
+                    return true;
+                });
+            if (toUpdate.length) await repository.save(toUpdate);
 
             return { granted: dto.grants.length, revoked: toRemove.length };
         });
@@ -212,12 +285,6 @@ export class OrganizationAppService {
         const access = await this.organizationService.requireWorkspace(userId, organizationId);
         const organization = await this.resolveOrganization(organizationId);
 
-        // 老师/管理员自己不受白名单限制，否则没法验证授权效果。
-        const canManage = access.permissions.includes(OrganizationPermission.ASSET_MANAGE);
-        if (!organization.appWhitelistEnabled || canManage) {
-            return { restricted: false, extensionIds: [], workflowIds: [] };
-        }
-
         const grants = await this.grantRepository.find({
             where: [
                 { organizationId, userId },
@@ -225,14 +292,42 @@ export class OrganizationAppService {
             ],
         });
 
+        const sidebar = {
+            systemIds: grants
+                .filter((grant) => grant.sidebarRequired && grant.appType === "system")
+                .map((grant) => grant.appRefId),
+            extensionIds: grants
+                .filter((grant) => grant.sidebarRequired && grant.appType === "extension")
+                .map((grant) => grant.appRefId),
+            workflowIds: grants
+                .filter((grant) => grant.sidebarRequired && grant.appType === "workflow")
+                .map((grant) => grant.appRefId),
+        };
+
+        // 老师/管理员自己不受白名单限制，否则没法验证授权效果。
+        const canManage = access.permissions.includes(OrganizationPermission.ASSET_MANAGE);
+        if (!organization.appWhitelistEnabled || canManage) {
+            return {
+                restricted: false,
+                extensionIds: [],
+                workflowIds: [],
+                systemIds: [],
+                sidebar,
+            };
+        }
+
         return {
             restricted: true,
+            systemIds: grants
+                .filter((grant) => grant.appType === "system")
+                .map((grant) => grant.appRefId),
             extensionIds: grants
                 .filter((grant) => grant.appType === OrganizationAppType.EXTENSION)
                 .map((grant) => grant.appRefId),
             workflowIds: grants
                 .filter((grant) => grant.appType === OrganizationAppType.WORKFLOW)
                 .map((grant) => grant.appRefId),
+            sidebar,
         };
     }
 }

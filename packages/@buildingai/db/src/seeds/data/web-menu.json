@@ -15,27 +15,27 @@
         },
         {
             "id": "menu_app-center",
-            "icon": "layout-grid",
-            "title": "应用",
+            "icon": "store",
+            "title": "市场",
             "link": {
-                "label": "应用",
-                "path": "/apps",
+                "label": "市场",
+                "path": "/market",
                 "type": "system",
                 "query": {},
-                "component": "/src/pages/apps/index.tsx",
+                "component": "/src/pages/market/index.tsx",
                 "target": "_self"
             }
         },
         {
             "id": "menu_agent-center",
             "icon": "bot",
-            "title": "智能体",
+            "title": "我的智能体",
             "link": {
-                "label": "智能体",
+                "label": "我的智能体",
                 "path": "/agents",
                 "type": "system",
                 "query": {},
-                "component": "/src/pages/agents/index.tsx",
+                "component": "/src/pages/agents/workspace.tsx",
                 "target": "_self"
             }
         },
@@ -49,45 +49,6 @@
                 "type": "system",
                 "query": {},
                 "component": "/src/pages/programming/index.tsx",
-                "target": "_self"
-            }
-        },
-        {
-            "id": "menu_triggers",
-            "icon": "zap",
-            "title": "触发器",
-            "link": {
-                "label": "触发器",
-                "path": "/triggers",
-                "type": "system",
-                "query": {},
-                "component": "/src/pages/triggers/index.tsx",
-                "target": "_self"
-            }
-        },
-        {
-            "id": "menu_smart-home",
-            "icon": "house-plug",
-            "title": "智能家居",
-            "link": {
-                "label": "智能家居",
-                "path": "/smart-home",
-                "type": "system",
-                "query": {},
-                "component": "/src/pages/smart-home/index.tsx",
-                "target": "_self"
-            }
-        },
-        {
-            "id": "menu_datasets",
-            "icon": "book-search",
-            "title": "知识库",
-            "link": {
-                "label": "知识库",
-                "path": "/datasets",
-                "type": "system",
-                "query": {},
-                "component": "/src/pages/datasets/index.tsx",
                 "target": "_self"
             }
         },
@@ -111,15 +72,54 @@
             "title": "应用",
             "items": [
                 {
-                    "id": "menu_group_extension_demo",
-                    "icon": "puzzle",
-                    "title": "Blog",
+                    "id": "menu_datasets_fixed",
+                    "icon": "book-search",
+                    "title": "知识库",
                     "link": {
-                        "label": "Blog",
-                        "path": "/apps/simple-blog",
-                        "type": "extension",
+                        "label": "知识库",
+                        "path": "/datasets",
+                        "type": "system",
                         "query": {},
-                        "component": null,
+                        "component": "/src/pages/datasets/index.tsx",
+                        "target": "_self"
+                    }
+                },
+                {
+                    "id": "menu_smart-home_fixed",
+                    "icon": "house-plug",
+                    "title": "智能家居",
+                    "link": {
+                        "label": "智能家居",
+                        "path": "/smart-home",
+                        "type": "system",
+                        "query": {},
+                        "component": "/src/pages/smart-home/index.tsx",
+                        "target": "_self"
+                    }
+                },
+                {
+                    "id": "menu_my-assignments_fixed",
+                    "icon": "clipboard-list",
+                    "title": "我的任务",
+                    "link": {
+                        "label": "我的任务",
+                        "path": "/my-assignments",
+                        "type": "system",
+                        "query": {},
+                        "component": "/src/pages/my-assignments/index.tsx",
+                        "target": "_self"
+                    }
+                },
+                {
+                    "id": "menu_triggers_fixed",
+                    "icon": "zap",
+                    "title": "触发器",
+                    "link": {
+                        "label": "触发器",
+                        "path": "/triggers",
+                        "type": "system",
+                        "query": {},
+                        "component": "/src/pages/triggers/index.tsx",
                         "target": "_self"
                     }
                 }

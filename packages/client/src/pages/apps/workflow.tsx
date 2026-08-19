@@ -215,7 +215,7 @@ export default function WorkflowApplicationPage() {
           <p className="text-muted-foreground mt-1 text-sm">该工作流不存在或当前未发布。</p>
         </div>
         <Button variant="outline" asChild>
-          <Link to="/apps">返回应用</Link>
+          <Link to="/market">返回市场</Link>
         </Button>
       </div>
     );
@@ -229,7 +229,7 @@ export default function WorkflowApplicationPage() {
       <main className="mx-auto flex min-h-dvh w-full max-w-5xl flex-col px-4 py-6 md:px-6">
         <header className="border-border flex items-center gap-3 border-b pb-5">
           <Button size="icon" variant="ghost" asChild>
-            <Link to="/apps" aria-label="返回应用">
+            <Link to="/market" aria-label="返回市场">
               <ArrowLeft />
             </Link>
           </Button>

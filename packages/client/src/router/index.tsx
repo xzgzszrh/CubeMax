@@ -1,9 +1,9 @@
+import { useWorkflowDetailQuery } from "@buildingai/services/web";
 import AuthGuard from "@buildingai/ui/components/auth/auth-guard";
 import GlobalError from "@buildingai/ui/components/exception/global-error";
 import NotFoundPage from "@buildingai/ui/components/exception/not-found-page";
 import MainLayout from "@buildingai/ui/layouts/main/index";
 import DefaultLayout from "@buildingai/ui/layouts/styles/default/index";
-import { useWorkflowDetailQuery } from "@buildingai/services/web";
 import { createBrowserRouter, Navigate, useParams } from "react-router-dom";
 
 import AgentsIndexPage from "@/pages/agents";
@@ -13,18 +13,17 @@ import AgentLogsPage from "@/pages/agents/detail/logs";
 import AgentMonitoringPage from "@/pages/agents/detail/monitoring";
 import AgentPublishPage from "@/pages/agents/detail/publish";
 import PublishChatPage from "@/pages/agents/site-chat";
-import AgentsWorkspacePage from "@/pages/agents/workspace";
 import AppsIndexPage from "@/pages/apps";
 import WorkflowApplicationPage from "@/pages/apps/workflow";
 import DatasetsIndexPage from "@/pages/datasets";
 import DatasetsLayout from "@/pages/datasets/_layouts";
 import DatasetsDetailPage from "@/pages/datasets/detail";
 import InstallPage from "@/pages/install";
-import ProgrammingCanvasPage from "@/pages/programming/program";
-import ProgrammingProjectsPage from "@/pages/programming";
-import ProgrammingToolsPage from "@/pages/programming/tools";
-import ProgrammingWorkspaceLayout from "@/pages/programming/layout";
 import LuaModulesPage from "@/pages/lua";
+import ProgrammingProjectsPage from "@/pages/programming";
+import ProgrammingWorkspaceLayout from "@/pages/programming/layout";
+import ProgrammingCanvasPage from "@/pages/programming/program";
+import ProgrammingToolsPage from "@/pages/programming/tools";
 import SimulatorPage from "@/pages/simulator";
 import SmartHomePage from "@/pages/smart-home";
 import TriggersPage from "@/pages/triggers";
@@ -38,6 +37,7 @@ import ClassroomPage from "../pages/classroom";
 import ClassroomDisplayPage from "../pages/classroom-display";
 import { LoginPage } from "../pages/login";
 import { OAuthCallbackPage } from "../pages/login/oauth-callback";
+import MarketPage from "../pages/market";
 import MyAssignmentsPage from "../pages/my-assignments";
 import AlipayReturnPage from "../pages/payment/alipay-return";
 
@@ -175,6 +175,10 @@ export const router = createBrowserRouter([
             ),
           },
           {
+            path: "/market",
+            element: <MarketPage />,
+          },
+          {
             path: "/apps",
             element: <AppsIndexPage />,
           },
@@ -219,7 +223,7 @@ export const router = createBrowserRouter([
           },
           {
             path: "/agents/workspace",
-            element: <AgentsWorkspacePage />,
+            element: <Navigate to="/agents" replace />,
           },
           {
             path: "/programming",

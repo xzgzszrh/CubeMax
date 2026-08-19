@@ -7,7 +7,7 @@
  *   pnpm migration:create:extension <identifier> <version> <description>
  *
  * Example:
- *   pnpm migration:create:extension simple-blog 0.0.3 add-custom-logic
+ *   pnpm migration:create:extension my-extension 0.0.3 add-custom-logic
  */
 
 import fs from "fs-extra";
@@ -31,7 +31,7 @@ if (!identifier || !version || !description) {
     console.log("  pnpm migration:create:extension <identifier> <version> <description>");
     console.log("");
     console.log("Example:");
-    console.log("  pnpm migration:create:extension simple-blog 0.0.3 add-custom-logic");
+    console.log("  pnpm migration:create:extension my-extension 0.0.3 add-custom-logic");
     process.exit(1);
 }
 

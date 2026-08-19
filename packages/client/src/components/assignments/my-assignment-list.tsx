@@ -165,7 +165,7 @@ export function MyAssignmentList({ emptyHint }: { emptyHint?: string } = {}) {
 
   if (isLoading) {
     return (
-      <div className="flex min-h-32 items-center justify-center border-y">
+      <div className="bg-background flex min-h-32 items-center justify-center rounded-lg border shadow-xs">
         <LoaderCircle className="size-5 animate-spin" />
       </div>
     );
@@ -173,7 +173,7 @@ export function MyAssignmentList({ emptyHint }: { emptyHint?: string } = {}) {
 
   if (!assignments.length) {
     return (
-      <div className="flex min-h-32 flex-col items-center justify-center gap-2 border-y text-center">
+      <div className="bg-background flex min-h-32 flex-col items-center justify-center gap-2 rounded-lg border-dashed text-center shadow-xs">
         <ClipboardList className="text-muted-foreground size-6" />
         <p className="text-sm font-medium">老师还没有布置任务</p>
         {emptyHint ? <p className="text-muted-foreground max-w-sm text-xs">{emptyHint}</p> : null}
@@ -183,52 +183,60 @@ export function MyAssignmentList({ emptyHint }: { emptyHint?: string } = {}) {
 
   return (
     <>
-      <div className="divide-y border-y">
+      <div className="grid gap-3 sm:grid-cols-2">
         {assignments.map((assignment) => {
           const open = isAssignmentOpen(assignment);
           return (
-            <div className="flex items-center gap-3 px-2 py-3" key={assignment.id}>
-              <div className="bg-muted flex size-9 shrink-0 items-center justify-center rounded-md">
-                <ClipboardList className="size-4" />
-              </div>
-              <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-2">
-                  <p className="truncate font-medium">{assignment.title}</p>
-                  {assignment.mySubmission ? (
-                    <Badge
-                      variant={
-                        assignment.mySubmission.status === "reviewed" ? "default" : "secondary"
-                      }
-                    >
-                      {assignment.mySubmission.status === "reviewed"
-                        ? `已批阅${assignment.mySubmission.score != null ? ` · ${assignment.mySubmission.score} 分` : ""}`
-                        : "已提交"}
-                    </Badge>
-                  ) : (
-                    <Badge variant="outline">{open ? "待提交" : "已截止"}</Badge>
-                  )}
+            <article
+              className="bg-background flex min-h-40 flex-col rounded-lg border p-4 shadow-xs"
+              key={assignment.id}
+            >
+              <div className="flex items-start gap-3">
+                <div className="bg-muted flex size-10 shrink-0 items-center justify-center rounded-lg">
+                  <ClipboardList className="size-4" />
                 </div>
-                <p className="text-muted-foreground truncate text-xs">
-                  截止 {formatAssignmentTime(assignment.dueAt)}
-                  {assignment.mySubmission
-                    ? ` · 已交：${assignment.mySubmission.targetName}`
-                    : assignment.description
-                      ? ` · ${assignment.description}`
-                      : ""}
-                </p>
-                {assignment.mySubmission?.feedback ? (
-                  <p className="mt-1 text-xs">老师评语：{assignment.mySubmission.feedback}</p>
-                ) : null}
+                <div className="min-w-0 flex-1">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <p className="min-w-0 truncate font-medium">{assignment.title}</p>
+                    {assignment.mySubmission ? (
+                      <Badge
+                        variant={
+                          assignment.mySubmission.status === "reviewed" ? "default" : "secondary"
+                        }
+                      >
+                        {assignment.mySubmission.status === "reviewed"
+                          ? `已批阅${assignment.mySubmission.score != null ? ` · ${assignment.mySubmission.score} 分` : ""}`
+                          : "已提交"}
+                      </Badge>
+                    ) : (
+                      <Badge variant="outline">{open ? "待提交" : "已截止"}</Badge>
+                    )}
+                  </div>
+                  <p className="text-muted-foreground mt-1 line-clamp-2 text-xs leading-5">
+                    {assignment.description || "暂无任务说明"}
+                  </p>
+                </div>
               </div>
-              <Button
-                size="sm"
-                variant={assignment.mySubmission ? "ghost" : "default"}
-                disabled={!open}
-                onClick={() => setSubmitting(assignment)}
-              >
-                {assignment.mySubmission ? "重新提交" : "提交"}
-              </Button>
-            </div>
+              {assignment.mySubmission?.feedback ? (
+                <p className="mt-3 line-clamp-2 border-t pt-3 text-xs">
+                  老师评语：{assignment.mySubmission.feedback}
+                </p>
+              ) : null}
+              <div className="mt-auto flex items-end justify-between gap-3 pt-4">
+                <p className="text-muted-foreground min-w-0 truncate text-xs">
+                  截止 {formatAssignmentTime(assignment.dueAt)}
+                  {assignment.mySubmission ? ` · 已交：${assignment.mySubmission.targetName}` : ""}
+                </p>
+                <Button
+                  size="sm"
+                  variant={assignment.mySubmission ? "outline" : "default"}
+                  disabled={!open}
+                  onClick={() => setSubmitting(assignment)}
+                >
+                  {assignment.mySubmission ? "重新提交" : "提交"}
+                </Button>
+              </div>
+            </article>
           );
         })}
       </div>

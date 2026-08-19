@@ -21,7 +21,7 @@ import {
   TableHeader,
   TableRow,
 } from "@buildingai/ui/components/ui/table";
-import { LayoutGrid, LoaderCircle, Save, Search } from "lucide-react";
+import { LayoutGrid, LoaderCircle, Pin, Save, Search } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
@@ -41,6 +41,7 @@ function appKey(app: Pick<GrantableApp, "appType" | "appRefId">) {
 
 /** 前端用 `appKey -> (userId | "*")` 的集合表示授权矩阵，提交时再摊平。 */
 type GrantState = Map<string, Set<string>>;
+type SidebarRequiredState = Set<string>;
 
 const CLASS_TOKEN = "*";
 
@@ -55,6 +56,7 @@ const PodiumAppsPage = () => {
   });
 
   const [grants, setGrants] = useState<GrantState>(new Map());
+  const [sidebarRequired, setSidebarRequired] = useState<SidebarRequiredState>(new Set());
   const [keyword, setKeyword] = useState("");
   const [dirty, setDirty] = useState(false);
 
@@ -62,12 +64,15 @@ const PodiumAppsPage = () => {
   useEffect(() => {
     if (!matrix) return;
     const next: GrantState = new Map();
+    const nextSidebarRequired = new Set<string>();
     for (const item of matrix.items) {
       const targets = new Set(item.grantedUserIds);
       if (item.grantedToClass) targets.add(CLASS_TOKEN);
       if (targets.size) next.set(appKey(item), targets);
+      if (item.sidebarRequiredToClass) nextSidebarRequired.add(appKey(item));
     }
     setGrants(next);
+    setSidebarRequired(nextSidebarRequired);
     setDirty(false);
   }, [matrix]);
 
@@ -108,16 +113,36 @@ const PodiumAppsPage = () => {
     });
   }
 
+  function toggleSidebarRequired(app: GrantableApp) {
+    const key = appKey(app);
+    setDirty(true);
+    setSidebarRequired((previous) => {
+      const next = new Set(previous);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+    // A forced sidebar app must also be available to the whole organization.
+    if (!grants.get(key)?.has(CLASS_TOKEN)) toggle(app, CLASS_TOKEN);
+  }
+
   function submit() {
     const payload: AppGrantInput[] = [];
     for (const app of matrix?.items ?? []) {
       const targets = grants.get(appKey(app));
-      if (!targets) continue;
-      for (const target of targets) {
+      const key = appKey(app);
+      const nextTargets = new Set(targets ?? []);
+      if (sidebarRequired.has(key)) nextTargets.add(CLASS_TOKEN);
+      if (!nextTargets.size) continue;
+      for (const target of nextTargets) {
         payload.push({
           appType: app.appType,
           appRefId: app.appRefId,
           userId: target === CLASS_TOKEN ? null : target,
+          sidebarRequired:
+            target === CLASS_TOKEN
+              ? sidebarRequired.has(key)
+              : app.sidebarRequiredUserIds.includes(target),
         });
       }
     }
@@ -137,7 +162,7 @@ const PodiumAppsPage = () => {
   return (
     <PodiumPage
       title="班级应用管理"
-      description="勾选「整班」即对全班开放；也可以只给个别学生安装某个应用。"
+      description="勾选「整班」即可开放应用；勾选「强制置顶」后，组织成员的侧边栏会始终保留该应用。"
       actions={
         <Button loading={saveGrants.isPending} disabled={!dirty} onClick={submit}>
           <Save /> 保存授权
@@ -177,6 +202,11 @@ const PodiumAppsPage = () => {
               <TableRow>
                 <TableHead className="min-w-56">应用</TableHead>
                 <TableHead className="w-20 text-center">整班</TableHead>
+                <TableHead className="w-28 text-center">
+                  <span className="inline-flex items-center gap-1">
+                    <Pin className="size-3.5" /> 强制置顶
+                  </span>
+                </TableHead>
                 {students.map((student) => (
                   <TableHead key={student.userId} className="w-24">
                     <div className="flex flex-col items-center gap-1">
@@ -198,6 +228,7 @@ const PodiumAppsPage = () => {
               {visibleApps.map((app) => {
                 const targets = grants.get(appKey(app)) ?? new Set<string>();
                 const grantedToClass = targets.has(CLASS_TOKEN);
+                const sidebarPinned = sidebarRequired.has(appKey(app));
                 return (
                   <TableRow key={appKey(app)}>
                     <TableCell>
@@ -213,7 +244,11 @@ const PodiumAppsPage = () => {
                           <div className="flex items-center gap-1.5">
                             <p className="max-w-48 truncate font-medium">{app.name}</p>
                             <Badge variant="outline">
-                              {app.appType === "workflow" ? "工作流" : "应用"}
+                              {app.appType === "system"
+                                ? "系统应用"
+                                : app.appType === "workflow"
+                                  ? "工作流"
+                                  : "应用"}
                             </Badge>
                           </div>
                           <p className="text-muted-foreground max-w-64 truncate text-xs">
@@ -226,6 +261,12 @@ const PodiumAppsPage = () => {
                       <Checkbox
                         checked={grantedToClass}
                         onCheckedChange={() => toggle(app, CLASS_TOKEN)}
+                      />
+                    </TableCell>
+                    <TableCell className="text-center">
+                      <Checkbox
+                        checked={sidebarPinned}
+                        onCheckedChange={() => toggleSidebarRequired(app)}
                       />
                     </TableCell>
                     {students.map((student) => (

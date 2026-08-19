@@ -7,8 +7,10 @@ import type { RouteObject } from "react-router-dom";
 import { Navigate, useRoutes } from "react-router-dom";
 
 import { usePodiumWorkspace } from "@/hooks/use-podium-workspace";
+import AppIframePage from "@/pages/apps/[identifier]";
 import PodiumActivitiesPage from "@/pages/podium/activities";
 import PodiumAppsPage from "@/pages/podium/apps";
+import PodiumClassroomAppsPage from "@/pages/podium/classroom-apps";
 import PodiumAssignmentsPage from "@/pages/podium/assignments";
 import PodiumCommandsPage from "@/pages/podium/commands";
 import PodiumDevicesPage from "@/pages/podium/devices";
@@ -23,6 +25,7 @@ import { filterPodiumNav, PODIUM_BASE_PATH } from "./_config/nav";
 const PAGE_BY_PATH: Record<string, RouteObject["element"]> = {
   members: <PodiumMembersPage />,
   apps: <PodiumAppsPage />,
+  "classroom-apps": <PodiumClassroomAppsPage />,
   assignments: <PodiumAssignmentsPage />,
   quota: <PodiumQuotaPage />,
   devices: <PodiumDevicesPage />,
@@ -39,6 +42,19 @@ function PodiumRoutes({ allowedPaths }: { allowedPaths: string[] }) {
   const routes = useMemo<RouteObject[]>(() => {
     const first = allowedPaths[0];
     return [
+      ...(allowedPaths.includes("classroom-apps")
+        ? [
+            {
+              path: "classroom-apps/:identifier/*",
+              element: (
+                <AppIframePage
+                  basePath="/podium/classroom-apps"
+                  className="h-full w-full border-0"
+                />
+              ),
+            },
+          ]
+        : []),
       ...allowedPaths.map((path) => ({ path, element: PAGE_BY_PATH[path] })),
       {
         path: "*",

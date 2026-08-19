@@ -42,7 +42,7 @@
 		DBF8319924B2B1208236E941 /* SmartHomeDevicesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SmartHomeDevicesView.swift; sourceTree = "<group>"; };
 		E0A4B856112BB98C56E843CC /* ConversationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConversationView.swift; sourceTree = "<group>"; };
 		EEE443F5470AA918A770370A /* Models.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Models.swift; sourceTree = "<group>"; };
-		F00B5997D752D593F706C072 /* CubeMax.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = CubeMax.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		F00B5997D752D593F706C072 /* CubeMax.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = CubeMax.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		FB987366036CD49E1D2EAA26 /* KeychainStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeychainStore.swift; sourceTree = "<group>"; };
 		FCFB4C79629ACCA6A8093046 /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -180,11 +180,6 @@
 			attributes = {
 				BuildIndependentTargetsInParallel = YES;
 				LastUpgradeCheck = 1430;
-				TargetAttributes = {
-					FAF2FE61E5135ABEBA1C610D = {
-						DevelopmentTeam = "";
-					};
-				};
 			};
 			buildConfigurationList = 22D8A7BFEBBE51EDCD0F7086 /* Build configuration list for PBXProject "CubeMax" */;
 			developmentRegion = en;
@@ -238,6 +233,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
+				DEVELOPMENT_TEAM = 4KHYCM95C5;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = CubeMax;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
@@ -323,6 +319,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
+				DEVELOPMENT_TEAM = 4KHYCM95C5;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = CubeMax;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";

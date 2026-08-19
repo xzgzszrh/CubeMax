@@ -40,6 +40,7 @@ import { useDeferredValue, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 
+import { PageShell } from "../_components/page-shell";
 import { initialData } from "../workflows/initial-data";
 import { ProjectNameDialog } from "./project-name-dialog";
 
@@ -115,19 +116,13 @@ export default function ProgrammingProjectsPage() {
   };
 
   return (
-    <div className="bg-muted/15 h-full overflow-y-auto">
-      <div className="mx-auto flex w-full max-w-6xl flex-col px-4 py-8 md:px-8 md:py-10">
-        <header className="flex flex-col gap-5 border-b pb-7 sm:flex-row sm:items-end sm:justify-between">
-          <div className="min-w-0">
-            <div className="text-muted-foreground mb-2 flex items-center gap-2 text-xs font-medium uppercase">
-              <Code2 className="size-4" /> CubeCat Studio
-            </div>
-            <h1 className="text-2xl font-semibold">编程</h1>
-            <p className="text-muted-foreground mt-1 text-sm">
-              {projectsQuery.data?.total ?? 0} 个工程
-            </p>
-          </div>
-          <div className="flex w-full items-center gap-2 sm:w-auto">
+    <>
+      <PageShell
+        icon={Code2}
+        title="编程"
+        description={`${projectsQuery.data?.total ?? 0} 个工程`}
+        actions={
+          <>
             <div className="relative min-w-0 flex-1 sm:w-64 sm:flex-none">
               <Search className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2" />
               <Input
@@ -151,124 +146,134 @@ export default function ProgrammingProjectsPage() {
             <Button type="button" onClick={() => setCreateDialogOpen(true)}>
               <Plus /> 新建工程
             </Button>
+          </>
+        }
+      >
+        {projectsQuery.isLoading ? (
+          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+            {Array.from({ length: 6 }).map((_, index) => (
+              <div
+                key={index}
+                className="bg-background flex min-h-44 flex-col rounded-lg border p-4 shadow-xs"
+              >
+                <div className="flex items-start justify-between">
+                  <Skeleton className="size-10 rounded-lg" />
+                  <Skeleton className="size-7 rounded-md" />
+                </div>
+                <Skeleton className="mt-5 h-4 w-2/3" />
+                <Skeleton className="mt-2 h-3 w-full" />
+                <Skeleton className="mt-2 h-3 w-4/5" />
+                <Skeleton className="mt-auto h-3 w-3/5" />
+              </div>
+            ))}
           </div>
-        </header>
-
-        <div className="pt-5">
-          {projectsQuery.isLoading ? (
-            <div className="grid gap-3 lg:grid-cols-2">
-              {Array.from({ length: 6 }).map((_, index) => (
-                <Skeleton key={index} className="h-32 w-full rounded-md" />
-              ))}
-            </div>
-          ) : projectsQuery.isError ? (
-            <Empty className="min-h-96 border">
-              <EmptyHeader>
-                <EmptyMedia variant="icon">
-                  <Blocks />
-                </EmptyMedia>
-                <EmptyTitle>工程加载失败</EmptyTitle>
-                <EmptyDescription>服务暂时不可用。</EmptyDescription>
-              </EmptyHeader>
+        ) : projectsQuery.isError ? (
+          <Empty className="bg-background min-h-72 rounded-lg border-dashed shadow-xs">
+            <EmptyHeader>
+              <EmptyMedia variant="icon">
+                <Blocks />
+              </EmptyMedia>
+              <EmptyTitle>工程加载失败</EmptyTitle>
+              <EmptyDescription>服务暂时不可用。</EmptyDescription>
+            </EmptyHeader>
+            <EmptyContent>
+              <Button variant="outline" onClick={() => projectsQuery.refetch()}>
+                <RefreshCw /> 重试
+              </Button>
+            </EmptyContent>
+          </Empty>
+        ) : projects.length === 0 ? (
+          <Empty className="bg-background min-h-72 rounded-lg border-dashed shadow-xs">
+            <EmptyHeader>
+              <EmptyMedia variant="icon">
+                <Box />
+              </EmptyMedia>
+              <EmptyTitle>{deferredKeyword ? "没有匹配的工程" : "暂无编程工程"}</EmptyTitle>
+              <EmptyDescription>
+                {deferredKeyword ? "尝试调整搜索内容。" : "创建工程后即可编辑主流程和 Lua 模块。"}
+              </EmptyDescription>
+            </EmptyHeader>
+            {!deferredKeyword && (
               <EmptyContent>
-                <Button variant="outline" onClick={() => projectsQuery.refetch()}>
-                  <RefreshCw /> 重试
+                <Button onClick={() => setCreateDialogOpen(true)}>
+                  <Plus /> 新建工程
                 </Button>
               </EmptyContent>
-            </Empty>
-          ) : projects.length === 0 ? (
-            <Empty className="min-h-96 border">
-              <EmptyHeader>
-                <EmptyMedia variant="icon">
-                  <Box />
-                </EmptyMedia>
-                <EmptyTitle>{deferredKeyword ? "没有匹配的工程" : "暂无编程工程"}</EmptyTitle>
-                <EmptyDescription>
-                  {deferredKeyword ? "尝试调整搜索内容。" : "创建工程后即可编辑主流程和 Lua 模块。"}
-                </EmptyDescription>
-              </EmptyHeader>
-              {!deferredKeyword && (
-                <EmptyContent>
-                  <Button onClick={() => setCreateDialogOpen(true)}>
-                    <Plus /> 新建工程
-                  </Button>
-                </EmptyContent>
-              )}
-            </Empty>
-          ) : (
-            <div className="grid gap-3 lg:grid-cols-2">
-              {projects.map((project) => (
-                <article
-                  key={project.id}
-                  className="bg-background hover:border-foreground/20 group relative flex min-h-32 flex-col rounded-md border p-4 transition-colors"
-                >
-                  <button
-                    type="button"
-                    className="focus-visible:ring-ring/50 absolute inset-0 rounded-md text-left outline-none focus-visible:ring-[3px]"
-                    onClick={() => navigate(`/programming/${project.id}/program`)}
-                    aria-label={`打开工程 ${project.name}`}
-                  />
-                  <div className="pointer-events-none relative flex items-start gap-3">
-                    <span className="bg-foreground text-background flex size-10 shrink-0 items-center justify-center rounded-md">
-                      <Code2 className="size-5" />
-                    </span>
-                    <div className="min-w-0 flex-1">
-                      <div className="flex min-w-0 items-center gap-2 pr-8">
-                        <h2 className="truncate text-sm font-semibold">{project.name}</h2>
-                        <Badge
-                          variant="outline"
-                          className={
-                            project.isPublished
-                              ? "shrink-0 border-emerald-200 bg-emerald-50 font-normal text-emerald-700 dark:border-emerald-900 dark:bg-emerald-950 dark:text-emerald-300"
-                              : "text-muted-foreground shrink-0 font-normal"
-                          }
-                        >
-                          {project.isPublished ? "已发布" : "草稿"}
-                        </Badge>
-                      </div>
-                      <p className="text-muted-foreground mt-1 line-clamp-2 min-h-8 text-xs leading-4">
-                        {project.description?.trim() || "无工程说明"}
-                      </p>
+            )}
+          </Empty>
+        ) : (
+          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+            {projects.map((project) => (
+              <article
+                key={project.id}
+                className="group bg-background hover:border-foreground/25 relative flex min-h-44 cursor-pointer flex-col rounded-lg border p-4 shadow-xs transition-[border-color,box-shadow,transform] duration-200 hover:-translate-y-0.5 hover:shadow-sm"
+              >
+                <button
+                  type="button"
+                  className="focus-visible:ring-ring/50 absolute inset-0 rounded-lg text-left outline-none focus-visible:ring-[3px]"
+                  onClick={() => navigate(`/programming/${project.id}/program`)}
+                  aria-label={`打开工程 ${project.name}`}
+                />
+                <div className="pointer-events-none relative flex items-start gap-3">
+                  <span className="bg-muted text-foreground flex size-10 shrink-0 items-center justify-center rounded-lg">
+                    <Code2 className="size-5" />
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex min-w-0 items-center gap-2 pr-8">
+                      <h2 className="truncate text-sm font-semibold">{project.name}</h2>
+                      <Badge
+                        variant="outline"
+                        className={
+                          project.isPublished
+                            ? "shrink-0 border-emerald-200 bg-emerald-50 font-normal text-emerald-700 dark:border-emerald-900 dark:bg-emerald-950 dark:text-emerald-300"
+                            : "text-muted-foreground shrink-0 font-normal"
+                        }
+                      >
+                        {project.isPublished ? "已发布" : "草稿"}
+                      </Badge>
                     </div>
+                    <p className="text-muted-foreground mt-1 line-clamp-2 min-h-8 text-xs leading-4">
+                      {project.description?.trim() || "无工程说明"}
+                    </p>
                   </div>
-                  <div className="text-muted-foreground pointer-events-none relative mt-auto flex flex-wrap items-center gap-x-3 gap-y-1 pt-3 text-xs">
-                    <span>{getNodeCount(project)} 个节点</span>
-                    <span>{project.luaModuleCount} 个 Lua 模块</span>
-                    <span>{project.tools.length} 个工具</span>
-                    <span>{RUNTIME_LABELS[project.runtimeTarget]}</span>
-                    <span className="ml-auto">{formatTime(project.updatedAt)}</span>
-                    <ArrowRight className="size-4 transition-transform group-hover:translate-x-0.5" />
-                  </div>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon-sm"
-                        className="absolute top-3 right-3 z-10"
-                        aria-label={`${project.name} 的更多操作`}
-                      >
-                        <MoreHorizontal />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem onClick={() => setEditingProject(project)}>
-                        <Pencil /> 编辑信息
-                      </DropdownMenuItem>
-                      <DropdownMenuItem
-                        variant="destructive"
-                        onClick={() => void handleDelete(project)}
-                      >
-                        <Trash2 /> 删除工程
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </article>
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
+                </div>
+                <div className="text-muted-foreground pointer-events-none relative mt-auto flex flex-wrap items-center gap-x-3 gap-y-1 pt-3 text-xs">
+                  <span>{getNodeCount(project)} 个节点</span>
+                  <span>{project.luaModuleCount} 个 Lua 模块</span>
+                  <span>{project.tools.length} 个工具</span>
+                  <span>{RUNTIME_LABELS[project.runtimeTarget]}</span>
+                  <span className="ml-auto">{formatTime(project.updatedAt)}</span>
+                  <ArrowRight className="size-4 transition-transform group-hover:translate-x-0.5" />
+                </div>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon-sm"
+                      className="absolute top-3 right-3 z-10"
+                      aria-label={`${project.name} 的更多操作`}
+                    >
+                      <MoreHorizontal />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={() => setEditingProject(project)}>
+                      <Pencil /> 编辑信息
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      variant="destructive"
+                      onClick={() => void handleDelete(project)}
+                    >
+                      <Trash2 /> 删除工程
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </article>
+            ))}
+          </div>
+        )}
+      </PageShell>
 
       <ProjectNameDialog
         mode="create"
@@ -292,6 +297,6 @@ export default function ProgrammingProjectsPage() {
         onOpenChange={(open) => !open && setEditingProject(null)}
         onSubmit={(dto) => editingProject && updateMutation.mutate({ id: editingProject.id, dto })}
       />
-    </div>
+    </>
   );
 }

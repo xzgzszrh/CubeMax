@@ -4,7 +4,7 @@ import { Logger } from "@nestjs/common";
 /**
  * Extension upgrade script for version 0.0.2
  *
- * Example upgrade logic for simple-blog extension
+ * Example upgrade logic for an extension
  */
 export class Upgrade {
     private readonly logger = new Logger(Upgrade.name);
