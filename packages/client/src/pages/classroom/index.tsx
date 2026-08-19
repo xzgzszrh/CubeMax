@@ -1,7 +1,6 @@
 import { definePageMeta, useDocumentHead } from "@buildingai/hooks";
 import {
   getActiveOrganizationId,
-  OrganizationPermission,
   setActiveOrganizationId,
   useWorkspaceContextQuery,
   WORKSPACE_CHANGED_EVENT,
@@ -21,7 +20,7 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
 import { MyAssignmentList } from "@/components/assignments";
-import { XiaozhiDevicePanel } from "@/components/settings-dialog/settings-items/xiaozhi-device-panel";
+import { CubeCatDeviceManager } from "@/components/settings-dialog/settings-items/my-cubecat-setting";
 
 export const meta = definePageMeta({
   title: "课堂",
@@ -57,13 +56,6 @@ const ClassroomPage = () => {
     setActiveId(fallback);
     setActiveOrganizationId(fallback);
   }, [activeOrganizationId, context]);
-
-  const activeOrganization = context?.organizations.find(
-    (item) => item.id === activeOrganizationId,
-  );
-  const permissions = activeOrganization?.permissions ?? [];
-  const canManageAssets = permissions.includes(OrganizationPermission.ASSET_MANAGE);
-  const canReadMembers = permissions.includes(OrganizationPermission.MEMBER_READ);
 
   function switchWorkspace(organizationId: string | null) {
     setActiveOrganizationId(organizationId);
@@ -134,11 +126,7 @@ const ClassroomPage = () => {
           </TabsList>
 
           <TabsContent value="devices" className="pt-2">
-            <XiaozhiDevicePanel
-              organizationId={activeOrganizationId}
-              canManageAssets={canManageAssets}
-              canReadMembers={canReadMembers}
-            />
+            <CubeCatDeviceManager />
           </TabsContent>
 
           {activeOrganizationId ? (

@@ -18,13 +18,13 @@ export const ToolSection = styled.div`
   display: flex;
   align-items: center;
   background-color: #fff;
-  border: 1px solid rgba(68, 83, 130, 0.25);
-  border-radius: 10px;
+  border: 1px solid #dfe4ec;
+  border-radius: 12px;
   box-shadow:
     rgba(0, 0, 0, 0.04) 0px 2px 6px 0px,
     rgba(0, 0, 0, 0.02) 0px 4px 12px 0px;
   column-gap: 2px;
-  height: 40px;
+  height: 42px;
   padding: 0 4px;
   pointer-events: auto;
 `;
@@ -35,11 +35,11 @@ export const LeftToolSection = styled(ToolSection)`
   top: 50%;
   transform: translateY(-50%);
   flex-direction: column;
-  width: 50px;
+  width: 48px;
   height: auto;
   padding: 7px;
   row-gap: 5px;
-  border-radius: 15px;
+  border-radius: 14px;
 
   .semi-button,
   .ui-mouse-pad-selector {
@@ -47,14 +47,14 @@ export const LeftToolSection = styled(ToolSection)`
     height: 36px !important;
     min-width: 36px;
     border-radius: 10px !important;
-    color: rgba(32, 41, 69, 0.75);
+    color: #475569;
   }
 
   .semi-button:hover,
   .ui-mouse-pad-selector:hover,
   .ui-mouse-pad-selector-active {
-    color: #0064fa;
-    background: rgba(0, 100, 250, 0.08);
+    color: #1d4ed8;
+    background: #eff6ff;
   }
 `;
 

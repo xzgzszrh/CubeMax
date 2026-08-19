@@ -21,33 +21,35 @@ const DEFAULT_NODE_PANEL_GROUP = {
 
 const NodeWrap = styled.div`
   width: 100%;
-  height: 36px;
-  border-radius: 6px;
+  min-height: 44px;
+  border-radius: 9px;
   box-sizing: border-box;
   display: flex;
   align-items: center;
   cursor: pointer;
-  padding: 0 12px;
+  padding: 7px 10px;
+  gap: 10px;
   &:hover {
-    background-color: hsl(252deg 62% 55% / 9%);
-    color: hsl(252 62% 54.9%);
+    background-color: #eff6ff;
+    color: #1d4ed8;
   }
 `;
 
 const NodeLabel = styled.div`
-  font-size: 14px;
+  font-size: 13px;
+  line-height: 18px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  margin-left: 10px;
+  margin-left: 0;
 `;
 
 const NodeGroupTitle = styled.div`
-  color: rgba(28, 31, 35, 0.55);
+  color: #64748b;
   font-size: 13px;
   font-weight: 600;
   line-height: 20px;
-  padding: 4px 12px 2px;
+  padding: 10px 10px 5px;
 `;
 
 const NodeGroup = styled.div`
@@ -80,11 +82,15 @@ function Node(props: NodeProps) {
 }
 
 const NodesWrap = styled.div`
-  width: 420px;
+  width: 392px;
   max-height: 520px;
   box-sizing: border-box;
   overflow: auto;
-  padding: 6px;
+  padding: 8px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  box-shadow: 0 12px 32px rgba(15, 23, 42, 0.12);
   &::-webkit-scrollbar {
     display: none;
   }

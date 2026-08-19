@@ -3,7 +3,7 @@ import SwiftUI
 
 @MainActor
 final class AppModel: ObservableObject {
-    static let defaultAPIBaseURL = "http://127.0.0.1:4090/api"
+    static let defaultAPIBaseURL = APIEndpoint.productionURLString
 
     @Published private(set) var token: String?
     @Published private(set) var user: UserInfo?
@@ -13,7 +13,8 @@ final class AppModel: ObservableObject {
     @Published private(set) var conversations: [ConversationRecord] = []
     @Published private(set) var accounts: [XiaomiHomeAccount] = []
     @Published private(set) var devices: [XiaomiDevice] = []
-    @Published private(set) var cubeCatDevices: [CubeCatDevice] = []
+    @Published private(set) var cubeCatDevices: [XiaozhiCubeCatDevice] = []
+    @Published private(set) var buildingAgents: [BuildingAgentSummary] = []
     @Published private(set) var isBootstrapping = true
     @Published private(set) var isLoading = false
     @Published var errorMessage: String?
@@ -35,7 +36,12 @@ final class AppModel: ObservableObject {
         let savedToken = KeychainStore.shared.load()
         token = savedToken
         defaultModelId = UserDefaults.standard.string(forKey: "cubemax.default-model-id") ?? ""
-        api = APIClient(baseURLString: UserDefaults.standard.string(forKey: "cubemax.api-base-url") ?? Self.defaultAPIBaseURL, token: savedToken)
+        let savedBaseURL = UserDefaults.standard.string(forKey: "cubemax.api-base-url")
+        let normalizedBaseURL = savedBaseURL.flatMap { APIEndpoint.normalizedString(from: $0) } ?? Self.defaultAPIBaseURL
+        if savedBaseURL != normalizedBaseURL {
+            UserDefaults.standard.set(normalizedBaseURL, forKey: "cubemax.api-base-url")
+        }
+        api = APIClient(baseURLString: normalizedBaseURL, token: savedToken)
         Task { [weak self] in
             guard let self else { return }
             await self.restoreSession()
@@ -44,8 +50,8 @@ final class AppModel: ObservableObject {
 
     func login(username: String, password: String, baseURL: String) async throws {
         errorMessage = nil
-        try await api.updateBaseURL(baseURL)
-        UserDefaults.standard.set(baseURL, forKey: "cubemax.api-base-url")
+        let normalizedBaseURL = try await api.updateBaseURL(baseURL)
+        UserDefaults.standard.set(normalizedBaseURL, forKey: "cubemax.api-base-url")
         let response = try await api.login(username: username, password: password)
         try keychain.save(token: response.token)
         token = response.token
@@ -81,7 +87,13 @@ final class AppModel: ObservableObject {
         if let organizationId { UserDefaults.standard.set(organizationId, forKey: "cubemax.workspace-id") }
         else { UserDefaults.standard.removeObject(forKey: "cubemax.workspace-id") }
         await api.setOrganizationId(organizationId)
+        cubeCatDevices = []
+        buildingAgents = []
+        accounts = []
+        devices = []
         await loadDashboard()
+        await loadCubeCatDevices()
+        await loadSmartHome()
     }
 
     func loadWorkspace() async {
@@ -109,8 +121,56 @@ final class AppModel: ObservableObject {
     }
 
     func loadCubeCatDevices() async {
-        do { cubeCatDevices = try await api.cubeCatDevices() }
+        do {
+            async let loadedDevices: [XiaozhiCubeCatDevice] = api.xiaozhiCubeCatDevices()
+            async let loadedAgents: Paginated<BuildingAgentSummary> = api.myBuildingAgents()
+            let (devices, agents) = try await (loadedDevices, loadedAgents)
+            cubeCatDevices = devices
+            buildingAgents = agents.items
+        }
         catch { errorMessage = localized(error) }
+    }
+
+    func updateCubeCatDevice(
+        _ device: XiaozhiCubeCatDevice,
+        alias: String,
+        settings: CubeCatDeviceSettings,
+        autoUpdate: Bool
+    ) async throws {
+        if alias.trimmingCharacters(in: .whitespacesAndNewlines) != device.alias {
+            try await api.updateXiaozhiDeviceAlias(
+                agentId: device.agentId,
+                deviceId: device.id,
+                macAddress: device.macAddress,
+                alias: alias.trimmingCharacters(in: .whitespacesAndNewlines)
+            )
+        }
+        if settings.volume != device.settings.volume ||
+            settings.brightness != device.settings.brightness ||
+            settings.doNotDisturb != device.settings.doNotDisturb {
+            try await api.updateXiaozhiDeviceSettings(
+                agentId: device.agentId,
+                deviceId: device.id,
+                settings: settings
+            )
+        }
+        if autoUpdate != device.autoUpdate {
+            try await api.updateXiaozhiDeviceAutoUpdate(
+                agentId: device.agentId,
+                deviceId: device.id,
+                autoUpdate: autoUpdate,
+                macAddress: device.macAddress
+            )
+        }
+        await loadCubeCatDevices()
+    }
+
+    func switchCubeCatAgent(_ device: XiaozhiCubeCatDevice, buildingAgentId: String?) async throws {
+        try await api.linkBuildingAgent(
+            xiaozhiAgentId: device.agentId,
+            buildingAgentId: buildingAgentId
+        )
+        await loadCubeCatDevices()
     }
 
     func loadLuaRuns(for device: CubeCatDevice) async throws -> [LuaDeviceRun] {
@@ -218,6 +278,7 @@ final class AppModel: ObservableObject {
         accounts = []
         devices = []
         cubeCatDevices = []
+        buildingAgents = []
     }
 
     private func localized(_ error: Error) -> String {

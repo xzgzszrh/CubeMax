@@ -34,6 +34,7 @@ export default {
     account: {
       label: "账户",
       profile: "账户",
+      cubeCat: "我的方糖猫",
       smartHome: "我的智能家居",
       workspace: "工作空间",
       wallet: "我的积分",

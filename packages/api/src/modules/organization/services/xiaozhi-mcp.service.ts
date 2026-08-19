@@ -21,7 +21,6 @@ import { HttpErrorFactory } from "@buildingai/errors";
 import { BuiltinMcpRegistryService } from "@modules/ai/mcp/services/builtin-mcp-registry.service";
 import { Injectable, Logger, type OnModuleDestroy, type OnModuleInit } from "@nestjs/common";
 import { EventEmitter2 } from "@nestjs/event-emitter";
-import { createCipheriv, createDecipheriv, createHash, randomBytes } from "crypto";
 
 import { OrganizationPermission } from "../constants/organization-permissions";
 import type {
@@ -30,6 +29,7 @@ import type {
     UpdateXiaozhiMcpSettingsDto,
 } from "../dto/xiaozhi-mcp.dto";
 import { OrganizationService } from "./organization.service";
+import { XiaozhiCredentialCryptoService } from "./xiaozhi-credential-crypto.service";
 
 /**
  * Emitted whenever the gateway receives a completion report from an agent's
@@ -94,40 +94,6 @@ function mcpEndpointBase() {
 
 function upstreamApiBase() {
     return (process.env.XIAOZHI_API_BASE || "https://xiaozhi.me/api").replace(/\/$/, "");
-}
-
-// Same key derivation as XiaozhiService so both services can read each
-// other's encrypted values (account tokens in, endpoint tokens out).
-let cachedEncryptionKey: Buffer | null = null;
-function encryptionKey() {
-    if (!cachedEncryptionKey) {
-        cachedEncryptionKey = createHash("sha256")
-            .update(
-                process.env.XIAOZHI_ENCRYPTION_KEY ||
-                    process.env.JWT_SECRET ||
-                    "BuildingAI-xiaozhi-development-key",
-            )
-            .digest();
-    }
-    return cachedEncryptionKey;
-}
-
-function encryptSecret(value: string) {
-    const iv = randomBytes(12);
-    const cipher = createCipheriv("aes-256-gcm", encryptionKey(), iv);
-    const encrypted = Buffer.concat([cipher.update(value, "utf8"), cipher.final()]);
-    return [iv, cipher.getAuthTag(), encrypted].map((part) => part.toString("base64url")).join(".");
-}
-
-function decryptSecret(value: string) {
-    const [iv, tag, encrypted] = value.split(".");
-    if (!iv || !tag || !encrypted) throw new Error("无效的加密凭据");
-    const decipher = createDecipheriv("aes-256-gcm", encryptionKey(), Buffer.from(iv, "base64url"));
-    decipher.setAuthTag(Buffer.from(tag, "base64url"));
-    return Buffer.concat([
-        decipher.update(Buffer.from(encrypted, "base64url")),
-        decipher.final(),
-    ]).toString("utf8");
 }
 
 /** Strip endpoint tokens out of error messages before they are persisted. */
@@ -267,6 +233,7 @@ export class XiaozhiMcpGatewayService implements OnModuleInit, OnModuleDestroy {
         private readonly builtinMcpRegistry: BuiltinMcpRegistryService,
         private readonly classroomToolRegistry: ClassroomToolRegistryService,
         private readonly eventEmitter: EventEmitter2,
+        private readonly credentialCrypto: XiaozhiCredentialCryptoService,
     ) {}
 
     async onModuleInit() {
@@ -471,8 +438,9 @@ export class XiaozhiMcpGatewayService implements OnModuleInit, OnModuleDestroy {
 
         let socket: GatewaySocket;
         try {
+            await this.credentialCrypto.ensureReadable();
             socket = new WebSocketImpl(
-                decryptSecret(connection.endpointEncrypted),
+                this.credentialCrypto.decrypt(connection.endpointEncrypted),
             ) as GatewaySocket;
         } catch (error) {
             this.scheduleReconnect(state, safeErrorMessage(error));
@@ -1036,6 +1004,7 @@ export class XiaozhiMcpService {
         private readonly accountRepository: Repository<XiaozhiAccount>,
         private readonly organizationService: OrganizationService,
         private readonly gateway: XiaozhiMcpGatewayService,
+        private readonly credentialCrypto: XiaozhiCredentialCryptoService,
     ) {}
 
     private async requireRead(userId: string, organizationId?: string | null) {
@@ -1232,12 +1201,13 @@ export class XiaozhiMcpService {
 
     /** Ask the upstream console to mint an MCP endpoint token for one agent. */
     private async generateEndpointToken(account: XiaozhiAccount, agent: XiaozhiAgentBinding) {
+        await this.credentialCrypto.ensureReadable();
         const headers: Record<string, string> = {
             Accept: "application/json",
-            Authorization: `Bearer ${decryptSecret(account.accessTokenEncrypted)}`,
+            Authorization: `Bearer ${this.credentialCrypto.decrypt(account.accessTokenEncrypted)}`,
         };
         if (account.sessionCookieEncrypted) {
-            headers.Cookie = decryptSecret(account.sessionCookieEncrypted);
+            headers.Cookie = this.credentialCrypto.decrypt(account.sessionCookieEncrypted);
         }
         let response: Response;
         try {
@@ -1269,6 +1239,7 @@ export class XiaozhiMcpService {
 
     /** One connection per agent binding; soft-deleted rows are revived. */
     private async upsertConnection(agent: XiaozhiAgentBinding, endpoint: string) {
+        await this.credentialCrypto.ensureWritable();
         const existing = await this.connectionRepository.findOne({
             where: { agentBindingId: agent.id },
             withDeleted: true,
@@ -1284,7 +1255,7 @@ export class XiaozhiMcpService {
         connection.organizationId = agent.organizationId;
         connection.ownerUserId = agent.ownerUserId;
         connection.agentName = agent.name;
-        connection.endpointEncrypted = encryptSecret(endpoint);
+        connection.endpointEncrypted = this.credentialCrypto.encrypt(endpoint);
         connection.enabled = true;
         connection.status = XiaozhiMcpConnectionStatus.CONNECTING;
         connection.lastError = null;

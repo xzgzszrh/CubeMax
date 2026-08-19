@@ -3,14 +3,15 @@
  * SPDX-License-Identifier: MIT
  */
 
-import type { FlowNodeRegistry } from "../../typings";
 import iconStart from "../../assets/icon-start.jpg";
-import { formMeta } from "./form-meta";
+import type { FlowNodeRegistry } from "../../typings";
 import { WorkflowNodeType } from "../constants";
+import { formMeta } from "./form-meta";
 
 export const BlockEndNodeRegistry: FlowNodeRegistry = {
   type: WorkflowNodeType.BlockEnd,
   meta: {
+    nodePanelLabel: "子流程出口",
     isNodeEnd: true,
     deleteDisable: true,
     copyDisable: true,

@@ -23,15 +23,7 @@ import {
 } from "@buildingai/ui/components/ui/table";
 import { Textarea } from "@buildingai/ui/components/ui/textarea";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import {
-  Copy,
-  LoaderCircle,
-  Pencil,
-  PlugZap,
-  RotateCw,
-  Trash2,
-  Unplug,
-} from "lucide-react";
+import { Copy, LoaderCircle, Pencil, PlugZap, RotateCw, Trash2, Unplug } from "lucide-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 
@@ -113,7 +105,11 @@ export function useXiaozhiMcpSettingsQuery(options?: { enabled?: boolean }) {
 
 export function useUpdateXiaozhiMcpSettingsMutation(options?: any) {
   const queryClient = useQueryClient();
-  return useMutation<XiaozhiMcpSettings, Error, Omit<XiaozhiMcpSettings, "promptSnippet" | "updatedAt">>({
+  return useMutation<
+    XiaozhiMcpSettings,
+    Error,
+    Omit<XiaozhiMcpSettings, "promptSnippet" | "updatedAt">
+  >({
     mutationFn: (data) =>
       apiHttpClient.patch("/organizations/xiaozhi/mcp/settings", data, {
         headers: organizationHeaders(),
@@ -329,9 +325,7 @@ function McpSettingsDialog({
             disabled={updateMutation.isPending || !draft.toolName.trim()}
             onClick={() => updateMutation.mutate(draft)}
           >
-            {updateMutation.isPending ? (
-              <LoaderCircle className="size-4 animate-spin" />
-            ) : null}
+            {updateMutation.isPending ? <LoaderCircle className="size-4 animate-spin" /> : null}
             保存并重载
           </Button>
         </DialogFooter>
@@ -351,8 +345,7 @@ export function XiaozhiMcpSetting({ canManage }: { canManage: boolean }) {
   const [busyId, setBusyId] = useState("");
 
   const { data: agents = [] } = useXiaozhiAgentsQuery();
-  const { data: connections = [], isLoading: connectionsLoading } =
-    useXiaozhiMcpConnectionsQuery();
+  const { data: connections = [], isLoading: connectionsLoading } = useXiaozhiMcpConnectionsQuery();
   const { data: settings } = useXiaozhiMcpSettingsQuery();
 
   const configureMutation = useBatchConfigureXiaozhiMcpMutation({
@@ -575,9 +568,7 @@ export function XiaozhiMcpSetting({ canManage }: { canManage: boolean }) {
                             >
                               <RotateCw
                                 className={
-                                  busyId === connection.id
-                                    ? "size-4 animate-spin"
-                                    : "size-4"
+                                  busyId === connection.id ? "size-4 animate-spin" : "size-4"
                                 }
                               />
                             </Button>
@@ -626,7 +617,7 @@ export function XiaozhiMcpSetting({ canManage }: { canManage: boolean }) {
             {connectionsLoading ? "正在加载 MCP 连接" : "暂无可配置智能体"}
           </p>
           <p className="text-muted-foreground max-w-sm text-xs">
-            绑定小智账号并同步智能体后，可以在这里批量配置 MCP 接入点。
+            在“设备管理”中绑定组织的小智账号并同步智能体后，可以在这里批量配置 MCP 接入点。
           </p>
         </div>
       )}
@@ -648,9 +639,7 @@ export function XiaozhiMcpSetting({ canManage }: { canManage: boolean }) {
               disabled={removeMutation.isPending}
               onClick={() => deleteTarget && removeMutation.mutate(deleteTarget.id)}
             >
-              {removeMutation.isPending ? (
-                <LoaderCircle className="size-4 animate-spin" />
-              ) : null}
+              {removeMutation.isPending ? <LoaderCircle className="size-4 animate-spin" /> : null}
               删除接入点
             </Button>
           </DialogFooter>

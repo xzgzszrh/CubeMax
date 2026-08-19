@@ -5,18 +5,18 @@
 
 :root {
   /* Port colors */
-  --g-workflow-port-color-primary: #4d53e8;
-  --g-workflow-port-color-secondary: #9197f1;
-  --g-workflow-port-color-error: #ff0000;
+  --g-workflow-port-color-primary: #2563eb;
+  --g-workflow-port-color-secondary: #94a3b8;
+  --g-workflow-port-color-error: #dc2626;
   --g-workflow-port-color-background: #ffffff;
 
   /* Line colors */
   --g-workflow-line-color-hidden: transparent;
-  --g-workflow-line-color-default: #4d53e8;
-  --g-workflow-line-color-drawing: #5dd6e3;
-  --g-workflow-line-color-hover: #37d0ff;
-  --g-workflow-line-color-selected: #37d0ff;
-  --g-workflow-line-color-error: red;
+  --g-workflow-line-color-default: #64748b;
+  --g-workflow-line-color-drawing: #2563eb;
+  --g-workflow-line-color-hover: #1d4ed8;
+  --g-workflow-line-color-selected: #1d4ed8;
+  --g-workflow-line-color-error: #dc2626;
 }
 
 .gedit-selector-bounds-foreground {
@@ -59,6 +59,27 @@
   width: 100%;
   height: 100%;
   min-height: 0;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 1px 1px, rgba(100, 116, 139, 0.16) 1px, transparent 0) 0 0 / 20px 20px,
+    #f8fafc;
+}
+
+.doc-free-feature-overview .gedit-playground {
+  background: transparent !important;
+}
+
+.doc-free-feature-overview .gedit-flow-render-layer {
+  background: transparent;
+}
+
+.doc-free-feature-overview [data-port-entity-type] {
+  z-index: 3;
+}
+
+.doc-free-feature-overview .workflow-port-render:hover .workflow-point-bg,
+.doc-free-feature-overview .workflow-port-render.hovered .workflow-point-bg {
+  box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.14);
 }
 
 @keyframes blink {
@@ -74,8 +95,9 @@
 }
 
 .node-running {
-  border: 1px dashed rgb(78, 64, 229) !important;
-  border-radius: 16px;
+  border: 1px dashed #2563eb !important;
+  border-radius: 12px;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1) !important;
 }
 .demo-editor {
   flex-grow: 1;

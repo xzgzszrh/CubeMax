@@ -130,6 +130,36 @@ export const router = createBrowserRouter([
         element: <PublishChatPage />,
       },
       {
+        path: "/programming/:projectId",
+        element: (
+          <AuthGuard>
+            <ProgrammingWorkspaceLayout />
+          </AuthGuard>
+        ),
+        children: [
+          {
+            index: true,
+            element: <Navigate to="program" replace />,
+          },
+          {
+            path: "program",
+            element: <ProgrammingCanvasPage />,
+          },
+          {
+            path: "lua",
+            element: <LuaModulesPage />,
+          },
+          {
+            path: "simulator",
+            element: <SimulatorPage />,
+          },
+          {
+            path: "tools",
+            element: <ProgrammingToolsPage />,
+          },
+        ],
+      },
+      {
         element: <DefaultLayout />,
         errorElement: (
           <DefaultLayout>
@@ -248,36 +278,6 @@ export const router = createBrowserRouter([
                 <TriggersPage />
               </AuthGuard>
             ),
-          },
-          {
-            path: "/programming/:projectId",
-            element: (
-              <AuthGuard>
-                <ProgrammingWorkspaceLayout />
-              </AuthGuard>
-            ),
-            children: [
-              {
-                index: true,
-                element: <Navigate to="program" replace />,
-              },
-              {
-                path: "program",
-                element: <ProgrammingCanvasPage />,
-              },
-              {
-                path: "lua",
-                element: <LuaModulesPage />,
-              },
-              {
-                path: "simulator",
-                element: <SimulatorPage />,
-              },
-              {
-                path: "tools",
-                element: <ProgrammingToolsPage />,
-              },
-            ],
           },
           // Keep old bookmarks usable while the product vocabulary moves to 编程。
           {

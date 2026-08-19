@@ -21,7 +21,7 @@ import {
 } from "@buildingai/ui/components/ui/sidebar";
 import { useAlertDialog } from "@buildingai/ui/hooks/use-alert-dialog";
 import { isEnabled } from "@buildingai/utils/is";
-import { ChevronsUpDown, LogOut, Settings, User } from "lucide-react";
+import { ChevronsUpDown, Cpu, LogOut, Settings, User } from "lucide-react";
 import { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 
@@ -82,6 +82,10 @@ export function NavUser() {
             <DropdownMenuItem onClick={() => settingsDialog.open("general")}>
               <Settings />
               设置
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => settingsDialog.open("cubeCat")}>
+              <Cpu />
+              我的方糖猫
             </DropdownMenuItem>
 
             <DropdownMenuSeparator />

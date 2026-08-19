@@ -16,29 +16,6 @@ export { AiProvider } from "./ai-provider.entity";
 export { AiUserMcpServer } from "./ai-user-mcp-server.entity";
 export { UserMemory } from "./ai-user-memory.entity";
 export { AiWorkflow } from "./ai-workflow.entity";
-export {
-    XiaomiHomeAccount,
-    XiaomiHomeAccountStatus,
-    XiaomiHomeDevice,
-    XiaomiHomeOAuthSession,
-    type XiaomiHomeAccountStatusType,
-    type XiaomiHomeCapability,
-    type XiaomiHomeServer,
-    type XiaomiHomeSummary,
-} from "./xiaomi-home.entity";
-export {
-    ProgrammingProject,
-    ProgrammingProjectTool,
-    type ProgrammingProjectLuaSnapshot,
-    type ProgrammingProjectPublishedSnapshot,
-    type ProgrammingProjectToolSnapshot,
-    type ProgrammingRuntimeTarget,
-} from "./programming-project.entity";
-export {
-    ProgrammingTrigger,
-    ProgrammingTriggerType,
-    type ProgrammingTriggerTypeValue,
-} from "./programming-trigger.entity";
 export { Analyse, AnalyseActionType } from "./analyse.entity";
 export { CardBatch, CardRedeemType } from "./card-batch.entity";
 export { CardKeyStatus, CDK } from "./cdk.entity";
@@ -74,6 +51,16 @@ export { Dict } from "./dict.entity";
 export { Extension } from "./extension.entity";
 export { ExtensionFeature } from "./extension-feature.entity";
 export { File, FileType } from "./file.entity";
+export {
+    LuaDeviceConnection,
+    type LuaDeviceLimits,
+    LuaDeviceRun,
+    LuaDeviceRunLog,
+    type LuaDeviceRunStatus,
+    type LuaDeviceRuntime,
+    LuaPhysicalDevice,
+} from "./lua-device.entity";
+export { type LuaAssistantMessage, LuaModule, type LuaModuleSchema } from "./lua-module.entity";
 export { MembershipLevels } from "./membership-levels.entity";
 export { MembershipOrder } from "./membership-order.entity";
 export type { Billing, Duration } from "./membership-plans.entity";
@@ -113,6 +100,19 @@ export {
 } from "./organization-quota-log.entity";
 export { Payconfig } from "./payconfig.entity";
 export { Permission, PermissionType } from "./permission.entity";
+export {
+    ProgrammingProject,
+    type ProgrammingProjectLuaSnapshot,
+    type ProgrammingProjectPublishedSnapshot,
+    ProgrammingProjectTool,
+    type ProgrammingProjectToolSnapshot,
+    type ProgrammingRuntimeTarget,
+} from "./programming-project.entity";
+export {
+    ProgrammingTrigger,
+    ProgrammingTriggerType,
+    type ProgrammingTriggerTypeValue,
+} from "./programming-trigger.entity";
 export { Recharge } from "./recharge.entity";
 export { RechargeOrder } from "./recharge-order.entity";
 export { RefundLog } from "./refund-log.entity";
@@ -131,19 +131,15 @@ export { UserDict } from "./user-dict.entity";
 export { UserSubscription } from "./user-subscription.entity";
 export { UserToken } from "./user-token.entity";
 export {
-    LuaModule,
-    type LuaAssistantMessage,
-    type LuaModuleSchema,
-} from "./lua-module.entity";
-export {
-    LuaDeviceConnection,
-    type LuaDeviceLimits,
-    type LuaDeviceRunStatus,
-    type LuaDeviceRuntime,
-    LuaDeviceRun,
-    LuaDeviceRunLog,
-    LuaPhysicalDevice,
-} from "./lua-device.entity";
+    XiaomiHomeAccount,
+    XiaomiHomeAccountStatus,
+    type XiaomiHomeAccountStatusType,
+    type XiaomiHomeCapability,
+    XiaomiHomeDevice,
+    XiaomiHomeOAuthSession,
+    type XiaomiHomeServer,
+    type XiaomiHomeSummary,
+} from "./xiaomi-home.entity";
 export {
     XiaozhiAccount,
     XiaozhiAccountStatus,
@@ -151,13 +147,19 @@ export {
 } from "./xiaozhi-account.entity";
 export { XiaozhiAgentBinding } from "./xiaozhi-agent-binding.entity";
 export {
+    type CubeCatDeviceSettings,
+    CubeCatDeviceType,
+    type CubeCatDeviceTypeValue,
+    XiaozhiDeviceProfile,
+} from "./xiaozhi-device-profile.entity";
+export {
     XiaozhiMcpConnection,
     XiaozhiMcpConnectionStatus,
     type XiaozhiMcpConnectionStatusType,
     XiaozhiMcpSettings,
 } from "./xiaozhi-mcp-connection.entity";
 export {
-    type XiaozhiQuickCommandTarget,
     XiaozhiQuickCommand,
+    type XiaozhiQuickCommandTarget,
 } from "./xiaozhi-quick-command.entity";
 export { XiaozhiScene } from "./xiaozhi-scene.entity";

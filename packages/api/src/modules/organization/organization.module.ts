@@ -18,6 +18,7 @@ import {
     User,
     XiaozhiAccount,
     XiaozhiAgentBinding,
+    XiaozhiDeviceProfile,
     XiaozhiMcpConnection,
     XiaozhiMcpSettings,
     XiaozhiQuickCommand,
@@ -39,6 +40,7 @@ import { OrganizationService } from "./services/organization.service";
 import { OrganizationAppService } from "./services/organization-app.service";
 import { OrganizationConsoleService } from "./services/organization-console.service";
 import { OrganizationQuotaService } from "./services/organization-quota.service";
+import { XiaozhiCredentialCryptoService } from "./services/xiaozhi-credential-crypto.service";
 import { XiaozhiService } from "./services/xiaozhi.service";
 import { XiaozhiAutomationService } from "./services/xiaozhi-automation.service";
 import { XiaozhiMcpGatewayService, XiaozhiMcpService } from "./services/xiaozhi-mcp.service";
@@ -62,6 +64,7 @@ import { XiaozhiMcpGatewayService, XiaozhiMcpService } from "./services/xiaozhi-
             User,
             XiaozhiAccount,
             XiaozhiAgentBinding,
+            XiaozhiDeviceProfile,
             XiaozhiScene,
             XiaozhiQuickCommand,
             XiaozhiMcpConnection,
@@ -80,6 +83,7 @@ import { XiaozhiMcpGatewayService, XiaozhiMcpService } from "./services/xiaozhi-
     ],
     providers: [
         OrganizationService,
+        XiaozhiCredentialCryptoService,
         XiaozhiService,
         XiaozhiAutomationService,
         XiaozhiMcpGatewayService,

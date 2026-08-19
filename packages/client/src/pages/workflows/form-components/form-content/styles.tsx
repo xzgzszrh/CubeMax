@@ -10,17 +10,19 @@ export const FormWrapper = styled.div`
   width: 100%;
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  background-color: rgb(251, 251, 251);
-  border-radius: 0 0 16px 16px;
-  padding: 0 12px 12px;
+  gap: 8px;
+  background-color: #ffffff;
+  padding: 10px 12px 12px;
 `;
 
 export const FormTitleDescription = styled.div`
-  color: var(--semi-color-text-2);
+  color: #64748b;
   font-size: 12px;
-  line-height: 20px;
-  padding: 0px 4px;
+  line-height: 18px;
+  background: #f8fafc;
+  border: 1px solid #edf0f5;
+  border-radius: 8px;
+  padding: 8px 10px;
   word-break: break-all;
   white-space: break-spaces;
 `;

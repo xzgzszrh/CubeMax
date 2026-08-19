@@ -3,8 +3,8 @@
  * SPDX-License-Identifier: MIT
  */
 
-import { useNodeRender } from "@flowgram.ai/free-layout-editor";
 import type { FlowNodeEntity } from "@flowgram.ai/free-layout-editor";
+import { useNodeRender } from "@flowgram.ai/free-layout-editor";
 
 import { NodeRenderContext } from "../../context";
 
@@ -16,12 +16,13 @@ export function SidebarNodeRenderer(props: { node: FlowNodeEntity }) {
     <NodeRenderContext.Provider value={nodeRender}>
       <div
         style={{
-          background: "rgb(251, 251, 251)",
+          background: "#ffffff",
           height: "100%",
           width: "100%",
-          borderRadius: 16,
-          border: "1px solid rgba(82,100,154, 0.13)",
+          borderRadius: 12,
+          border: "1px solid #e2e8f0",
           boxSizing: "border-box",
+          overflow: "auto",
         }}
       >
         {nodeRender.form?.render()}

@@ -1,4 +1,9 @@
-import { OrganizationRole, type OrganizationRoleType } from "@buildingai/db/entities";
+import {
+    CubeCatDeviceType,
+    type CubeCatDeviceTypeValue,
+    OrganizationRole,
+    type OrganizationRoleType,
+} from "@buildingai/db/entities";
 import { Type } from "class-transformer";
 import {
     ArrayMaxSize,
@@ -22,6 +27,7 @@ import {
 } from "class-validator";
 
 const ORGANIZATION_ROLES = Object.values(OrganizationRole);
+const CUBECAT_DEVICE_TYPES = Object.values(CubeCatDeviceType);
 
 export class CreateOrganizationDto {
     @IsString()
@@ -105,6 +111,11 @@ export class BindXiaozhiAccountDto {
 export class ReconnectXiaozhiAccountDto {
     @IsOptional()
     @IsString()
+    @Length(2, 120)
+    username?: string;
+
+    @IsOptional()
+    @IsString()
     @Length(1, 200)
     password?: string;
 
@@ -159,6 +170,47 @@ export class UpdateDeviceAutoUpdateDto {
 
     @IsBoolean()
     autoUpdate: boolean;
+}
+
+export class UpdateCubeCatDeviceTypeDto {
+    @IsIn(CUBECAT_DEVICE_TYPES, { message: "方糖猫设备型号不受支持" })
+    deviceType: CubeCatDeviceTypeValue;
+}
+
+export class UpdateCubeCatDeviceSettingsDto {
+    @IsOptional()
+    @IsInt()
+    @Min(0)
+    @Max(100)
+    volume?: number;
+
+    @IsOptional()
+    @IsInt()
+    @Min(0)
+    @Max(100)
+    brightness?: number;
+
+    @IsOptional()
+    @IsBoolean()
+    doNotDisturb?: boolean;
+}
+
+export class PublishBuildingAgentToCubeCatDto {
+    @IsUUID(4, { message: "目标方糖猫智能体ID格式不正确" })
+    targetAgentId: string;
+
+    @IsString()
+    @Length(1, 120, { message: "请选择模型" })
+    model: string;
+
+    @IsString()
+    @Length(1, 160, { message: "请选择音色" })
+    voice: string;
+
+    @IsOptional()
+    @IsString()
+    @MaxLength(40)
+    language?: string;
 }
 
 export class RenameXiaozhiAgentDto {

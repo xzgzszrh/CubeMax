@@ -5,6 +5,9 @@ struct LoginView: View {
     @State private var username = ""
     @State private var password = ""
     @State private var baseURL = AppModel.defaultAPIBaseURL
+    @State private var serverDraft = AppModel.defaultAPIBaseURL
+    @State private var logoTapCount = 0
+    @State private var showServerEditor = false
     @State private var isSubmitting = false
     @State private var localError: String?
     @FocusState private var focusedField: Field?
@@ -16,9 +19,19 @@ struct LoginView: View {
             Form {
                 Section {
                     VStack(spacing: 12) {
-                        Image(systemName: "cube.transparent")
-                            .font(.system(size: 48, weight: .medium))
-                            .foregroundStyle(.indigo)
+                        Image("PixelPlanet")
+                            .resizable()
+                            .scaledToFit()
+                            .frame(width: 132, height: 96)
+                            .contentShape(Rectangle())
+                            .onTapGesture {
+                                logoTapCount += 1
+                                if logoTapCount >= 5 {
+                                    serverDraft = baseURL
+                                    logoTapCount = 0
+                                    showServerEditor = true
+                                }
+                            }
                         Text("CubeMax")
                             .font(.largeTitle.weight(.bold))
                         Text("连接你的 CubeCat 工作区")
@@ -39,19 +52,6 @@ struct LoginView: View {
                         .textContentType(.password)
                         .focused($focusedField, equals: .password)
                         .onSubmit { submit() }
-                }
-
-                Section {
-                    TextField("API 地址", text: $baseURL)
-                        .keyboardType(.URL)
-                        .textInputAutocapitalization(.never)
-                        .autocorrectionDisabled()
-                        .focused($focusedField, equals: .baseURL)
-                    Text("开发环境默认使用 127.0.0.1:4090；真机调试时请改成电脑在局域网中的地址。")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                } header: {
-                    Text("服务器")
                 }
 
                 if let localError {
@@ -79,7 +79,49 @@ struct LoginView: View {
             .background(Color(uiColor: .systemGroupedBackground))
         }
         .task {
-            baseURL = UserDefaults.standard.string(forKey: "cubemax.api-base-url") ?? AppModel.defaultAPIBaseURL
+            let savedBaseURL = UserDefaults.standard.string(forKey: "cubemax.api-base-url")
+            baseURL = savedBaseURL.flatMap { APIEndpoint.normalizedString(from: $0) } ?? AppModel.defaultAPIBaseURL
+        }
+        .sheet(isPresented: $showServerEditor) {
+            NavigationStack {
+                Form {
+                    Section("目标服务器") {
+                        TextField("API 地址", text: $serverDraft)
+                            .keyboardType(.URL)
+                            .textInputAutocapitalization(.never)
+                            .autocorrectionDisabled()
+                            .focused($focusedField, equals: .baseURL)
+                        Text("默认连接 https://max.sh.creativone.cn。自定义地址仅用于开发和测试。")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+
+                    Section {
+                        Button("恢复官方服务器") {
+                            serverDraft = AppModel.defaultAPIBaseURL
+                        }
+                    }
+                }
+                .navigationTitle("服务器设置")
+                .navigationBarTitleDisplayMode(.inline)
+                .toolbar {
+                    ToolbarItem(placement: .cancellationAction) {
+                        Button("取消") { showServerEditor = false }
+                    }
+                    ToolbarItem(placement: .confirmationAction) {
+                        Button("保存") {
+                            guard let normalized = APIEndpoint.normalizedString(from: serverDraft) else {
+                                localError = "API 地址无效，请检查服务器地址"
+                                return
+                            }
+                            baseURL = normalized
+                            UserDefaults.standard.set(normalized, forKey: "cubemax.api-base-url")
+                            showServerEditor = false
+                        }
+                    }
+                }
+            }
+            .presentationDetents([.medium])
         }
     }
 

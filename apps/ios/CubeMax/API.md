@@ -1,48 +1,49 @@
 # CubeMax iOS API 契约
 
-CubeMax 使用原生 `URLSession` 调用 BuildingAI Web API。默认开发地址为
-`http://127.0.0.1:4090/api`，生产环境通过登录页修改为部署地址。
+CubeMax 使用原生 `URLSession` 调用 BuildingAI Web API。默认地址为生产环境的
+`https://max.sh.creativone.cn/api`。登录页不直接显示服务器输入框；连续点击星球标识 5 次后可打开开发者服务器设置。真机调试建议使用局域网 HTTPS 地址。
 
 ## 请求约定
 
 - 除登录、公开回调外，发送 `Authorization: Bearer <token>`。
 - 当前组织工作区通过 `x-organization-id` 发送；个人空间不发送该请求头。
-- 服务端通常返回 `{ "code": 0, "message": "ok", "data": ... }`。客户端也接受直接返回的 `data`，便于兼容旧接口。
+- 服务端通常返回 `{ "code": 0, "message": "ok", "data": ... }`。客户端也接受直接返回的
+  `data`，便于兼容旧接口。
 - 401 时客户端清除 Keychain token 并回到登录页。
 
 ## 认证与工作区
 
-| 方法 | 路径 | 说明 |
-| --- | --- | --- |
-| POST | `/auth/login` | `{ username, password, terminal: 4 }`，返回 `token`、`expiresAt`、`user` |
-| GET | `/user/info` | 当前用户信息 |
-| POST | `/auth/logout` | 撤销当前 token |
-| GET | `/organizations/context` | 个人空间和组织工作区列表 |
+| 方法 | 路径                     | 说明                                                                     |
+| ---- | ------------------------ | ------------------------------------------------------------------------ |
+| POST | `/auth/login`            | `{ username, password, terminal: 4 }`，返回 `token`、`expiresAt`、`user` |
+| GET  | `/user/info`             | 当前用户信息                                                             |
+| POST | `/auth/logout`           | 撤销当前 token                                                           |
+| GET  | `/organizations/context` | 个人空间和组织工作区列表                                                 |
 
 ## 触发器与工程
 
-| 方法 | 路径 | 说明 |
-| --- | --- | --- |
-| GET | `/programming-triggers?page=1&pageSize=100` | 当前用户的触发器 |
-| GET | `/programming-triggers/:id` | 触发器详情和表单 JSON Schema |
-| POST | `/programming-triggers` | 创建表单触发器 |
-| PATCH | `/programming-triggers/:id` | 修改启用、置顶和名称 |
-| DELETE | `/programming-triggers/:id` | 删除触发器 |
-| POST | `/programming-triggers/:id/execute` | `{ inputs: { ... } }`，返回运行任务 ID |
-| GET | `/programming-projects?page=1&pageSize=100` | 创建触发器时选择已发布工程 |
+| 方法   | 路径                                        | 说明                                   |
+| ------ | ------------------------------------------- | -------------------------------------- |
+| GET    | `/programming-triggers?page=1&pageSize=100` | 当前用户的触发器                       |
+| GET    | `/programming-triggers/:id`                 | 触发器详情和表单 JSON Schema           |
+| POST   | `/programming-triggers`                     | 创建表单触发器                         |
+| PATCH  | `/programming-triggers/:id`                 | 修改启用、置顶和名称                   |
+| DELETE | `/programming-triggers/:id`                 | 删除触发器                             |
+| POST   | `/programming-triggers/:id/execute`         | `{ inputs: { ... } }`，返回运行任务 ID |
+| GET    | `/programming-projects?page=1&pageSize=100` | 创建触发器时选择已发布工程             |
 
 表单字段直接来自工程主流程 `start` 节点的输入 Schema。客户端支持
 `string`、`integer`、`number`、`boolean`、`object`、`array`、`enum`、默认值和必填校验。
 
 ## 对话
 
-| 方法 | 路径 | 说明 |
-| --- | --- | --- |
-| GET | `/ai-conversations?page=1&pageSize=50` | 对话列表 |
-| POST | `/ai-conversations` | 创建对话 |
-| GET | `/ai-conversations/:id/info` | 对话信息 |
-| GET | `/ai-conversations/:id/messages?page=1&pageSize=100` | 消息列表 |
-| POST | `/ai-chat` | AI SDK data stream；客户端解析 `data:` 行中的 text delta |
+| 方法 | 路径                                                 | 说明                                                     |
+| ---- | ---------------------------------------------------- | -------------------------------------------------------- |
+| GET  | `/ai-conversations?page=1&pageSize=50`               | 对话列表                                                 |
+| POST | `/ai-conversations`                                  | 创建对话                                                 |
+| GET  | `/ai-conversations/:id/info`                         | 对话信息                                                 |
+| GET  | `/ai-conversations/:id/messages?page=1&pageSize=100` | 消息列表                                                 |
+| POST | `/ai-chat`                                           | AI SDK data stream；客户端解析 `data:` 行中的 text delta |
 
 `/ai-chat` 请求需要 `modelId`（UUID）和 `messages`。客户端会优先使用已有对话的
 `modelId`，新对话可在对话页输入默认模型 ID。
@@ -51,33 +52,38 @@ CubeMax 使用原生 `URLSession` 调用 BuildingAI Web API。默认开发地址
 
 账号管理位于“我的 > 我的智能家居”，设备页面只负责设备浏览和控制。
 
-| 方法 | 路径 | 说明 |
-| --- | --- | --- |
-| GET | `/smart-home/xiaomi/accounts` | 当前用户的小米账号 |
-| POST | `/smart-home/xiaomi/import` | 导入 Home Assistant 本地脚本生成的凭据 JSON |
-| POST | `/smart-home/xiaomi/accounts/:accountId/sync` | 同步家庭和设备 |
-| PATCH | `/smart-home/xiaomi/accounts/:accountId` | 修改账号备注 |
-| DELETE | `/smart-home/xiaomi/accounts/:accountId` | 删除账号及其设备缓存 |
-| GET | `/smart-home/xiaomi/devices` | 当前用户全部设备 |
-| GET | `/smart-home/xiaomi/devices/:deviceId` | 设备详情 |
-| POST | `/smart-home/xiaomi/devices/:deviceId/refresh` | 刷新设备状态 |
-| POST | `/smart-home/xiaomi/devices/:deviceId/properties` | `{ siid, piid, value }` |
-| POST | `/smart-home/xiaomi/devices/:deviceId/actions` | `{ siid, aiid, in: [] }` |
+| 方法   | 路径                                              | 说明                                        |
+| ------ | ------------------------------------------------- | ------------------------------------------- |
+| GET    | `/smart-home/xiaomi/accounts`                     | 当前用户的小米账号                          |
+| POST   | `/smart-home/xiaomi/import`                       | 导入 Home Assistant 本地脚本生成的凭据 JSON |
+| POST   | `/smart-home/xiaomi/accounts/:accountId/sync`     | 同步家庭和设备                              |
+| PATCH  | `/smart-home/xiaomi/accounts/:accountId`          | 修改账号备注                                |
+| DELETE | `/smart-home/xiaomi/accounts/:accountId`          | 删除账号及其设备缓存                        |
+| GET    | `/smart-home/xiaomi/devices`                      | 当前用户全部设备                            |
+| GET    | `/smart-home/xiaomi/devices/:deviceId`            | 设备详情                                    |
+| POST   | `/smart-home/xiaomi/devices/:deviceId/refresh`    | 刷新设备状态                                |
+| POST   | `/smart-home/xiaomi/devices/:deviceId/properties` | `{ siid, piid, value }`                     |
+| POST   | `/smart-home/xiaomi/devices/:deviceId/actions`    | `{ siid, aiid, in: [] }`                    |
 
-设备控制能力由服务端返回的 `capabilities` 描述，客户端根据 `format`、
-`valueRange`、`valueList` 生成原生 Toggle、Slider、Picker 或输入控件。
+设备控制能力由服务端返回的 `capabilities` 描述，客户端根据 `format`、 `valueRange`、`valueList`
+生成原生 Toggle、Slider、Picker 或输入控件。
 
 ## CubeCat 设备管理
 
-“我的 > CubeCat 设备”使用现有 Lua 设备网关接口展示设备在线状态、固件能力和执行记录。
-工作流运行仍由触发器或工程页面发起，客户端不会绕过服务端直接连接设备。
+xiaozhi.me 账号属于组织资产，只允许老师、团队管理员或组织管理者在网页端的“讲台 > 设备管理”中绑定、重连、同步和移除。学生端不提供账号绑定，也不会取得账号信息；老师或管理员分配设备后，“我的 > 我的方糖猫”会自动展示当前团队中分配给该学生的设备。
 
-| 方法 | 路径 | 说明 |
-| --- | --- | --- |
-| GET | `/devices` | 在线/离线 CubeCat 设备及固件能力 |
-| GET | `/devices/:deviceId/lua-runs` | 当前账号在设备上的 Lua 执行记录 |
-| GET | `/devices/:deviceId/lua-runs/:runId/logs?after=0` | 执行日志 |
-| POST | `/devices/:deviceId/lua-runs/:runId/stop` | 停止排队或运行中的任务 |
+方糖猫资产与正在开发的 Lua/ESP 设备网关是两套独立模型，iOS 的方糖猫页面不会读取 `/devices`
+或展示 Lua 执行记录。
 
-设备与 API 网关之间使用 `/api/device-ws/v1` WebSocket；iOS 客户端只消费已鉴权的 HTTP
-管理接口，不保存设备密钥。
+| 方法  | 路径                                                                   | 说明                           |
+| ----- | ---------------------------------------------------------------------- | ------------------------------ |
+| GET   | `/organizations/xiaozhi/devices`                                       | 当前工作空间可访问的全部方糖猫 |
+| GET   | `/ai-agents/my-created?page=1&pageSize=100`                            | 切换设备智能体时的候选列表     |
+| PATCH | `/organizations/xiaozhi/agents/:agentId/building-agent`                | 快捷切换 BuildingAI 智能体     |
+| PATCH | `/organizations/xiaozhi/agents/:agentId/devices/:deviceId/alias`       | 修改设备名称                   |
+| PATCH | `/organizations/xiaozhi/agents/:agentId/devices/:deviceId/settings`    | 保存音量、亮度和勿扰偏好       |
+| PATCH | `/organizations/xiaozhi/agents/:agentId/devices/:deviceId/auto-update` | 修改自动升级设置               |
+
+设备型号 `CubeCat-Lite` / `CubeCat-S` 由老师或组织管理员在网页端指定。账号管理接口要求
+`x-organization-id`
+和组织资产管理权限；设备查询接口则按组织权限或分配关系过滤。多个设备可属于同一个 xiaozhi 智能体组，切换智能体时该组设备会共同生效。

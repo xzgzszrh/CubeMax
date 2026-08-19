@@ -3,26 +3,46 @@
  * SPDX-License-Identifier: MIT
  */
 
-import styled from "styled-components";
 import { IconInfoCircle } from "@douyinfe/semi-icons";
+import styled from "styled-components";
 
 export const NodeWrapperStyle = styled.div`
   align-items: flex-start;
-  background-color: #fff;
-  border: 1px solid rgba(6, 7, 9, 0.15);
-  border-radius: 16px;
+  background: #ffffff;
+  border: 1px solid #dfe4ec;
+  border-radius: 12px;
   box-shadow:
-    0 2px 6px 0 rgba(0, 0, 0, 0.04),
-    0 4px 12px 0 rgba(0, 0, 0, 0.02);
+    0 1px 2px rgba(15, 23, 42, 0.04),
+    0 8px 22px rgba(15, 23, 42, 0.06);
   display: flex;
   flex-direction: column;
   justify-content: center;
   position: relative;
   width: 360px;
   height: auto;
+  overflow: hidden;
+  transition:
+    border-color 160ms ease,
+    box-shadow 160ms ease,
+    transform 160ms ease;
+
+  &:hover {
+    border-color: #c4ccd9;
+    box-shadow:
+      0 1px 2px rgba(15, 23, 42, 0.05),
+      0 10px 26px rgba(15, 23, 42, 0.08);
+  }
 
   &.selected {
-    border: 1px solid #4e40e5;
+    border-color: #2563eb;
+    box-shadow:
+      0 0 0 3px rgba(37, 99, 235, 0.12),
+      0 10px 26px rgba(15, 23, 42, 0.09);
+  }
+
+  &:focus-visible {
+    outline: 3px solid rgba(37, 99, 235, 0.2);
+    outline-offset: 2px;
   }
 `;
 
@@ -30,12 +50,13 @@ export const ErrorIcon = () => (
   <IconInfoCircle
     style={{
       position: "absolute",
-      color: "red",
-      left: -6,
-      top: -6,
+      color: "#dc2626",
+      left: 10,
+      top: 10,
       zIndex: 1,
-      background: "white",
-      borderRadius: 8,
+      background: "#fff",
+      borderRadius: 999,
+      fontSize: 16,
     }}
   />
 );

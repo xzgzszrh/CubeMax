@@ -155,6 +155,13 @@ struct ProgrammingProject: Codable, Identifiable, Sendable {
     let runtimeTarget: String
 }
 
+struct BuildingAgentSummary: Codable, Identifiable, Sendable {
+    let id: String
+    let name: String
+    let avatar: String?
+    let description: String?
+}
+
 struct CubeCatDevice: Codable, Identifiable, Sendable {
     let id: String
     let deviceId: String
@@ -168,6 +175,67 @@ struct CubeCatDevice: Codable, Identifiable, Sendable {
     let lastSeenAt: String?
     let createdAt: String?
     let updatedAt: String?
+}
+
+enum CubeCatDeviceType: String, Codable, Sendable {
+    case unknown
+    case lite = "CubeCat-Lite"
+    case s = "CubeCat-S"
+
+    var displayName: String {
+        switch self {
+        case .unknown: return "型号待指定"
+        case .lite: return "CubeCat-Lite"
+        case .s: return "CubeCat-S"
+        }
+    }
+}
+
+struct CubeCatDeviceSettings: Codable, Sendable {
+    var volume: Int
+    var brightness: Int
+    var doNotDisturb: Bool
+}
+
+/// A xiaozhi.me-backed CubeCat asset. This is intentionally separate from
+/// `CubeCatDevice`, which represents the Lua/ESP gateway introduced earlier.
+struct XiaozhiCubeCatDevice: Codable, Identifiable, Sendable {
+    let id: Int
+    let agentId: String
+    let macAddress: String
+    let alias: String
+    let boardName: String
+    let appVersion: String
+    let serialNumber: String
+    let autoUpdate: Bool
+    let online: Bool
+    let authorized: Bool
+    let lastConnectedAt: String?
+    let deviceType: CubeCatDeviceType
+    let deviceTypeLabel: String
+    let agentName: String
+    let upstreamAgentId: String
+    let linkedAgentId: String?
+    let linkedAgentName: String?
+    let model: String?
+    let voice: String?
+    let agentDeviceCount: Int
+    var settings: CubeCatDeviceSettings
+    let canManage: Bool
+    let canSetDeviceType: Bool
+
+    var displayName: String {
+        alias.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? deviceTypeLabel : alias
+    }
+
+    var stableID: String { "\(agentId):\(id)" }
+
+    var assetImageName: String {
+        switch deviceType {
+        case .s: return "CubeCat-S"
+        case .lite, .unknown: return "CubeCat-Lite"
+        }
+    }
 }
 
 struct CubeCatDeviceLimits: Codable, Sendable {

@@ -17,12 +17,13 @@ import { Button } from "@buildingai/ui/components/ui/button";
 // import { Switch } from "@buildingai/ui/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@buildingai/ui/components/ui/tabs";
 import { TooltipProvider } from "@buildingai/ui/components/ui/tooltip";
-import { ArrowBigUp, Loader2, RefreshCcw } from "lucide-react";
+import { ArrowBigUp, Loader2, Radio, RefreshCcw } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useParams } from "react-router-dom";
 import { toast } from "sonner";
 
 import OrchestrationLayout from "../../_layouts";
+import { CubeCatPublishDialog } from "./cubecat-publish-dialog";
 import DebuggingPreview from "./debugging";
 import {
   AgentFeatures,
@@ -238,9 +239,10 @@ export default function Configuration() {
   const [config, setConfig] = useState<ConfigState>(() => getDefaultConfig());
   const [isSaving, setIsSaving] = useState(false);
   const [publishDialogOpen, setPublishDialogOpen] = useState(false);
+  const [cubeCatPublishDialogOpen, setCubeCatPublishDialogOpen] = useState(false);
   const hydratedRef = useRef(false);
   const skipNextAutoSaveRef = useRef(false);
-  const saveConfigRef = useRef<(next: ConfigState) => Promise<void>>(null!);
+  const saveConfigRef = useRef<(next: ConfigState) => Promise<boolean>>(null!);
 
   const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null);
   const [saveError, setSaveError] = useState(false);
@@ -291,7 +293,7 @@ export default function Configuration() {
 
   const saveConfig = useCallback(
     async (next: ConfigState) => {
-      if (!agentId) return;
+      if (!agentId) return false;
       setIsSaving(true);
 
       setSaveError(false);
@@ -370,9 +372,11 @@ export default function Configuration() {
         }
 
         setLastSavedAt(new Date());
+        return true;
       } catch (error) {
         setSaveError(true);
         console.error("Failed to save agent config:", error);
+        return false;
       } finally {
         setIsSaving(false);
       }
@@ -432,6 +436,15 @@ export default function Configuration() {
   }, [agentId, autoSave, config]);
 
   const publishLoading = publishSquareMutation.isPending || unpublishSquareMutation.isPending;
+
+  const handleOpenCubeCatPublish = useCallback(async () => {
+    if (!config.rolePrompt.trim()) {
+      toast.error("请先填写角色设定，再发布到方糖猫");
+      return;
+    }
+    const saved = await saveConfigRef.current(config);
+    if (saved) setCubeCatPublishDialogOpen(true);
+  }, [config]);
 
   const handleConfirmSquarePublish = useCallback(
     async (publishToSquare: boolean, tagIds?: string[], allowCopy?: boolean) => {
@@ -509,6 +522,14 @@ export default function Configuration() {
               >
                 <span>{agent?.squarePublishStatus === "rejected" ? "审核失败" : "发布到广场"}</span>
                 {agent?.squarePublishStatus === "rejected" ? <RefreshCcw /> : <ArrowBigUp />}
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => void handleOpenCubeCatPublish()}
+                disabled={!agentId || !agent || isSaving}
+              >
+                <Radio />
+                发布到方糖猫
               </Button>
             </div>
           </div>
@@ -673,6 +694,14 @@ export default function Configuration() {
         squareRejectReason={agent?.squareRejectReason ?? null}
         loading={publishLoading}
         onConfirm={handleConfirmSquarePublish}
+      />
+      <CubeCatPublishDialog
+        open={cubeCatPublishDialogOpen}
+        onOpenChange={setCubeCatPublishDialogOpen}
+        buildingAgentId={agentId}
+        buildingAgentName={agent?.name}
+        promptPreview={config.rolePrompt}
+        openingStatement={config.openingStatement}
       />
     </div>
   );

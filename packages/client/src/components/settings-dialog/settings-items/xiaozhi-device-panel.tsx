@@ -37,15 +37,7 @@ import {
   TableHeader,
   TableRow,
 } from "@buildingai/ui/components/ui/table";
-import {
-  Bot,
-  Link2,
-  LoaderCircle,
-  Pencil,
-  PlugZap,
-  RefreshCw,
-  Trash2,
-} from "lucide-react";
+import { Bot, Link2, LoaderCircle, Pencil, PlugZap, RefreshCw, Trash2 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 
@@ -72,9 +64,8 @@ function EmptyState({
 }
 
 /**
- * The full 方糖猫 asset panel: bound xiaozhi accounts, agent list with
- * distribution, and every account/agent management dialog. Self-contained
- * apart from the workspace scope passed in by the host page.
+ * Organization-only asset panel for teachers and administrators. Student
+ * device access uses CubeCatDeviceManager and never renders account data.
  */
 export function XiaozhiDevicePanel({
   organizationId,
@@ -85,7 +76,7 @@ export function XiaozhiDevicePanel({
   canManageAssets: boolean;
   canReadMembers: boolean;
 }) {
-  const canManage = canManageAssets || !organizationId;
+  const canManage = Boolean(organizationId && canManageAssets);
   const [xiaozhiOpen, setXiaozhiOpen] = useState(false);
   const [detailAgentId, setDetailAgentId] = useState<string | null>(null);
   const [captcha, setCaptcha] = useState<CaptchaState>(null);
@@ -98,12 +89,18 @@ export function XiaozhiDevicePanel({
   });
   const [accountRename, setAccountRename] = useState<{ id: string; label: string } | null>(null);
   const [reconnectTarget, setReconnectTarget] = useState<XiaozhiAccount | null>(null);
-  const [reconnectForm, setReconnectForm] = useState({ password: "", captchaCode: "" });
+  const [reconnectForm, setReconnectForm] = useState({
+    username: "",
+    password: "",
+    captchaCode: "",
+  });
 
   const { data: accounts = [], isLoading: accountsLoading } = useXiaozhiAccountsQuery({
     enabled: canManage,
   });
-  const { data: agents = [], isLoading: agentsLoading } = useXiaozhiAgentsQuery();
+  const { data: agents = [], isLoading: agentsLoading } = useXiaozhiAgentsQuery({
+    enabled: Boolean(organizationId),
+  });
   // Resolve from the live list so the dialog reflects mutations (e.g. a
   // fresh agent link) without being reopened.
   const detailAgent = agents.find((agent) => agent.id === detailAgentId) || null;
@@ -140,7 +137,7 @@ export function XiaozhiDevicePanel({
     onSuccess: () => {
       toast.success("小智账号已重新连接");
       setReconnectTarget(null);
-      setReconnectForm({ password: "", captchaCode: "" });
+      setReconnectForm({ username: "", password: "", captchaCode: "" });
       setCaptcha(null);
     },
   });
@@ -157,7 +154,7 @@ export function XiaozhiDevicePanel({
   async function refreshCaptcha() {
     setCaptchaLoading(true);
     try {
-      setCaptcha(await fetchXiaozhiCaptcha());
+      setCaptcha(await fetchXiaozhiCaptcha(organizationId));
     } finally {
       setCaptchaLoading(false);
     }
@@ -170,7 +167,7 @@ export function XiaozhiDevicePanel({
 
   function openReconnectDialog(account: XiaozhiAccount) {
     setReconnectTarget(account);
-    setReconnectForm({ password: "", captchaCode: "" });
+    setReconnectForm({ username: "", password: "", captchaCode: "" });
     void refreshCaptcha();
   }
 
@@ -191,7 +188,7 @@ export function XiaozhiDevicePanel({
         <div>
           <p className="font-medium">方糖猫智能体</p>
           <p className="text-muted-foreground text-xs">
-            一项绑定代表一个小智智能体，智能体下可能包含多台设备。
+            组织绑定的小智账号会同步智能体；每个智能体下可以包含多台设备并分配给一名成员。
           </p>
         </div>
         {canManage && (
@@ -231,6 +228,9 @@ export function XiaozhiDevicePanel({
               />
               <span>{account.label}</span>
               <span className="text-muted-foreground">{account.usernameMasked}</span>
+              {account.credentialStatus === "recovery_required" ? (
+                <span className="text-amber-600">需恢复</span>
+              ) : null}
               <Button
                 size="icon-xs"
                 variant="ghost"
@@ -354,7 +354,9 @@ export function XiaozhiDevicePanel({
           detail={
             canManage
               ? "绑定小智控制台账号后，系统会按智能体同步设备。"
-              : "管理员尚未向你分发方糖猫。"
+              : organizationId
+                ? "当前组织身份没有管理方糖猫资产的权限。"
+                : "请先切换到需要管理设备的组织工作空间。"
           }
         />
       )}
@@ -418,18 +420,35 @@ export function XiaozhiDevicePanel({
             <DialogTitle>重新登录小智账号</DialogTitle>
             <DialogDescription>
               {reconnectTarget
-                ? `为「${reconnectTarget.label}」（${reconnectTarget.usernameMasked}）重新获取登录会话。密码留空则使用已保存的密码。`
+                ? reconnectTarget.credentialStatus === "recovery_required"
+                  ? `「${reconnectTarget.label}」的旧凭据无法解密，请重新填写小智用户名和密码。成功后会原地恢复，不影响已有设备分配。`
+                  : `为「${reconnectTarget.label}」（${reconnectTarget.usernameMasked}）重新获取登录会话。用户名和密码留空则使用已保存的凭据。`
                 : ""}
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-3">
+            <Input
+              value={reconnectForm.username}
+              onChange={(event) =>
+                setReconnectForm({ ...reconnectForm, username: event.target.value })
+              }
+              placeholder={
+                reconnectTarget?.credentialStatus === "recovery_required"
+                  ? "小智用户名"
+                  : "小智用户名（可选）"
+              }
+            />
             <Input
               type="password"
               value={reconnectForm.password}
               onChange={(event) =>
                 setReconnectForm({ ...reconnectForm, password: event.target.value })
               }
-              placeholder="新密码（可选）"
+              placeholder={
+                reconnectTarget?.credentialStatus === "recovery_required"
+                  ? "小智密码"
+                  : "小智密码（可选）"
+              }
             />
             <div className="flex items-stretch gap-2">
               <div className="bg-muted flex h-10 min-w-32 items-center justify-center overflow-hidden border">
@@ -460,13 +479,19 @@ export function XiaozhiDevicePanel({
             </Button>
             <Button
               loading={reconnectXiaozhi.isPending}
-              disabled={!captcha || !reconnectForm.captchaCode.trim()}
+              disabled={
+                !captcha ||
+                !reconnectForm.captchaCode.trim() ||
+                (reconnectTarget?.credentialStatus === "recovery_required" &&
+                  (!reconnectForm.username.trim() || !reconnectForm.password))
+              }
               onClick={() =>
                 captcha &&
                 reconnectTarget &&
                 reconnectXiaozhi.mutate({
                   accountId: reconnectTarget.id,
-                  password: reconnectForm.password.trim() || undefined,
+                  username: reconnectForm.username.trim() || undefined,
+                  password: reconnectForm.password || undefined,
                   captchaCode: reconnectForm.captchaCode.trim(),
                   challengeId: captcha.challengeId,
                 })
@@ -482,7 +507,9 @@ export function XiaozhiDevicePanel({
         <DialogContent>
           <DialogHeader>
             <DialogTitle>绑定小智账号</DialogTitle>
-            <DialogDescription>凭据加密保存，并持续更新登录会话与智能体状态。</DialogDescription>
+            <DialogDescription>
+              仅老师和组织管理员可操作。凭据加密保存在当前组织，并用于同步智能体与设备。
+            </DialogDescription>
           </DialogHeader>
           <div className="grid gap-3">
             <Input
@@ -492,17 +519,13 @@ export function XiaozhiDevicePanel({
             />
             <Input
               value={xiaozhiForm.username}
-              onChange={(event) =>
-                setXiaozhiForm({ ...xiaozhiForm, username: event.target.value })
-              }
+              onChange={(event) => setXiaozhiForm({ ...xiaozhiForm, username: event.target.value })}
               placeholder="小智用户名"
             />
             <Input
               type="password"
               value={xiaozhiForm.password}
-              onChange={(event) =>
-                setXiaozhiForm({ ...xiaozhiForm, password: event.target.value })
-              }
+              onChange={(event) => setXiaozhiForm({ ...xiaozhiForm, password: event.target.value })}
               placeholder="小智密码"
             />
             <div className="flex items-stretch gap-2">

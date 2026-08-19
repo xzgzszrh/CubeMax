@@ -1,15 +1,60 @@
 import Foundation
 
+enum APIEndpoint {
+    static let productionURLString = "https://max.sh.creativone.cn/api"
+    static let developmentURLString = "http://127.0.0.1:4090/api"
+
+    static var productionURL: URL {
+        URL(string: productionURLString)!
+    }
+
+    /// Normalizes user-entered API URLs and upgrades the deployed endpoint to HTTPS.
+    /// The upgrade is intentionally limited to our known host so arbitrary local
+    /// development URLs are not silently changed.
+    static func normalizedURL(from value: String) -> URL? {
+        let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty,
+              var components = URLComponents(string: trimmed),
+              let rawScheme = components.scheme,
+              let host = components.host,
+              !host.isEmpty else {
+            return nil
+        }
+
+        let scheme = rawScheme.lowercased()
+        guard scheme == "http" || scheme == "https" else { return nil }
+        components.scheme = scheme
+
+        if host.caseInsensitiveCompare("max.sh.creativone.cn") == .orderedSame {
+            components.scheme = "https"
+        }
+
+        while components.path.count > 1 && components.path.hasSuffix("/") {
+            components.path.removeLast()
+        }
+        return components.url
+    }
+
+    static func normalizedString(from value: String) -> String? {
+        normalizedURL(from: value)?.absoluteString
+    }
+}
+
 enum APIClientError: LocalizedError {
     case invalidBaseURL
+    case insecureConnection
     case invalidResponse
+    case network(Error)
     case server(message: String, code: Int?)
     case decoding(Error)
 
     var errorDescription: String? {
         switch self {
         case .invalidBaseURL: return "API 地址无效，请检查服务器地址"
+        case .insecureConnection:
+            return "iOS 阻止了不安全的 HTTP 连接，请将服务器地址改为 https://max.sh.creativone.cn/api"
         case .invalidResponse: return "服务器返回了无效响应"
+        case .network(let error): return "网络请求失败：\(error.localizedDescription)"
         case .server(let message, _): return message
         case .decoding(let error): return "数据解析失败：\(error.localizedDescription)"
         }
@@ -42,16 +87,17 @@ actor APIClient {
 
     init(baseURLString: String, token: String? = nil) {
         self.session = URLSession(configuration: .default)
-        self.baseURL = URL(string: baseURLString.trimmingCharacters(in: CharacterSet(charactersIn: "/"))) ?? URL(string: "http://127.0.0.1:4090/api")!
+        self.baseURL = APIEndpoint.normalizedURL(from: baseURLString) ?? APIEndpoint.productionURL
         self.token = token
     }
 
-    func updateBaseURL(_ value: String) throws {
-        guard let url = URL(string: value.trimmingCharacters(in: CharacterSet(charactersIn: "/"))),
-              let scheme = url.scheme,
-              ["http", "https"].contains(scheme.lowercased()),
-              url.host != nil else { throw APIClientError.invalidBaseURL }
+    @discardableResult
+    func updateBaseURL(_ value: String) throws -> String {
+        guard let url = APIEndpoint.normalizedURL(from: value) else {
+            throw APIClientError.invalidBaseURL
+        }
         baseURL = url
+        return url.absoluteString
     }
 
     func setToken(_ value: String?) { token = value }
@@ -80,7 +126,61 @@ actor APIClient {
         try await request("/programming-projects", query: ["page": "1", "pageSize": "100"])
     }
 
-    func cubeCatDevices() async throws -> [CubeCatDevice] { try await request("/devices") }
+    /// xiaozhi-backed CubeCat assets. Keep this separate from `/devices`,
+    /// which is reserved for the Lua/ESP runtime.
+    func xiaozhiCubeCatDevices() async throws -> [XiaozhiCubeCatDevice] {
+        try await request("/organizations/xiaozhi/devices")
+    }
+
+    func myBuildingAgents() async throws -> Paginated<BuildingAgentSummary> {
+        try await request("/ai-agents/my-created", query: ["page": "1", "pageSize": "100"])
+    }
+
+    func linkBuildingAgent(xiaozhiAgentId: String, buildingAgentId: String?) async throws {
+        try await requestVoid(
+            "/organizations/xiaozhi/agents/\(xiaozhiAgentId)/building-agent",
+            method: "PATCH",
+            body: LinkBuildingAgentRequest(agentId: buildingAgentId)
+        )
+    }
+
+    func updateXiaozhiDeviceAlias(
+        agentId: String,
+        deviceId: Int,
+        macAddress: String,
+        alias: String
+    ) async throws {
+        try await requestVoid(
+            "/organizations/xiaozhi/agents/\(agentId)/devices/\(deviceId)/alias",
+            method: "PATCH",
+            body: XiaozhiDeviceAliasRequest(macAddress: macAddress, alias: alias)
+        )
+    }
+
+    func updateXiaozhiDeviceSettings(
+        agentId: String,
+        deviceId: Int,
+        settings: CubeCatDeviceSettings
+    ) async throws {
+        try await requestVoid(
+            "/organizations/xiaozhi/agents/\(agentId)/devices/\(deviceId)/settings",
+            method: "PATCH",
+            body: settings
+        )
+    }
+
+    func updateXiaozhiDeviceAutoUpdate(
+        agentId: String,
+        deviceId: Int,
+        autoUpdate: Bool,
+        macAddress: String
+    ) async throws {
+        try await requestVoid(
+            "/organizations/xiaozhi/agents/\(agentId)/devices/\(deviceId)/auto-update",
+            method: "PATCH",
+            body: XiaozhiDeviceAutoUpdateRequest(macAddress: macAddress, autoUpdate: autoUpdate)
+        )
+    }
     func luaRuns(deviceId: String) async throws -> [LuaDeviceRun] {
         try await request("/devices/\(deviceId)/lua-runs")
     }
@@ -108,7 +208,12 @@ actor APIClient {
     func sendChat(_ payload: ChatSendRequest) async throws -> String {
         var request = try makeRequest("/ai-chat", method: "POST", body: payload)
         request.setValue("text/event-stream", forHTTPHeaderField: "Accept")
-        let (bytes, response) = try await session.bytes(for: request)
+        let (bytes, response): (URLSession.AsyncBytes, URLResponse)
+        do {
+            (bytes, response) = try await session.bytes(for: request)
+        } catch {
+            throw transportError(error)
+        }
         try validate(response)
 
         var result = ""
@@ -165,7 +270,12 @@ actor APIClient {
 
     private func request<T: Decodable & Sendable, Body: Encodable>(_ path: String, method: String = "GET", body: Body? = nil, query: [String: String] = [:]) async throws -> T {
         let request = try makeRequest(path, method: method, body: body, query: query)
-        let (data, response) = try await session.data(for: request)
+        let (data, response): (Data, URLResponse)
+        do {
+            (data, response) = try await session.data(for: request)
+        } catch {
+            throw transportError(error)
+        }
         try validate(response, data: data)
         do {
             if let envelope = try? JSONDecoder().decode(APIEnvelope<T>.self, from: data) { return envelope.data }
@@ -181,8 +291,32 @@ actor APIClient {
 
     private func requestVoid(_ path: String, method: String = "GET") async throws {
         let request = try makeRequest(path, method: method, body: Optional<EmptyRequest>.none)
-        let (data, response) = try await session.data(for: request)
+        let (data, response): (Data, URLResponse)
+        do {
+            (data, response) = try await session.data(for: request)
+        } catch {
+            throw transportError(error)
+        }
         try validate(response, data: data)
+    }
+
+    private func requestVoid<Body: Encodable>(_ path: String, method: String, body: Body) async throws {
+        let request = try makeRequest(path, method: method, body: body)
+        let (data, response): (Data, URLResponse)
+        do {
+            (data, response) = try await session.data(for: request)
+        } catch {
+            throw transportError(error)
+        }
+        try validate(response, data: data)
+    }
+
+    private func transportError(_ error: Error) -> APIClientError {
+        if let urlError = error as? URLError,
+           urlError.code == .appTransportSecurityRequiresSecureConnection {
+            return .insecureConnection
+        }
+        return .network(error)
     }
 
     private func validate(_ response: URLResponse, data: Data? = nil) throws {
@@ -213,6 +347,20 @@ actor APIClient {
 }
 
 private struct EmptyRequest: Encodable {}
+
+private struct XiaozhiDeviceAliasRequest: Encodable {
+    let macAddress: String
+    let alias: String
+}
+
+private struct XiaozhiDeviceAutoUpdateRequest: Encodable {
+    let macAddress: String
+    let autoUpdate: Bool
+}
+
+private struct LinkBuildingAgentRequest: Encodable {
+    let agentId: String?
+}
 
 private struct LoginRequest: Encodable {
     let username: String

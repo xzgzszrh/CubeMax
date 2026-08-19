@@ -2,14 +2,17 @@ import { ClassroomKitService } from "@buildingai/core/modules/classroom";
 import { InjectRepository } from "@buildingai/db/@nestjs/typeorm";
 import {
     Agent,
+    CubeCatDeviceType,
+    type CubeCatDeviceTypeValue,
     XiaozhiAccount,
     XiaozhiAccountStatus,
     XiaozhiAgentBinding,
+    XiaozhiDeviceProfile,
 } from "@buildingai/db/entities";
-import { IsNull, Repository } from "@buildingai/db/typeorm";
+import { In, IsNull, Repository } from "@buildingai/db/typeorm";
 import { HttpErrorFactory } from "@buildingai/errors";
 import { Injectable } from "@nestjs/common";
-import { createCipheriv, createDecipheriv, createHash, randomBytes, randomUUID } from "crypto";
+import { randomUUID } from "crypto";
 
 import { OrganizationPermission } from "../constants/organization-permissions";
 import {
@@ -22,12 +25,17 @@ import {
     type UpstreamChatPayload,
     type UpstreamDevicePayload,
 } from "../constants/xiaozhi-mappers";
-import type { BindXiaozhiAccountDto } from "../dto/organization.dto";
+import type { BindXiaozhiAccountDto, ReconnectXiaozhiAccountDto } from "../dto/organization.dto";
 import { OrganizationService } from "./organization.service";
+import {
+    XIAOZHI_CREDENTIAL_RECOVERY_MESSAGE,
+    XiaozhiCredentialCryptoService,
+} from "./xiaozhi-credential-crypto.service";
 import { XiaozhiMcpGatewayService } from "./xiaozhi-mcp.service";
 
 type LoginChallenge = {
     userId: string;
+    organizationId: string;
     cookie: string;
     expiresAt: number;
 };
@@ -72,27 +80,37 @@ export class XiaozhiService {
         /\/$/,
         "",
     );
-    private readonly encryptionKey = createHash("sha256")
-        .update(
-            process.env.XIAOZHI_ENCRYPTION_KEY ||
-                process.env.JWT_SECRET ||
-                "BuildingAI-xiaozhi-development-key",
-        )
-        .digest();
 
     constructor(
         @InjectRepository(XiaozhiAccount)
         private readonly accountRepository: Repository<XiaozhiAccount>,
         @InjectRepository(XiaozhiAgentBinding)
         private readonly agentRepository: Repository<XiaozhiAgentBinding>,
+        @InjectRepository(XiaozhiDeviceProfile)
+        private readonly deviceProfileRepository: Repository<XiaozhiDeviceProfile>,
         @InjectRepository(Agent)
         private readonly buildingAgentRepository: Repository<Agent>,
         private readonly organizationService: OrganizationService,
         private readonly mcpGateway: XiaozhiMcpGatewayService,
         private readonly classroomKit: ClassroomKitService,
+        private readonly credentialCrypto: XiaozhiCredentialCryptoService,
     ) {}
 
-    async getCaptcha(userId: string) {
+    /** xiaozhi credentials are organization assets and never belong to a student workspace. */
+    private async requireAccountManager(userId: string, organizationId: string | null | undefined) {
+        if (!organizationId) {
+            throw HttpErrorFactory.badRequest("小智账号只能由老师或组织管理员在组织工作空间中管理");
+        }
+        await this.organizationService.requireWorkspace(
+            userId,
+            organizationId,
+            OrganizationPermission.ASSET_MANAGE,
+        );
+        return organizationId;
+    }
+
+    async getCaptcha(userId: string, organizationId: string | null | undefined) {
+        const managedOrganizationId = await this.requireAccountManager(userId, organizationId);
         this.cleanupChallenges();
         let response: Response;
         try {
@@ -109,6 +127,7 @@ export class XiaozhiService {
         const expiresAt = Date.now() + 5 * 60_000;
         this.challenges.set(challengeId, {
             userId,
+            organizationId: managedOrganizationId,
             cookie: this.readSetCookies(response.headers),
             expiresAt,
         });
@@ -124,12 +143,9 @@ export class XiaozhiService {
         organizationId: string | null | undefined,
         dto: BindXiaozhiAccountDto,
     ) {
-        await this.organizationService.requireWorkspace(
-            userId,
-            organizationId,
-            organizationId ? OrganizationPermission.ASSET_MANAGE : undefined,
-        );
-        const login = await this.loginUpstream(userId, {
+        const managedOrganizationId = await this.requireAccountManager(userId, organizationId);
+        await this.ensureCredentialWrite();
+        const login = await this.loginUpstream(userId, managedOrganizationId, {
             username: dto.username.trim(),
             password: dto.password,
             captchaCode: dto.captchaCode,
@@ -137,14 +153,14 @@ export class XiaozhiService {
         });
         const account = await this.accountRepository.save(
             this.accountRepository.create({
-                organizationId: organizationId || null,
+                organizationId: managedOrganizationId,
                 ownerUserId: userId,
                 label: dto.label.trim(),
-                usernameEncrypted: this.encrypt(dto.username.trim()),
-                passwordEncrypted: this.encrypt(dto.password),
-                accessTokenEncrypted: this.encrypt(login.token),
+                usernameEncrypted: this.credentialCrypto.encrypt(dto.username.trim()),
+                passwordEncrypted: this.credentialCrypto.encrypt(dto.password),
+                accessTokenEncrypted: this.credentialCrypto.encrypt(login.token),
                 sessionCookieEncrypted: login.sessionCookie
-                    ? this.encrypt(login.sessionCookie)
+                    ? this.credentialCrypto.encrypt(login.sessionCookie)
                     : null,
                 upstreamUserId: login.upstreamUserId,
                 status: XiaozhiAccountStatus.ACTIVE,
@@ -163,15 +179,10 @@ export class XiaozhiService {
     }
 
     async listAccounts(userId: string, organizationId?: string | null) {
-        await this.organizationService.requireWorkspace(
-            userId,
-            organizationId,
-            organizationId ? OrganizationPermission.ASSET_READ : undefined,
-        );
+        const managedOrganizationId = await this.requireAccountManager(userId, organizationId);
+        await this.ensureCredentialRead();
         const accounts = await this.accountRepository.find({
-            where: organizationId
-                ? { organizationId }
-                : { organizationId: IsNull(), ownerUserId: userId },
+            where: { organizationId: managedOrganizationId },
             order: { createdAt: "ASC" },
         });
         return accounts.map((account) => this.toPublicAccount(account));
@@ -194,14 +205,107 @@ export class XiaozhiService {
         });
     }
 
+    /**
+     * Flatten devices from every xiaozhi agent the caller can access. Device
+     * profiles are local-only metadata, while live state remains sourced from
+     * xiaozhi.me.
+     */
+    async listAllDevices(userId: string, organizationId?: string | null) {
+        const access = await this.organizationService.requireWorkspace(userId, organizationId);
+        const agents = await this.listAgents(userId, organizationId);
+        if (!agents.length) return [];
+
+        const accountIds = [...new Set(agents.map((agent) => agent.xiaozhiAccountId))];
+        const [accounts, profiles] = await Promise.all([
+            this.accountRepository.find({ where: { id: In(accountIds) } }),
+            this.deviceProfileRepository.find({
+                where: { agentBindingId: In(agents.map((agent) => agent.id)) },
+            }),
+        ]);
+        const accountMap = new Map(accounts.map((account) => [account.id, account]));
+        const profileMap = new Map(
+            profiles.map((profile) => [
+                `${profile.agentBindingId}:${profile.upstreamDeviceId}`,
+                profile,
+            ]),
+        );
+        const canSetDeviceType =
+            access.type === "organization" &&
+            access.permissions.includes(OrganizationPermission.ASSET_MANAGE);
+
+        const results = await Promise.allSettled(
+            agents.map(async (agent) => {
+                const account = accountMap.get(agent.xiaozhiAccountId);
+                if (!account) throw HttpErrorFactory.notFound("方糖猫所属的小智账号不存在");
+                const result = await this.request<UpstreamDevicePayload[]>(
+                    account,
+                    `/agents/${agent.upstreamAgentId}/devices`,
+                );
+                const devices = (result.data || []).map((device) =>
+                    mapUpstreamDevice(device, agent.id),
+                );
+                await this.refreshDeviceCounters(agent, devices);
+                return devices.map((device) => {
+                    const profile = profileMap.get(`${agent.id}:${device.id}`);
+                    const deviceType = profile?.deviceType || CubeCatDeviceType.UNKNOWN;
+                    const canManage =
+                        access.type === "personal" ||
+                        access.permissions.includes(OrganizationPermission.ASSET_MANAGE) ||
+                        agent.assignedUserId === userId;
+                    return {
+                        ...device,
+                        deviceType,
+                        deviceTypeLabel:
+                            deviceType === CubeCatDeviceType.UNKNOWN ? "型号待指定" : deviceType,
+                        agentName: agent.name,
+                        upstreamAgentId: agent.upstreamAgentId,
+                        linkedAgentId: agent.linkedAgentId,
+                        linkedAgentName: agent.linkedAgentName,
+                        model: agent.model,
+                        voice: agent.voice,
+                        agentDeviceCount: devices.length,
+                        settings: profile?.settings || {
+                            volume: 65,
+                            brightness: 70,
+                            doNotDisturb: false,
+                        },
+                        canManage,
+                        canSetDeviceType,
+                    };
+                });
+            }),
+        );
+
+        const fulfilled = results.filter((result) => result.status === "fulfilled");
+        if (!fulfilled.length) {
+            const failure = results.find(
+                (result): result is PromiseRejectedResult => result.status === "rejected",
+            );
+            throw failure?.reason || HttpErrorFactory.badGateway("无法读取方糖猫设备");
+        }
+
+        return fulfilled
+            .flatMap((result) => result.value)
+            .sort(
+                (left, right) =>
+                    Number(right.online) - Number(left.online) ||
+                    (left.alias || left.macAddress).localeCompare(right.alias || right.macAddress),
+            );
+    }
+
     /** Consume a captcha challenge and log into the upstream console. */
     private async loginUpstream(
         userId: string,
+        organizationId: string,
         input: { username: string; password: string; captchaCode: string; challengeId: string },
     ) {
         this.cleanupChallenges();
         const challenge = this.challenges.get(input.challengeId);
-        if (!challenge || challenge.userId !== userId) {
+        if (
+            !challenge ||
+            challenge.userId !== userId ||
+            challenge.organizationId !== organizationId
+        ) {
             throw HttpErrorFactory.badRequest("验证码已过期，请刷新后重试");
         }
         this.challenges.delete(input.challengeId);
@@ -252,15 +356,9 @@ export class XiaozhiService {
         organizationId: string | null | undefined,
         accountId: string,
     ) {
-        await this.organizationService.requireWorkspace(
-            userId,
-            organizationId,
-            organizationId ? OrganizationPermission.ASSET_MANAGE : undefined,
-        );
+        const managedOrganizationId = await this.requireAccountManager(userId, organizationId);
         const account = await this.accountRepository.findOne({
-            where: organizationId
-                ? { id: accountId, organizationId }
-                : { id: accountId, organizationId: IsNull(), ownerUserId: userId },
+            where: { id: accountId, organizationId: managedOrganizationId },
         });
         if (!account) throw HttpErrorFactory.notFound("小智账号不存在");
         return account;
@@ -270,20 +368,23 @@ export class XiaozhiService {
         userId: string,
         organizationId: string | null | undefined,
         accountId: string,
-        dto: { password?: string; captchaCode: string; challengeId: string },
+        dto: ReconnectXiaozhiAccountDto,
     ) {
         const account = await this.resolveManagedAccount(userId, organizationId, accountId);
-        const password = dto.password || this.decrypt(account.passwordEncrypted);
-        const login = await this.loginUpstream(userId, {
-            username: this.decrypt(account.usernameEncrypted),
+        await this.ensureCredentialWrite();
+        const username = dto.username?.trim() || this.decryptForRecovery(account.usernameEncrypted);
+        const password = dto.password || this.decryptForRecovery(account.passwordEncrypted);
+        const login = await this.loginUpstream(userId, account.organizationId as string, {
+            username,
             password,
             captchaCode: dto.captchaCode,
             challengeId: dto.challengeId,
         });
-        account.passwordEncrypted = this.encrypt(password);
-        account.accessTokenEncrypted = this.encrypt(login.token);
+        account.usernameEncrypted = this.credentialCrypto.encrypt(username);
+        account.passwordEncrypted = this.credentialCrypto.encrypt(password);
+        account.accessTokenEncrypted = this.credentialCrypto.encrypt(login.token);
         account.sessionCookieEncrypted = login.sessionCookie
-            ? this.encrypt(login.sessionCookie)
+            ? this.credentialCrypto.encrypt(login.sessionCookie)
             : null;
         account.upstreamUserId = login.upstreamUserId ?? account.upstreamUserId;
         account.status = XiaozhiAccountStatus.ACTIVE;
@@ -495,7 +596,7 @@ export class XiaozhiService {
         agentId: string,
         input: { macAddress: string; alias: string },
     ) {
-        const { agent, account } = await this.resolveAgent(userId, organizationId, agentId, true);
+        const { agent, account } = await this.resolveLinkableAgent(userId, organizationId, agentId);
         await this.request(account, `/agents/${agent.upstreamAgentId}/devices/update-alias`, {
             method: "POST",
             body: { macAddress: input.macAddress, alias: input.alias.trim() },
@@ -509,12 +610,82 @@ export class XiaozhiService {
         agentId: string,
         input: { macAddress: string; autoUpdate: boolean },
     ) {
-        const { agent, account } = await this.resolveAgent(userId, organizationId, agentId, true);
+        const { agent, account } = await this.resolveLinkableAgent(userId, organizationId, agentId);
         await this.request(account, `/agents/${agent.upstreamAgentId}/devices/update-auto-update`, {
             method: "POST",
             body: { macAddress: input.macAddress, autoUpdate: input.autoUpdate },
         });
         return { success: true };
+    }
+
+    async updateDeviceType(
+        userId: string,
+        organizationId: string | null | undefined,
+        agentId: string,
+        deviceId: number,
+        deviceType: CubeCatDeviceTypeValue,
+    ) {
+        if (!organizationId) {
+            throw HttpErrorFactory.forbidden("设备型号由组织管理员或老师指定");
+        }
+        const { agent, account } = await this.resolveAgent(userId, organizationId, agentId, true);
+        const result = await this.request<UpstreamDevicePayload[]>(
+            account,
+            `/agents/${agent.upstreamAgentId}/devices`,
+        );
+        if (!(result.data || []).some((device) => Number(device.id) === deviceId)) {
+            throw HttpErrorFactory.notFound("方糖猫设备不存在");
+        }
+
+        let profile = await this.deviceProfileRepository.findOne({
+            where: { agentBindingId: agent.id, upstreamDeviceId: String(deviceId) },
+            withDeleted: true,
+        });
+        if (!profile) {
+            profile = this.deviceProfileRepository.create({
+                agentBindingId: agent.id,
+                upstreamDeviceId: String(deviceId),
+                deviceType,
+            });
+        } else {
+            profile.deletedAt = null;
+            profile.deviceType = deviceType;
+        }
+        return this.deviceProfileRepository.save(profile);
+    }
+
+    async updateDeviceSettings(
+        userId: string,
+        organizationId: string | null | undefined,
+        agentId: string,
+        deviceId: number,
+        settings: { volume?: number; brightness?: number; doNotDisturb?: boolean },
+    ) {
+        const { agent, account } = await this.resolveLinkableAgent(userId, organizationId, agentId);
+        const result = await this.request<UpstreamDevicePayload[]>(
+            account,
+            `/agents/${agent.upstreamAgentId}/devices`,
+        );
+        if (!(result.data || []).some((device) => Number(device.id) === deviceId)) {
+            throw HttpErrorFactory.notFound("方糖猫设备不存在");
+        }
+
+        let profile = await this.deviceProfileRepository.findOne({
+            where: { agentBindingId: agent.id, upstreamDeviceId: String(deviceId) },
+            withDeleted: true,
+        });
+        if (!profile) {
+            profile = this.deviceProfileRepository.create({
+                agentBindingId: agent.id,
+                upstreamDeviceId: String(deviceId),
+                deviceType: CubeCatDeviceType.UNKNOWN,
+                settings: { volume: 65, brightness: 70, doNotDisturb: false },
+            });
+        } else {
+            profile.deletedAt = null;
+        }
+        profile.settings = { ...profile.settings, ...settings };
+        return this.deviceProfileRepository.save(profile);
     }
 
     async unbindDevice(
@@ -844,6 +1015,127 @@ export class XiaozhiService {
         return saved;
     }
 
+    /**
+     * Publish one BuildingAI agent onto a xiaozhi agent group. The prompt is
+     * always composed server-side from the saved BuildingAI configuration;
+     * clients only choose upstream model and voice identifiers.
+     */
+    async publishBuildingAgent(
+        userId: string,
+        organizationId: string | null | undefined,
+        buildingAgentId: string,
+        input: { targetAgentId: string; model: string; voice: string; language?: string },
+    ) {
+        const buildingAgent = await this.buildingAgentRepository.findOne({
+            where: { id: buildingAgentId, createBy: userId },
+        });
+        if (!buildingAgent) {
+            throw HttpErrorFactory.notFound("智能体不存在，只能发布自己创建的智能体");
+        }
+        const character = this.composeCharacter(buildingAgent);
+        if (!character) {
+            throw HttpErrorFactory.badRequest("请先填写智能体的角色设定再发布到方糖猫");
+        }
+
+        const { agent, account } = await this.resolveLinkableAgent(
+            userId,
+            organizationId,
+            input.targetAgentId,
+        );
+        const detail = await this.request<{
+            agent?: { agent_template_id?: number | null } & Record<string, unknown>;
+        }>(account, `/agents/${agent.upstreamAgentId}`);
+        const current = detail.data?.agent;
+        if (!current) throw HttpErrorFactory.badGateway("小智智能体详情响应不完整");
+
+        const templateId = current.agent_template_id;
+        const suffix =
+            typeof templateId === "number" && templateId > 0
+                ? `?agent_template_id=${templateId}`
+                : "";
+        const [modelResult, ttsResult] = await Promise.all([
+            this.request<{ modelList?: Array<Record<string, unknown>> }>(
+                account,
+                `/roles/model-list${suffix}`,
+            ),
+            this.request<{
+                languages?: string[];
+                tts_voices?: Record<string, Array<Record<string, unknown>>>;
+            }>(account, `/user/tts-list${suffix}`),
+        ]);
+
+        const models = modelResult.data?.modelList || [];
+        const modelIds = new Set(
+            models.flatMap((model) =>
+                [model.name, model.model, model.model_name]
+                    .filter((value): value is string => typeof value === "string")
+                    .map((value) => value.trim()),
+            ),
+        );
+        if (modelIds.size && !modelIds.has(input.model.trim())) {
+            throw HttpErrorFactory.badRequest("所选模型不属于这只方糖猫的可用模型");
+        }
+
+        const voicesByLanguage = ttsResult.data?.tts_voices || {};
+        const voiceIds = new Set(
+            Object.values(voicesByLanguage).flatMap((voices) =>
+                voices.flatMap((voice) =>
+                    [voice.voice_id, voice.id]
+                        .filter((value): value is string => typeof value === "string")
+                        .map((value) => value.trim()),
+                ),
+            ),
+        );
+        if (voiceIds.size && !voiceIds.has(input.voice.trim())) {
+            throw HttpErrorFactory.badRequest("所选音色不属于这只方糖猫的可用音色");
+        }
+        if (
+            input.language &&
+            (ttsResult.data?.languages || []).length &&
+            !ttsResult.data?.languages?.includes(input.language)
+        ) {
+            throw HttpErrorFactory.badRequest("所选语言不受这只方糖猫支持");
+        }
+
+        const config = Object.fromEntries(
+            [
+                "language",
+                "tts_voice",
+                "asr_speed",
+                "tts_speech_speed",
+                "tts_pitch",
+                "llm_model",
+                "memory_type",
+                "teen_mode",
+                "mcp_endpoints",
+                "knowledge_base_ids",
+            ].flatMap((key) => (key in current ? [[key, current[key]]] : [])),
+        );
+        await this.request(account, `/agents/${agent.upstreamAgentId}/config`, {
+            method: "POST",
+            body: {
+                ...config,
+                ...(input.language ? { language: input.language } : {}),
+                llm_model: input.model.trim(),
+                tts_voice: input.voice.trim(),
+                character,
+            },
+        });
+
+        agent.model = input.model.trim();
+        agent.voice = input.voice.trim();
+        agent.linkedAgentId = buildingAgent.id;
+        agent.linkedAgentName = buildingAgent.name;
+        agent.linkedAgentSyncedAt = new Date();
+        const saved = await this.agentRepository.save(agent);
+        void this.mcpGateway.reloadAgentTools(agent.id);
+        return {
+            agent: saved,
+            affectedDevices: saved.deviceCount,
+            publishedAt: saved.linkedAgentSyncedAt,
+        };
+    }
+
     async listAgentChats(
         userId: string,
         organizationId: string | null | undefined,
@@ -900,12 +1192,13 @@ export class XiaozhiService {
         path: string,
         init: { method?: string; body?: unknown } = {},
     ): Promise<UpstreamPayload<T>> {
+        await this.ensureCredentialRead();
         const headers: Record<string, string> = {
             Accept: "application/json",
-            Authorization: `Bearer ${this.decrypt(account.accessTokenEncrypted)}`,
+            Authorization: `Bearer ${this.decryptCredential(account.accessTokenEncrypted)}`,
         };
         if (account.sessionCookieEncrypted) {
-            headers.Cookie = this.decrypt(account.sessionCookieEncrypted);
+            headers.Cookie = this.decryptCredential(account.sessionCookieEncrypted);
         }
         if (init.body !== undefined) headers["Content-Type"] = "application/json";
 
@@ -923,9 +1216,12 @@ export class XiaozhiService {
         const freshCookies = this.readSetCookies(response.headers);
         if (freshCookies) {
             const current = account.sessionCookieEncrypted
-                ? this.decrypt(account.sessionCookieEncrypted)
+                ? this.decryptCredential(account.sessionCookieEncrypted)
                 : "";
-            account.sessionCookieEncrypted = this.encrypt(this.mergeCookies(current, freshCookies));
+            await this.ensureCredentialWrite();
+            account.sessionCookieEncrypted = this.credentialCrypto.encrypt(
+                this.mergeCookies(current, freshCookies),
+            );
             await this.accountRepository.save(account);
         }
         if (!response.ok) {
@@ -939,21 +1235,32 @@ export class XiaozhiService {
     }
 
     private toPublicAccount(account: XiaozhiAccount) {
-        const username = this.decrypt(account.usernameEncrypted);
-        const usernameMasked =
-            username.length <= 3
-                ? `${username.slice(0, 1)}***`
-                : `${username.slice(0, 2)}***${username.slice(-1)}`;
+        let usernameMasked = "需要重新登录";
+        let credentialStatus: "ready" | "recovery_required" = "ready";
+        try {
+            const username = this.credentialCrypto.decrypt(account.usernameEncrypted);
+            usernameMasked =
+                username.length <= 3
+                    ? `${username.slice(0, 1)}***`
+                    : `${username.slice(0, 2)}***${username.slice(-1)}`;
+        } catch (error) {
+            if (!this.credentialCrypto.isCredentialError(error)) throw error;
+            credentialStatus = "recovery_required";
+        }
         return {
             id: account.id,
             organizationId: account.organizationId,
             ownerUserId: account.ownerUserId,
             label: account.label,
             usernameMasked,
+            credentialStatus,
             upstreamUserId: account.upstreamUserId,
             status: account.status,
             lastSyncAt: account.lastSyncAt,
-            lastError: account.lastError,
+            lastError:
+                credentialStatus === "recovery_required"
+                    ? XIAOZHI_CREDENTIAL_RECOVERY_MESSAGE
+                    : account.lastError,
             createdAt: account.createdAt,
         };
     }
@@ -994,27 +1301,41 @@ export class XiaozhiService {
         return [...jar.entries()].map(([key, value]) => `${key}=${value}`).join("; ");
     }
 
-    private encrypt(value: string) {
-        const iv = randomBytes(12);
-        const cipher = createCipheriv("aes-256-gcm", this.encryptionKey, iv);
-        const encrypted = Buffer.concat([cipher.update(value, "utf8"), cipher.final()]);
-        return [iv, cipher.getAuthTag(), encrypted]
-            .map((part) => part.toString("base64url"))
-            .join(".");
+    private async ensureCredentialRead() {
+        try {
+            await this.credentialCrypto.ensureReadable();
+        } catch (error) {
+            throw this.credentialCrypto.toHttpError(error);
+        }
     }
 
-    private decrypt(value: string) {
-        const [iv, tag, encrypted] = value.split(".");
-        if (!iv || !tag || !encrypted) throw new Error("无效的加密凭据");
-        const decipher = createDecipheriv(
-            "aes-256-gcm",
-            this.encryptionKey,
-            Buffer.from(iv, "base64url"),
-        );
-        decipher.setAuthTag(Buffer.from(tag, "base64url"));
-        return Buffer.concat([
-            decipher.update(Buffer.from(encrypted, "base64url")),
-            decipher.final(),
-        ]).toString("utf8");
+    private async ensureCredentialWrite() {
+        try {
+            await this.credentialCrypto.ensureWritable();
+        } catch (error) {
+            throw this.credentialCrypto.toHttpError(error);
+        }
+    }
+
+    private decryptCredential(value: string) {
+        try {
+            return this.credentialCrypto.decrypt(value);
+        } catch (error) {
+            throw this.credentialCrypto.toHttpError(error);
+        }
+    }
+
+    private decryptForRecovery(value: string) {
+        try {
+            return this.credentialCrypto.decrypt(value);
+        } catch (error) {
+            if (this.credentialCrypto.isCredentialError(error)) {
+                throw HttpErrorFactory.badRequest(
+                    "旧凭据无法读取，请同时填写小智用户名和密码后重新登录",
+                    { code: "xiaozhi_full_credentials_required" },
+                );
+            }
+            throw error;
+        }
     }
 }

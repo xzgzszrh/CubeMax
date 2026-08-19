@@ -210,7 +210,7 @@ function SceneDialog({
         </DialogHeader>
         {!agents.length ? (
           <p className="text-muted-foreground py-8 text-center text-sm">
-            需要至少一个智能体来加载配置选项，请先绑定小智账号并同步。
+            需要至少一个智能体来加载配置选项，请先在“设备管理”中绑定组织的小智账号并同步。
           </p>
         ) : (
           <div className="max-h-[420px] space-y-4 overflow-auto pr-1">

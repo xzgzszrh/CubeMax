@@ -38,11 +38,14 @@ import {
     CreateOrganizationDto,
     LinkBuildingAgentDto,
     OrganizationSearchDto,
+    PublishBuildingAgentToCubeCatDto,
     ReconnectXiaozhiAccountDto,
     RenameXiaozhiAgentDto,
     SaveXiaozhiQuickCommandDto,
     SaveXiaozhiSceneDto,
     UpdateConfigLocksDto,
+    UpdateCubeCatDeviceSettingsDto,
+    UpdateCubeCatDeviceTypeDto,
     UpdateDeviceAliasDto,
     UpdateDeviceAutoUpdateDto,
     UpdateOrganizationMemberDto,
@@ -176,8 +179,11 @@ export class OrganizationController {
     }
 
     @Get("xiaozhi/captcha")
-    getXiaozhiCaptcha(@Playground() user: UserPlayground) {
-        return this.xiaozhiService.getCaptcha(user.id);
+    getXiaozhiCaptcha(
+        @Playground() user: UserPlayground,
+        @Headers("x-organization-id") organizationId?: string,
+    ) {
+        return this.xiaozhiService.getCaptcha(user.id, organizationId);
     }
 
     @Get("xiaozhi/accounts")
@@ -246,6 +252,29 @@ export class OrganizationController {
         @Headers("x-organization-id") organizationId?: string,
     ) {
         return this.xiaozhiService.listAgents(user.id, organizationId);
+    }
+
+    @Get("xiaozhi/devices")
+    getAllXiaozhiDevices(
+        @Playground() user: UserPlayground,
+        @Headers("x-organization-id") organizationId?: string,
+    ) {
+        return this.xiaozhiService.listAllDevices(user.id, organizationId);
+    }
+
+    @Post("xiaozhi/building-agents/:buildingAgentId/publish")
+    publishBuildingAgentToCubeCat(
+        @Playground() user: UserPlayground,
+        @Headers("x-organization-id") organizationId: string | undefined,
+        @Param("buildingAgentId", UUIDValidationPipe) buildingAgentId: string,
+        @Body() dto: PublishBuildingAgentToCubeCatDto,
+    ) {
+        return this.xiaozhiService.publishBuildingAgent(
+            user.id,
+            organizationId,
+            buildingAgentId,
+            dto,
+        );
     }
 
     @Patch("xiaozhi/agents/:agentId/assignment")
@@ -377,6 +406,40 @@ export class OrganizationController {
         @Body() dto: UpdateDeviceAutoUpdateDto,
     ) {
         return this.xiaozhiService.updateDeviceAutoUpdate(user.id, organizationId, agentId, dto);
+    }
+
+    @Patch("xiaozhi/agents/:agentId/devices/:deviceId/type")
+    updateCubeCatDeviceType(
+        @Playground() user: UserPlayground,
+        @Headers("x-organization-id") organizationId: string | undefined,
+        @Param("agentId", UUIDValidationPipe) agentId: string,
+        @Param("deviceId", ParseIntPipe) deviceId: number,
+        @Body() dto: UpdateCubeCatDeviceTypeDto,
+    ) {
+        return this.xiaozhiService.updateDeviceType(
+            user.id,
+            organizationId,
+            agentId,
+            deviceId,
+            dto.deviceType,
+        );
+    }
+
+    @Patch("xiaozhi/agents/:agentId/devices/:deviceId/settings")
+    updateCubeCatDeviceSettings(
+        @Playground() user: UserPlayground,
+        @Headers("x-organization-id") organizationId: string | undefined,
+        @Param("agentId", UUIDValidationPipe) agentId: string,
+        @Param("deviceId", ParseIntPipe) deviceId: number,
+        @Body() dto: UpdateCubeCatDeviceSettingsDto,
+    ) {
+        return this.xiaozhiService.updateDeviceSettings(
+            user.id,
+            organizationId,
+            agentId,
+            deviceId,
+            dto,
+        );
     }
 
     @Delete("xiaozhi/agents/:agentId/devices/:deviceId")

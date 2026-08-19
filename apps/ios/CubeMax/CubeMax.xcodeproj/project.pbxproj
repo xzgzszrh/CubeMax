@@ -22,6 +22,7 @@
 		8FA1C4C00B5BDD737C12EBF4 /* KeychainStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = FB987366036CD49E1D2EAA26 /* KeychainStore.swift */; };
 		B2350D7812E885CE711E3A5A /* ConversationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E0A4B856112BB98C56E843CC /* ConversationView.swift */; };
 		BC1AF0736DDF621EEEEA4212 /* CubeMaxApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 34C5F64822106EC3DD3D1F3E /* CubeMaxApp.swift */; };
+		C6B6E6E4714B4DC49518A101 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = C6B6E6E4714B4DC49518A102 /* Assets.xcassets */; };
 		C703B26C1C8594ABF0FB6BF9 /* CreateTriggerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 31677CD648A22C9A2D0653B2 /* CreateTriggerView.swift */; };
 		DD54CF82384674D636F928B1 /* TriggerFormView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 011C7B600CC8ADDC407BAD46 /* TriggerFormView.swift */; };
 /* End PBXBuildFile section */
@@ -39,6 +40,7 @@
 		4E4C33517C4F03D7FCA48C9C /* LoginView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginView.swift; sourceTree = "<group>"; };
 		721E4130A0A5A10C34AA0126 /* TriggersView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TriggersView.swift; sourceTree = "<group>"; };
 		8F41933BC342DFDB7A28AA2B /* AppModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppModel.swift; sourceTree = "<group>"; };
+		C6B6E6E4714B4DC49518A102 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		DBF8319924B2B1208236E941 /* SmartHomeDevicesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SmartHomeDevicesView.swift; sourceTree = "<group>"; };
 		E0A4B856112BB98C56E843CC /* ConversationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConversationView.swift; sourceTree = "<group>"; };
 		EEE443F5470AA918A770370A /* Models.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Models.swift; sourceTree = "<group>"; };
@@ -80,6 +82,7 @@
 			children = (
 				34EB5BEF9EC1A2081513DF71 /* APIClient.swift */,
 				8F41933BC342DFDB7A28AA2B /* AppModel.swift */,
+				C6B6E6E4714B4DC49518A102 /* Assets.xcassets */,
 				34C5F64822106EC3DD3D1F3E /* CubeMaxApp.swift */,
 				FB987366036CD49E1D2EAA26 /* KeychainStore.swift */,
 				D0660B52B68D19F82ADEB31C /* Features */,
@@ -160,6 +163,7 @@
 			buildConfigurationList = D7E9C3DBE0F2C4E69D5086D1 /* Build configuration list for PBXNativeTarget "CubeMax" */;
 			buildPhases = (
 				17D48C964F89B41301E2C433 /* Sources */,
+				C6B6E6E4714B4DC49518A103 /* Resources */,
 			);
 			buildRules = (
 			);
@@ -199,6 +203,17 @@
 			);
 		};
 /* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		C6B6E6E4714B4DC49518A103 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				C6B6E6E4714B4DC49518A101 /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		17D48C964F89B41301E2C433 /* Sources */ = {

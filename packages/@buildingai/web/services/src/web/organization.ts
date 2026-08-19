@@ -89,6 +89,7 @@ export type XiaozhiAccount = {
     ownerUserId: string;
     label: string;
     usernameMasked: string;
+    credentialStatus: "ready" | "recovery_required";
     upstreamUserId: string | null;
     status: "active" | "auth_error" | "sync_error";
     lastSyncAt: string | null;
@@ -127,6 +128,27 @@ export type XiaozhiDevice = {
     online: boolean;
     authorized: boolean;
     lastConnectedAt: string | null;
+};
+
+export type CubeCatDeviceType = "unknown" | "CubeCat-Lite" | "CubeCat-S";
+
+export type CubeCatManagedDevice = XiaozhiDevice & {
+    deviceType: CubeCatDeviceType;
+    deviceTypeLabel: string;
+    agentName: string;
+    upstreamAgentId: string;
+    linkedAgentId: string | null;
+    linkedAgentName: string | null;
+    model: string | null;
+    voice: string | null;
+    agentDeviceCount: number;
+    settings: {
+        volume: number;
+        brightness: number;
+        doNotDisturb: boolean;
+    };
+    canManage: boolean;
+    canSetDeviceType: boolean;
 };
 
 export type XiaozhiTtsVoice = {
@@ -443,6 +465,7 @@ export function useReconnectXiaozhiAccountMutation(options?: any) {
     return useMutation({
         mutationFn: (data: {
             accountId: string;
+            username?: string;
             password?: string;
             captchaCode: string;
             challengeId: string;
@@ -450,6 +473,7 @@ export function useReconnectXiaozhiAccountMutation(options?: any) {
             apiHttpClient.post(
                 `/organizations/xiaozhi/accounts/${data.accountId}/reconnect`,
                 {
+                    username: data.username || undefined,
                     password: data.password || undefined,
                     captchaCode: data.captchaCode,
                     challengeId: data.challengeId,
@@ -543,12 +567,16 @@ export function useAssignXiaozhiAgentMutation(options?: any) {
     });
 }
 
-export async function fetchXiaozhiCaptcha() {
+export async function fetchXiaozhiCaptcha(
+    organizationId: string | null = getActiveOrganizationId(),
+) {
     return apiHttpClient.get<{
         challengeId: string;
         image: string;
         expiresAt: string;
-    }>("/organizations/xiaozhi/captcha");
+    }>("/organizations/xiaozhi/captcha", {
+        headers: organizationId ? { "x-organization-id": organizationId } : undefined,
+    });
 }
 
 export function useXiaozhiDevicesQuery(agentId: string | null, options?: { enabled?: boolean }) {
@@ -560,6 +588,82 @@ export function useXiaozhiDevicesQuery(agentId: string | null, options?: { enabl
                 headers: organizationHeaders(),
             }),
         enabled: Boolean(agentId) && options?.enabled !== false,
+    });
+}
+
+export function useCubeCatDevicesQuery(options?: { enabled?: boolean }) {
+    const organizationId = getActiveOrganizationId();
+    return useQuery<CubeCatManagedDevice[]>({
+        queryKey: ["xiaozhi", organizationId, "all-devices"],
+        queryFn: () =>
+            apiHttpClient.get("/organizations/xiaozhi/devices", {
+                headers: organizationHeaders(),
+            }),
+        ...options,
+    });
+}
+
+export function useUpdateCubeCatDeviceTypeMutation(options?: any) {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: (data: { agentId: string; deviceId: number; deviceType: CubeCatDeviceType }) =>
+            apiHttpClient.patch(
+                `/organizations/xiaozhi/agents/${data.agentId}/devices/${data.deviceId}/type`,
+                { deviceType: data.deviceType },
+                { headers: organizationHeaders() },
+            ),
+        ...options,
+        onSuccess: (...args: any[]) => {
+            queryClient.invalidateQueries({ queryKey: ["xiaozhi"] });
+            options?.onSuccess?.(...args);
+        },
+    });
+}
+
+export function useUpdateCubeCatDeviceSettingsMutation(options?: any) {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: (data: {
+            agentId: string;
+            deviceId: number;
+            volume?: number;
+            brightness?: number;
+            doNotDisturb?: boolean;
+        }) => {
+            const { agentId, deviceId, ...settings } = data;
+            return apiHttpClient.patch(
+                `/organizations/xiaozhi/agents/${agentId}/devices/${deviceId}/settings`,
+                settings,
+                { headers: organizationHeaders() },
+            );
+        },
+        ...options,
+        onSuccess: (...args: any[]) => {
+            queryClient.invalidateQueries({ queryKey: ["xiaozhi"] });
+            options?.onSuccess?.(...args);
+        },
+    });
+}
+
+export function usePublishBuildingAgentToCubeCatMutation(buildingAgentId: string, options?: any) {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: (data: {
+            targetAgentId: string;
+            model: string;
+            voice: string;
+            language?: string;
+        }) =>
+            apiHttpClient.post(
+                `/organizations/xiaozhi/building-agents/${buildingAgentId}/publish`,
+                data,
+                { headers: organizationHeaders() },
+            ),
+        ...options,
+        onSuccess: (...args: any[]) => {
+            queryClient.invalidateQueries({ queryKey: ["xiaozhi"] });
+            options?.onSuccess?.(...args);
+        },
     });
 }
 

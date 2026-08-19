@@ -1,6 +1,7 @@
 import {
   BookmarkCheck,
   Building2,
+  Cpu,
   Hammer,
   HousePlug,
   Info,
@@ -14,6 +15,7 @@ import {
 
 export type SettingsPage =
   | "profile"
+  | "cubeCat"
   | "smartHome"
   | "workspace"
   | "general"
@@ -40,6 +42,11 @@ export const SETTINGS_NAV: SettingsNavGroup[] = [
     label: "settings.nav.account.label",
     items: [
       { id: "profile", name: "settings.nav.account.profile", icon: UserCircle },
+      {
+        id: "cubeCat",
+        name: "settings.nav.account.cubeCat",
+        icon: Cpu,
+      },
       {
         id: "smartHome",
         name: "settings.nav.account.smartHome",

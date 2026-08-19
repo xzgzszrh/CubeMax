@@ -34,6 +34,7 @@ export default {
     account: {
       label: "Account",
       profile: "Profile",
+      cubeCat: "My CubeCat",
       smartHome: "My Smart Home",
       workspace: "Workspace",
       wallet: "My Points",
