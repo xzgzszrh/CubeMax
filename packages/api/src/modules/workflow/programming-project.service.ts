@@ -123,6 +123,7 @@ export class ProgrammingProjectService {
                 projectRepository.create({
                     name: dto.name,
                     description: dto.description ?? "",
+                    projectType: dto.projectType ?? "conversation",
                     createBy: userId,
                     runtimeTarget: "local",
                     isPublished: false,
@@ -230,7 +231,7 @@ export class ProgrammingProjectService {
     async publish(id: string, userId: string): Promise<ProgrammingProjectDetail> {
         const project = await this.findOne(id, userId);
         const workflow = await this.getMainWorkflow(project, userId);
-        this.workflowService.assertPublishableSchema(workflow.schema);
+        this.workflowService.assertPublishableSchema(workflow.schema, project.projectType);
         const schema = workflow.schema as Record<string, unknown>;
         const references = this.extractReferences(schema);
         const modules = await Promise.all(

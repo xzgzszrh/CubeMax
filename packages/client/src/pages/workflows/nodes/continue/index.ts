@@ -5,10 +5,10 @@
 
 import { nanoid } from "nanoid";
 
-import type { FlowNodeRegistry } from "../../typings";
 import iconContinue from "../../assets/icon-continue.jpg";
-import { formMeta } from "./form-meta";
+import type { FlowNodeRegistry } from "../../typings";
 import { WorkflowNodeType } from "../constants";
+import { formMeta } from "./form-meta";
 
 let index = 0;
 export const ContinueNodeRegistry: FlowNodeRegistry = {
@@ -18,7 +18,7 @@ export const ContinueNodeRegistry: FlowNodeRegistry = {
     defaultPorts: [{ type: "input" }],
     sidebarDisabled: true,
     size: {
-      width: 360,
+      width: 320,
       height: 54,
     },
     expandable: false,

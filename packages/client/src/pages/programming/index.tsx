@@ -28,7 +28,9 @@ import {
   ArrowRight,
   Blocks,
   Box,
+  CircuitBoard,
   Code2,
+  MessageCircle,
   MoreHorizontal,
   Pencil,
   Plus,
@@ -41,7 +43,7 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 
 import { PageShell } from "../_components/page-shell";
-import { initialData } from "../workflows/initial-data";
+import { applicationInitialData, initialData } from "../workflows/initial-data";
 import { ProjectNameDialog } from "./project-name-dialog";
 
 const PAGE_SIZE = 50;
@@ -64,6 +66,22 @@ function formatTime(value: string) {
 function getNodeCount(project: ProgrammingProjectItem) {
   const nodes = project.mainWorkflow.schema?.nodes;
   return Array.isArray(nodes) ? nodes.length : 0;
+}
+
+function getProjectTypeMeta(project: ProgrammingProjectItem) {
+  return project.projectType === "application"
+    ? {
+        label: "应用",
+        icon: CircuitBoard,
+        className:
+          "border-sky-200 bg-sky-50 text-sky-700 dark:border-sky-900 dark:bg-sky-950 dark:text-sky-300",
+      }
+    : {
+        label: "对话流",
+        icon: MessageCircle,
+        className:
+          "border-violet-200 bg-violet-50 text-violet-700 dark:border-violet-900 dark:bg-violet-950 dark:text-violet-300",
+      };
 }
 
 export default function ProgrammingProjectsPage() {
@@ -216,11 +234,20 @@ export default function ProgrammingProjectsPage() {
                 />
                 <div className="pointer-events-none relative flex items-start gap-3">
                   <span className="bg-muted text-foreground flex size-10 shrink-0 items-center justify-center rounded-lg">
-                    <Code2 className="size-5" />
+                    {(() => {
+                      const ProjectTypeIcon = getProjectTypeMeta(project).icon;
+                      return <ProjectTypeIcon className="size-5" />;
+                    })()}
                   </span>
                   <div className="min-w-0 flex-1">
                     <div className="flex min-w-0 items-center gap-2 pr-8">
                       <h2 className="truncate text-sm font-semibold">{project.name}</h2>
+                      <Badge
+                        variant="outline"
+                        className={`shrink-0 font-normal ${getProjectTypeMeta(project).className}`}
+                      >
+                        {getProjectTypeMeta(project).label}
+                      </Badge>
                       <Badge
                         variant="outline"
                         className={
@@ -280,11 +307,15 @@ export default function ProgrammingProjectsPage() {
         open={createDialogOpen}
         isPending={createMutation.isPending}
         onOpenChange={setCreateDialogOpen}
-        onSubmit={({ name, description }) =>
+        onSubmit={({ name, description, projectType }) =>
           createMutation.mutate({
             name,
             description,
-            schema: initialData as unknown as Record<string, unknown>,
+            projectType,
+            schema:
+              projectType === "application"
+                ? (applicationInitialData as unknown as Record<string, unknown>)
+                : (initialData as unknown as Record<string, unknown>),
           })
         }
       />

@@ -5,9 +5,9 @@
 
 import { nanoid } from "nanoid";
 
-import { WorkflowNodeType } from "../constants";
-import type { FlowNodeRegistry } from "../../typings";
 import iconHTTP from "../../assets/icon-http.svg";
+import type { FlowNodeRegistry } from "../../typings";
+import { WorkflowNodeType } from "../constants";
 import { formMeta } from "./form-meta";
 
 let index = 0;
@@ -21,7 +21,7 @@ export const HTTPNodeRegistry: FlowNodeRegistry = {
   meta: {
     nodePanelLabel: "HTTP 请求",
     size: {
-      width: 360,
+      width: 320,
       height: 390,
     },
   },

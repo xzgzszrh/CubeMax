@@ -15,7 +15,7 @@ export const LuaNodeRegistry: FlowNodeRegistry = {
   },
   meta: {
     nodePanelLabel: "Lua 模块",
-    size: { width: 360, height: 390 },
+    size: { width: 320, height: 390 },
   },
   onAdd() {
     return {

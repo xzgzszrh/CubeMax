@@ -5,6 +5,9 @@ import { BaseEntity } from "./base";
 
 export type ProgrammingRuntimeTarget = "local" | "simulator" | "device";
 
+/** The two intentionally different programming experiences. */
+export type ProgrammingProjectType = "conversation" | "application";
+
 export type ProgrammingProjectToolSnapshot = {
     mcpServerId: string;
     toolName: string;
@@ -44,6 +47,15 @@ export class ProgrammingProject extends BaseEntity {
 
     @Column({ type: "text", nullable: true, comment: "工程描述" })
     description?: string | null;
+
+    @Column({
+        name: "project_type",
+        type: "varchar",
+        length: 20,
+        default: "conversation",
+        comment: "工程类型：对话流或应用",
+    })
+    projectType: ProgrammingProjectType;
 
     @Column({ name: "main_workflow_id", type: "uuid", nullable: true, comment: "主流程ID" })
     mainWorkflowId?: string | null;

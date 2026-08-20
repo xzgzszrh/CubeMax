@@ -3,12 +3,14 @@
  * SPDX-License-Identifier: MIT
  */
 
+import "./index.css";
+
+import { Tooltip, Typography } from "@douyinfe/semi-ui";
+import { DisplaySchemaTag } from "@flowgram.ai/form-materials";
 import React, { useCallback } from "react";
 
-import { DisplaySchemaTag } from "@flowgram.ai/form-materials";
-import { Typography, Tooltip } from "@douyinfe/semi-ui";
-
-import "./index.css";
+import { useOptionalProgrammingProject } from "../../../programming/context";
+import { useIsSidebar } from "../../hooks";
 
 const { Text } = Typography;
 
@@ -34,6 +36,8 @@ export function FormItem({
   vertical,
   style,
 }: FormItemProps): JSX.Element {
+  const isSidebar = useIsSidebar();
+  const project = useOptionalProgrammingProject();
   const renderTitle = useCallback(
     (showTooltip?: boolean) => (
       <div style={{ width: "0", display: "flex", flex: "1" }}>
@@ -48,12 +52,12 @@ export function FormItem({
   return (
     <div
       style={{
-        fontSize: 12,
-        marginBottom: 6,
+        fontSize: "var(--workflow-form-item-font-size, 12px)",
+        marginBottom: "var(--workflow-form-item-margin, 6px)",
         width: "100%",
         position: "relative",
         display: "flex",
-        gap: 8,
+        gap: "var(--workflow-form-item-gap, 8px)",
         ...(vertical
           ? { flexDirection: "column" }
           : {
@@ -68,9 +72,9 @@ export function FormItem({
           justifyContent: "center",
           alignItems: "center",
           color: "var(--semi-color-text-0)",
-          width: labelWidth || 118,
-          minWidth: labelWidth || 118,
-          maxWidth: labelWidth || 118,
+          width: labelWidth || "var(--workflow-form-label-width, 118px)",
+          minWidth: labelWidth || "var(--workflow-form-label-width, 118px)",
+          maxWidth: labelWidth || "var(--workflow-form-label-width, 118px)",
           position: "relative",
           display: "flex",
           columnGap: 4,
@@ -89,6 +93,9 @@ export function FormItem({
         }}
       >
         {children}
+        {isSidebar && project?.projectType === "application" && description && (
+          <div className="workflow-form-item-hint">{description}</div>
+        )}
       </div>
     </div>
   );

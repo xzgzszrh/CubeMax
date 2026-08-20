@@ -129,7 +129,7 @@ export class WorkflowService {
         };
     }
 
-    assertPublishableSchema(schema?: object): void {
+    assertPublishableSchema(schema?: object, projectType: "conversation" | "application" = "conversation"): void {
         if (!isRecord(schema) || !Array.isArray(schema.nodes) || !Array.isArray(schema.edges)) {
             throw HttpErrorFactory.badRequest("工作流结构不完整，无法发布");
         }
@@ -141,7 +141,14 @@ export class WorkflowService {
         );
         const startIds = nodes.filter((node) => node.type === "start").map((node) => node.id);
         const endIds = new Set(nodes.filter((node) => node.type === "end").map((node) => node.id));
-        if (!startIds.length || !endIds.size) {
+        if (!startIds.length) {
+            throw HttpErrorFactory.badRequest("工作流必须包含开始节点");
+        }
+        // An application is an open-ended device program. It starts from one
+        // entry node and may wait or loop forever, so it intentionally has no
+        // conversational end/output contract.
+        if (projectType === "application") return;
+        if (!endIds.size) {
             throw HttpErrorFactory.badRequest("工作流必须包含开始节点和结束节点");
         }
 

@@ -17,7 +17,7 @@ export const EndNodeRegistry: FlowNodeRegistry = {
     nodePanelVisible: false,
     defaultPorts: [{ type: "input" }],
     size: {
-      width: 360,
+      width: 320,
       height: 211,
     },
   },

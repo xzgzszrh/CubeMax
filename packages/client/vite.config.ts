@@ -75,8 +75,16 @@ export default defineConfig({
     },
     dedupe: ["react", "react-dom", "@tanstack/react-query", "inversify", ...flowgramDedupe],
   },
+  optimizeDeps: {
+    include: [
+      "@douyinfe/semi-ui",
+      "@douyinfe/semi-ui > Textarea",
+      "@douyinfe/semi-ui > Input",
+      "@douyinfe/semi-ui > Button",
+    ],
+  },
   server: {
-    host: host || "0.0.0.0",
+    host: host || "127.0.0.1",
     open: true,
     port: 4091,
     strictPort: true,

@@ -20,7 +20,7 @@ export const LLMNodeRegistry: FlowNodeRegistry = {
   meta: {
     nodePanelLabel: "大模型",
     size: {
-      width: 360,
+      width: 320,
       height: 390,
     },
   },

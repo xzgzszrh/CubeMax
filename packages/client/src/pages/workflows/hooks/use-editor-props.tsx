@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: MIT
  */
 
+import type { ProgrammingProjectType } from "@buildingai/services/web";
 import { createDownloadPlugin } from "@flowgram.ai/export-plugin";
 import { createContainerNodePlugin } from "@flowgram.ai/free-container-plugin";
 import { createFreeGroupPlugin } from "@flowgram.ai/free-group-plugin";
@@ -47,7 +48,26 @@ export function useEditorProps(
   initialData: FlowDocumentJSON,
   nodeRegistries: FlowNodeRegistry[],
   projectId?: string,
+  projectType: ProgrammingProjectType = "conversation",
 ): FreeLayoutProps {
+  const editorNodeRegistries = useMemo(
+    () =>
+      projectType === "application"
+        ? nodeRegistries
+        : nodeRegistries.map((registry) => ({
+            ...registry,
+            meta: {
+              ...registry.meta,
+              size: registry.meta.size
+                ? {
+                    ...registry.meta.size,
+                    width: registry.meta.size.width === 320 ? 360 : registry.meta.size.width,
+                  }
+                : registry.meta.size,
+            },
+          })),
+    [nodeRegistries, projectType],
+  );
   return useMemo<FreeLayoutProps>(
     () => ({
       /**
@@ -88,7 +108,7 @@ export function useEditorProps(
        * Node registries
        * 节点注册
        */
-      nodeRegistries,
+      nodeRegistries: editorNodeRegistries,
       /**
        * Get the default node registry, which will be merged with the 'nodeRegistries'
        * 提供默认的节点注册，这个会和 nodeRegistries 做合并
@@ -322,7 +342,7 @@ export function useEditorProps(
          * 节点添加面板渲染插件
          */
         createFreeNodePanelPlugin({
-          renderer: NodePanel,
+          renderer: (props) => <NodePanel {...props} projectType={projectType} />,
         }),
         /**
          * This is used for the rendering of the loop node sub-canvas
@@ -359,6 +379,6 @@ export function useEditorProps(
         createPanelManagerPlugin(),
       ],
     }),
-    [initialData, nodeRegistries, projectId],
+    [editorNodeRegistries, initialData, nodeRegistries, projectId, projectType],
   );
 }

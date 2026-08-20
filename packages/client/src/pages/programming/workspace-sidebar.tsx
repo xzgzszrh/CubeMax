@@ -120,6 +120,12 @@ export function ProgrammingSidebar({ project, onEdit }: ProgrammingSidebarProps)
               >
                 {project.isPublished ? "已发布" : "草稿"}
               </Badge>
+              <Badge
+                variant="outline"
+                className="text-muted-foreground shrink-0 px-1.5 py-0 text-[10px] font-normal"
+              >
+                {project.projectType === "application" ? "应用" : "对话流"}
+              </Badge>
             </div>
             <p className="text-muted-foreground mt-1 line-clamp-2 text-xs leading-4">
               {project.description?.trim() || "还没有工程说明"}

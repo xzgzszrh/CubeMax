@@ -9,6 +9,7 @@ import type { WorkflowItem } from "./workflow";
 const PROGRAMMING_PROJECTS_PATH = "/programming-projects";
 
 export type ProgrammingRuntimeTarget = "local" | "simulator" | "device";
+export type ProgrammingProjectType = "conversation" | "application";
 
 export type ProgrammingProjectToolRef = {
     mcpServerId: string;
@@ -19,6 +20,7 @@ export interface ProgrammingProjectItem {
     id: string;
     name: string;
     description?: string | null;
+    projectType: ProgrammingProjectType;
     mainWorkflowId: string;
     runtimeTarget: ProgrammingRuntimeTarget;
     simulatorSessionId?: string | null;
@@ -44,6 +46,7 @@ export interface ProgrammingProjectListResult {
 export interface CreateProgrammingProjectDto {
     name: string;
     description?: string;
+    projectType?: ProgrammingProjectType;
     schema?: Record<string, unknown>;
 }
 

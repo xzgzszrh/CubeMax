@@ -10,7 +10,8 @@ export const NodeWrapperStyle = styled.div`
   align-items: flex-start;
   background: #ffffff;
   border: 1px solid #dfe4ec;
-  border-radius: 12px;
+  border-radius: var(--workflow-node-radius, 12px);
+  box-sizing: border-box;
   box-shadow:
     0 1px 2px rgba(15, 23, 42, 0.04),
     0 8px 22px rgba(15, 23, 42, 0.06);
@@ -18,7 +19,8 @@ export const NodeWrapperStyle = styled.div`
   flex-direction: column;
   justify-content: center;
   position: relative;
-  width: 360px;
+  width: var(--workflow-node-width, 360px);
+  min-width: 0;
   height: auto;
   overflow: hidden;
   transition:
@@ -44,6 +46,23 @@ export const NodeWrapperStyle = styled.div`
     outline: 3px solid rgba(37, 99, 235, 0.2);
     outline-offset: 2px;
   }
+
+  /* Keep the canvas view readable while reducing the vertical rhythm of
+   * Semi controls. The editable sidebar is rendered outside this wrapper. */
+  .semi-input-wrapper,
+  .semi-input-number,
+  .semi-select,
+  .semi-tree-select {
+    min-height: var(--workflow-control-height, 32px);
+    height: var(--workflow-control-height, 32px);
+  }
+
+  .semi-input,
+  .semi-input-number-input,
+  .semi-select-selection,
+  .semi-tree-select-selection {
+    font-size: var(--workflow-control-font-size, 12px);
+  }
 `;
 
 export const ErrorIcon = () => (
@@ -51,8 +70,8 @@ export const ErrorIcon = () => (
     style={{
       position: "absolute",
       color: "#dc2626",
-      left: 10,
-      top: 10,
+      left: 8,
+      top: 8,
       zIndex: 1,
       background: "#fff",
       borderRadius: 999,

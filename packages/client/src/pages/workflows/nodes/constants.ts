@@ -47,4 +47,11 @@ export enum WorkflowNodeType {
   Comment = "comment",
   Continue = "continue",
   Break = "break",
+  // 应用工作流专用节点
+  Agent = "agent",
+  Wait = "wait",
+  Webhook = "webhook",
+  Vision = "vision",
+  Speech = "speech",
+  DeviceControl = "device_control",
 }

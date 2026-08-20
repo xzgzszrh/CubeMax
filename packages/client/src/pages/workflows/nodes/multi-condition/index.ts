@@ -9,10 +9,9 @@
  */
 import { nanoid } from "nanoid";
 
+import iconCondition from "../../assets/icon-condition.svg";
 import type { FlowNodeRegistry } from "../../typings";
 import { WorkflowNodeType } from "../constants";
-import iconCondition from "../../assets/icon-condition.svg";
-
 import { formMeta } from "./form-meta";
 
 let index = 0;
@@ -29,7 +28,7 @@ export const MultiConditionNodeRegistry: FlowNodeRegistry = {
     useDynamicPort: true,
     expandable: false, // disable expanded
     size: {
-      width: 360,
+      width: 320,
       height: 210,
     },
   },

@@ -82,6 +82,9 @@ function WorkspaceTopbar({
           >
             {project.isPublished ? "已发布" : "草稿"}
           </Badge>
+          <Badge variant="outline" className="text-muted-foreground px-1.5 py-0 text-[10px]">
+            {project.projectType === "application" ? "应用" : "对话流"}
+          </Badge>
           <Button
             type="button"
             variant="ghost"
@@ -94,7 +97,9 @@ function WorkspaceTopbar({
             <Pencil className="size-3.5" />
           </Button>
         </div>
-        <p className="text-muted-foreground hidden text-[11px] sm:block">工程主流程与运行配置</p>
+        <p className="text-muted-foreground hidden text-[11px] sm:block">
+          {project.projectType === "application" ? "应用流程与设备运行配置" : "对话流与运行配置"}
+        </p>
       </div>
 
       <div className="ml-auto flex min-w-0 items-center gap-2">

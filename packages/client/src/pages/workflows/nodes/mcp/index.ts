@@ -22,7 +22,7 @@ export const MCPNodeRegistry: FlowNodeRegistry = {
   meta: {
     nodePanelLabel: "MCP 工具",
     size: {
-      width: 360,
+      width: 320,
       height: 390,
     },
   },

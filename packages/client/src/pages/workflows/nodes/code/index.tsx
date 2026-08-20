@@ -5,9 +5,9 @@
 
 import { nanoid } from "nanoid";
 
-import { WorkflowNodeType } from "../constants";
-import type { FlowNodeRegistry } from "../../typings";
 import iconCode from "../../assets/icon-script.png";
+import type { FlowNodeRegistry } from "../../typings";
+import { WorkflowNodeType } from "../constants";
 import { formMeta } from "./form-meta";
 
 let index = 0;
@@ -41,7 +41,7 @@ export const CodeNodeRegistry: FlowNodeRegistry = {
   meta: {
     nodePanelLabel: "代码",
     size: {
-      width: 360,
+      width: 320,
       height: 390,
     },
   },

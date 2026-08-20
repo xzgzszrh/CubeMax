@@ -14,6 +14,8 @@ import {
     ValidateNested,
 } from "class-validator";
 
+import type { ProgrammingProjectType } from "@buildingai/db/entities";
+
 export class QueryProgrammingProjectDto {
     @IsOptional()
     @Type(() => Number)
@@ -44,6 +46,10 @@ export class CreateProgrammingProjectDto {
     @IsString()
     @MaxLength(500)
     description?: string;
+
+    @IsOptional()
+    @IsIn(["conversation", "application"])
+    projectType?: ProgrammingProjectType = "conversation";
 
     @IsOptional()
     @IsObject()

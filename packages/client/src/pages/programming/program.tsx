@@ -2,14 +2,14 @@ import { unstableSetCreateRoot } from "@flowgram.ai/form-materials";
 import { createRoot } from "react-dom/client";
 
 import { Editor } from "../workflows/editor";
-import { initialData } from "../workflows/initial-data";
+import { applicationInitialData, initialData } from "../workflows/initial-data";
 import type { FlowDocumentJSON } from "../workflows/typings";
 import { normalizeWorkflowSchema } from "../workflows/utils/llm-schema";
 import { useProgrammingProject } from "./context";
 
 unstableSetCreateRoot(createRoot);
 
-function resolveWorkflowSchema(schema: unknown): FlowDocumentJSON {
+function resolveWorkflowSchema(schema: unknown, fallback: FlowDocumentJSON): FlowDocumentJSON {
   if (
     schema &&
     typeof schema === "object" &&
@@ -18,7 +18,7 @@ function resolveWorkflowSchema(schema: unknown): FlowDocumentJSON {
   ) {
     return normalizeWorkflowSchema(schema as FlowDocumentJSON);
   }
-  return initialData;
+  return fallback;
 }
 
 export default function ProgrammingCanvasPage() {
@@ -30,8 +30,12 @@ export default function ProgrammingCanvasPage() {
       <Editor
         key={workflow.id}
         projectId={project.id}
+        projectType={project.projectType}
         workflowId={workflow.id}
-        initialData={resolveWorkflowSchema(workflow.schema)}
+        initialData={resolveWorkflowSchema(
+          workflow.schema,
+          project.projectType === "application" ? applicationInitialData : initialData,
+        )}
       />
     </div>
   );

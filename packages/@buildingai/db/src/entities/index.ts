@@ -106,6 +106,7 @@ export {
     type ProgrammingProjectPublishedSnapshot,
     ProgrammingProjectTool,
     type ProgrammingProjectToolSnapshot,
+    type ProgrammingProjectType,
     type ProgrammingRuntimeTarget,
 } from "./programming-project.entity";
 export {

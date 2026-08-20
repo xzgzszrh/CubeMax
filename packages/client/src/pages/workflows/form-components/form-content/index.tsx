@@ -5,10 +5,11 @@
 
 import React from "react";
 
-import type { FlowNodeRegistry } from "@flowgram.ai/free-layout-editor";
-
+import { useOptionalProgrammingProject } from "../../../programming/context";
 import { useIsSidebar, useNodeRenderContext } from "../../hooks";
-import { FormTitleDescription, FormWrapper } from "./styles";
+import type { FlowNodeRegistry } from "../../typings";
+import { NodeGuidance } from "./node-guidance";
+import { FormWrapper } from "./styles";
 
 /**
  * @param props
@@ -17,11 +18,14 @@ import { FormTitleDescription, FormWrapper } from "./styles";
 export function FormContent(props: { children?: React.ReactNode }) {
   const { node, expanded } = useNodeRenderContext();
   const isSidebar = useIsSidebar();
+  const project = useOptionalProgrammingProject();
   const registry = node.getNodeRegistry<FlowNodeRegistry>();
   return (
     <FormWrapper>
       <>
-        {isSidebar && <FormTitleDescription>{registry.info?.description}</FormTitleDescription>}
+        {isSidebar && project?.projectType === "application" && (
+          <NodeGuidance node={node} registry={registry} />
+        )}
         {(expanded || isSidebar) && props.children}
       </>
     </FormWrapper>

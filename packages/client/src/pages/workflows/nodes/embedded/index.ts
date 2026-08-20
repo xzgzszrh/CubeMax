@@ -36,7 +36,7 @@ function createEmbeddedNodeRegistry(definition: EmbeddedNodeDefinition): FlowNod
     },
     meta: {
       size: {
-        width: 360,
+        width: 320,
         height: 390,
       },
       nodePanelLabel: definition.label,

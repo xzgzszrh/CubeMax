@@ -6,6 +6,7 @@
 import "@flowgram.ai/free-layout-editor/index.css";
 import "./styles/index.css";
 
+import type { ProgrammingProjectType } from "@buildingai/services/web";
 import { EditorRenderer, FreeLayoutEditorProvider } from "@flowgram.ai/free-layout-editor";
 import { DockedPanelLayer } from "@flowgram.ai/panel-manager-plugin";
 
@@ -19,13 +20,19 @@ export interface EditorProps {
   workflowId: string;
   initialData: FlowDocumentJSON;
   projectId?: string;
+  projectType?: ProgrammingProjectType;
 }
 
-export const Editor = ({ workflowId, initialData, projectId }: EditorProps) => {
-  const editorProps = useEditorProps(initialData, nodeRegistries, projectId);
+export const Editor = ({
+  workflowId,
+  initialData,
+  projectId,
+  projectType = "conversation",
+}: EditorProps) => {
+  const editorProps = useEditorProps(initialData, nodeRegistries, projectId, projectType);
 
   return (
-    <div className="doc-free-feature-overview">
+    <div className="doc-free-feature-overview" data-workflow-type={projectType}>
       <WorkflowSaveProvider workflowId={workflowId} projectId={projectId}>
         <FreeLayoutEditorProvider {...editorProps}>
           <WorkflowAutoSave />

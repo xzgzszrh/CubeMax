@@ -27,6 +27,12 @@ import { EmbeddedNodeRegistries } from "./embedded";
 import { MultiConditionNodeRegistry } from "./multi-condition";
 import { StartNodeRegistry } from "./start";
 import { VariableNodeRegistry } from "./variable";
+import { AgentNodeRegistry } from "./agent";
+import { WaitNodeRegistry } from "./wait";
+import { WebhookNodeRegistry } from "./webhook";
+import { VisionNodeRegistry } from "./vision";
+import { SpeechNodeRegistry } from "./speech";
+import { DeviceControlNodeRegistry } from "./device-control";
 export { WorkflowNodeType } from "./constants";
 
 export const nodeRegistries: FlowNodeRegistry[] = [
@@ -48,4 +54,11 @@ export const nodeRegistries: FlowNodeRegistry[] = [
   VariableNodeRegistry,
   GroupNodeRegistry,
   MultiConditionNodeRegistry,
+  // 应用工作流专用节点
+  AgentNodeRegistry,
+  WaitNodeRegistry,
+  WebhookNodeRegistry,
+  VisionNodeRegistry,
+  SpeechNodeRegistry,
+  DeviceControlNodeRegistry,
 ];

@@ -5,10 +5,10 @@
 
 import { nanoid } from "nanoid";
 
-import type { FlowNodeRegistry } from "../../typings";
 import iconCondition from "../../assets/icon-condition.svg";
-import { formMeta } from "./form-meta";
+import type { FlowNodeRegistry } from "../../typings";
 import { WorkflowNodeType } from "../constants";
+import { formMeta } from "./form-meta";
 
 export const ConditionNodeRegistry: FlowNodeRegistry = {
   type: WorkflowNodeType.Condition,
@@ -23,7 +23,7 @@ export const ConditionNodeRegistry: FlowNodeRegistry = {
     useDynamicPort: true,
     expandable: false, // disable expanded
     size: {
-      width: 360,
+      width: 320,
       height: 210,
     },
   },

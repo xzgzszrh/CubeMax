@@ -1,3 +1,4 @@
+import type { ProgrammingProjectType } from "@buildingai/services/web";
 import { Button } from "@buildingai/ui/components/ui/button";
 import {
   Dialog,
@@ -10,6 +11,7 @@ import {
 import { Input } from "@buildingai/ui/components/ui/input";
 import { Label } from "@buildingai/ui/components/ui/label";
 import { Textarea } from "@buildingai/ui/components/ui/textarea";
+import { Check, CircuitBoard, MessageCircle } from "lucide-react";
 import { type FormEvent, useEffect, useId, useState } from "react";
 
 const MAX_PROJECT_NAME_LENGTH = 100;
@@ -19,9 +21,14 @@ interface ProjectNameDialogProps {
   open: boolean;
   initialName?: string;
   initialDescription?: string;
+  initialProjectType?: ProgrammingProjectType;
   isPending?: boolean;
   onOpenChange: (open: boolean) => void;
-  onSubmit: (value: { name: string; description: string }) => void;
+  onSubmit: (value: {
+    name: string;
+    description: string;
+    projectType?: ProgrammingProjectType;
+  }) => void;
 }
 
 export function ProjectNameDialog({
@@ -29,6 +36,7 @@ export function ProjectNameDialog({
   open,
   initialName = "",
   initialDescription = "",
+  initialProjectType = "conversation",
   isPending = false,
   onOpenChange,
   onSubmit,
@@ -37,12 +45,14 @@ export function ProjectNameDialog({
   const descriptionId = useId();
   const [name, setName] = useState(initialName);
   const [description, setDescription] = useState(initialDescription);
+  const [projectType, setProjectType] = useState<ProgrammingProjectType>(initialProjectType);
 
   useEffect(() => {
     if (!open) return;
     setName(initialName);
     setDescription(initialDescription);
-  }, [initialDescription, initialName, open]);
+    setProjectType(initialProjectType);
+  }, [initialDescription, initialName, initialProjectType, open]);
 
   const normalizedName = name.trim();
   const normalizedDescription = description.trim();
@@ -55,7 +65,11 @@ export function ProjectNameDialog({
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (canSubmit) {
-      onSubmit({ name: normalizedName, description: normalizedDescription });
+      onSubmit({
+        name: normalizedName,
+        description: normalizedDescription,
+        ...(mode === "create" ? { projectType } : {}),
+      });
     }
   };
 
@@ -66,11 +80,60 @@ export function ProjectNameDialog({
           <DialogTitle>{mode === "create" ? "新建工程" : "工程信息"}</DialogTitle>
           <DialogDescription>
             {mode === "create"
-              ? "创建一个包含主流程和 Lua 模块的编程工程。"
+              ? "先选择工程形态，之后可以在画布中继续搭建。"
               : "修改工程名称和说明。"}
           </DialogDescription>
         </DialogHeader>
         <form className="grid gap-5" onSubmit={handleSubmit}>
+          {mode === "create" && (
+            <div className="grid gap-2">
+              <Label>工程类型</Label>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <button
+                  type="button"
+                  className={`group relative flex min-h-28 flex-col items-start gap-2 rounded-lg border p-4 text-left transition-colors ${
+                    projectType === "conversation"
+                      ? "border-primary bg-primary/5 ring-primary/20 ring-2"
+                      : "hover:border-foreground/30 bg-background"
+                  }`}
+                  onClick={() => setProjectType("conversation")}
+                  aria-pressed={projectType === "conversation"}
+                >
+                  <span className="bg-muted text-foreground flex size-9 items-center justify-center rounded-lg">
+                    <MessageCircle className="size-4" />
+                  </span>
+                  <span className="text-sm font-semibold">对话流</span>
+                  <span className="text-muted-foreground text-xs leading-4">
+                    处理文字输入、模型推理和回复输出
+                  </span>
+                  {projectType === "conversation" && (
+                    <Check className="text-primary absolute top-3 right-3 size-4" />
+                  )}
+                </button>
+                <button
+                  type="button"
+                  className={`group relative flex min-h-28 flex-col items-start gap-2 rounded-lg border p-4 text-left transition-colors ${
+                    projectType === "application"
+                      ? "border-primary bg-primary/5 ring-primary/20 ring-2"
+                      : "hover:border-foreground/30 bg-background"
+                  }`}
+                  onClick={() => setProjectType("application")}
+                  aria-pressed={projectType === "application"}
+                >
+                  <span className="bg-muted text-foreground flex size-9 items-center justify-center rounded-lg">
+                    <CircuitBoard className="size-4" />
+                  </span>
+                  <span className="text-sm font-semibold">应用</span>
+                  <span className="text-muted-foreground text-xs leading-4">
+                    从开始节点编排设备、Lua 和智能动作
+                  </span>
+                  {projectType === "application" && (
+                    <Check className="text-primary absolute top-3 right-3 size-4" />
+                  )}
+                </button>
+              </div>
+            </div>
+          )}
           <div className="grid gap-2">
             <Label htmlFor={nameId}>工程名称</Label>
             <Input

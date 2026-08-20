@@ -101,3 +101,35 @@ export const initialData: FlowDocumentJSON = {
     },
   },
 };
+
+/**
+ * Application programs start without a conversational input contract. Students
+ * add actions and device nodes after this single entry point.
+ */
+export const applicationInitialData: FlowDocumentJSON = {
+  nodes: [
+    {
+      id: "start_0",
+      type: "start",
+      meta: {
+        position: {
+          x: 180,
+          y: 300,
+        },
+      },
+      data: {
+        title: "开始",
+        outputs: {
+          type: "object",
+          properties: {},
+        },
+      },
+    },
+  ],
+  edges: [],
+  globalVariable: {
+    type: "object",
+    required: [],
+    properties: {},
+  },
+};
