@@ -9,6 +9,7 @@ import type { NodePanelRenderProps } from "@flowgram.ai/free-node-panel-plugin";
 import {
   Activity,
   Blocks,
+  BookUser,
   BrainCircuit,
   ChevronRight,
   Cpu,
@@ -27,6 +28,7 @@ import styled from "styled-components";
 import { nodeRegistries, WorkflowNodeType } from "../../nodes";
 import type { FlowNodeRegistry } from "../../typings";
 import { canContainNode } from "../../utils";
+import { useUserLuaNodes } from "../../context/UserLuaNodesContext";
 
 type NodeCategoryId =
   | "frequent"
@@ -34,7 +36,8 @@ type NodeCategoryId =
   | "logic"
   | "device"
   | "app"
-  | "integration";
+  | "integration"
+  | "user-lua";
 
 type NodeCategory = {
   id: NodeCategoryId;
@@ -79,6 +82,12 @@ const CATEGORIES: NodeCategory[] = [
     label: "连接",
     description: "MCP 工具与 HTTP 接口",
     icon: Link2,
+  },
+  {
+    id: "user-lua",
+    label: "我的模块",
+    description: "用户自定义的 Lua 模块",
+    icon: BookUser,
   },
 ];
 
@@ -128,6 +137,7 @@ const CATEGORY_BY_TYPE: Partial<Record<WorkflowNodeType | string, NodeCategoryId
 function getCategoryId(registry: FlowNodeRegistry): NodeCategoryId {
   if (registry.meta.nodePanelGroup === "device") return "device";
   if (registry.meta.nodePanelGroup === "app") return "app";
+  if (registry.meta.nodePanelGroup === "user-lua") return "user-lua";
   return CATEGORY_BY_TYPE[registry.type as string] ?? "logic";
 }
 
@@ -143,14 +153,19 @@ export function getVisibleRegistries(params: {
   containerNode: WorkflowNodeEntity | undefined;
   fromPort?: WorkflowPortEntity;
   projectType?: "conversation" | "application";
+  userLuaRegistries?: FlowNodeRegistry[];
 }): FlowNodeRegistry[] {
-  const { containerNode, fromPort, projectType = "conversation" } = params;
+  const { containerNode, fromPort, projectType = "conversation", userLuaRegistries = [] } = params;
 
   return nodeRegistries
     .filter((registry) => registry.meta.nodePanelVisible !== false)
     .filter((registry) => {
       // 对话流过滤掉智能交互节点
       if (projectType === "conversation" && APP_NODE_TYPES.has(registry.type as string)) {
+        return false;
+      }
+      // 对话流过滤掉用户 Lua 模块节点
+      if (projectType === "conversation" && registry.meta.nodePanelGroup === "user-lua") {
         return false;
       }
       if (fromPort && registry.type === WorkflowNodeType.Comment) return false;
@@ -161,7 +176,12 @@ export function getVisibleRegistries(params: {
         return false;
       }
       return true;
-    });
+    })
+    .concat(
+      projectType === "conversation"
+        ? []
+        : userLuaRegistries,
+    );
 }
 
 interface NodeListProps {
@@ -246,7 +266,8 @@ function groupRegistries(registries: FlowNodeRegistry[]) {
 /** The original compact popover palette used by conversation flows. */
 export const ConversationNodeList: FC<NodeListProps> = ({ onSelect, containerNode, fromPort }) => {
   const context = useClientContext();
-  const groups = groupRegistries(getVisibleRegistries({ containerNode, fromPort, projectType: "conversation" }));
+  const { registries: userLuaRegistries } = useUserLuaNodes();
+  const groups = groupRegistries(getVisibleRegistries({ containerNode, fromPort, projectType: "conversation", userLuaRegistries }));
 
   return (
     <ConversationNodesWrap>
@@ -356,10 +377,11 @@ export const NodeList: FC<NodeListProps> = ({
   const context = useClientContext();
   const [activeCategory, setActiveCategory] = useState<NodeCategoryId>("frequent");
   const [keyword, setKeyword] = useState("");
+  const { registries: userLuaRegistries } = useUserLuaNodes();
 
   const registries = useMemo(
-    () => getVisibleRegistries({ containerNode, fromPort, projectType }),
-    [containerNode, fromPort, projectType],
+    () => getVisibleRegistries({ containerNode, fromPort, projectType, userLuaRegistries }),
+    [containerNode, fromPort, projectType, userLuaRegistries],
   );
 
   const categoryCounts = useMemo(() => {
