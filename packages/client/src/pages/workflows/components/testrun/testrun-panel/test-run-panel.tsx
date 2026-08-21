@@ -3,28 +3,26 @@
  * SPDX-License-Identifier: MIT
  */
 
-import { useState, useEffect } from "react";
-import type { FC } from "react";
-
-import classnames from "classnames";
-import type { WorkflowInputs, WorkflowOutputs } from "@flowgram.ai/runtime-interface";
-import { useService } from "@flowgram.ai/free-layout-editor";
-import { Button, Switch } from "@douyinfe/semi-ui";
 import { IconClose, IconPlay, IconSpin } from "@douyinfe/semi-icons";
+import { Button, Switch } from "@douyinfe/semi-ui";
+import { usePlaygroundContainer } from "@flowgram.ai/free-layout-editor";
+import type { WorkflowInputs, WorkflowOutputs } from "@flowgram.ai/runtime-interface";
+import classnames from "classnames";
+import type { FC } from "react";
+import { useEffect, useState } from "react";
 
-import { TestRunJsonInput } from "../testrun-json-input";
-import { TestRunForm } from "../testrun-form";
-import { NodeStatusGroup } from "../node-status-bar/group";
-import { WorkflowRuntimeService } from "../../../plugins/runtime-plugin/runtime-service";
-import { useTestRunFormPanel } from "../../../plugins/panel-manager-plugin/hooks";
 import { IconCancel } from "../../../assets/icon-cancel";
-
+import { useTestRunFormPanel } from "../../../plugins/panel-manager-plugin/hooks";
+import { getWorkflowRuntimeService } from "../../../plugins/runtime-plugin/runtime-service";
+import { NodeStatusGroup } from "../node-status-bar/group";
+import { TestRunForm } from "../testrun-form";
+import { TestRunJsonInput } from "../testrun-json-input";
 import styles from "./index.module.less";
 
 export interface TestRunSidePanelProps {}
 
 export const TestRunSidePanel: FC<TestRunSidePanelProps> = () => {
-  const runtimeService = useService(WorkflowRuntimeService);
+  const runtimeService = getWorkflowRuntimeService(usePlaygroundContainer());
   const { close: closePanel } = useTestRunFormPanel();
   const [isRunning, setRunning] = useState(false);
   const [values, setValues] = useState<Record<string, unknown>>({});
@@ -49,6 +47,7 @@ export const TestRunSidePanel: FC<TestRunSidePanelProps> = () => {
   };
 
   const onTestRun = async () => {
+    if (!runtimeService) return;
     if (isRunning) {
       await runtimeService.taskCancel();
       return;
@@ -62,7 +61,7 @@ export const TestRunSidePanel: FC<TestRunSidePanelProps> = () => {
   };
 
   const onClose = async () => {
-    await runtimeService.taskCancel();
+    await runtimeService?.taskCancel();
     setValues({});
     setRunning(false);
     closePanel();
@@ -115,6 +114,7 @@ export const TestRunSidePanel: FC<TestRunSidePanelProps> = () => {
   );
 
   useEffect(() => {
+    if (!runtimeService) return;
     const disposer = runtimeService.onResultChanged(({ result, errors }) => {
       setRunning(false);
       setResult(result);
@@ -125,11 +125,11 @@ export const TestRunSidePanel: FC<TestRunSidePanelProps> = () => {
       }
     });
     return () => disposer.dispose();
-  }, []);
+  }, [runtimeService]);
 
   useEffect(
     () => () => {
-      runtimeService.taskCancel();
+      runtimeService?.taskCancel();
     },
     [runtimeService],
   );

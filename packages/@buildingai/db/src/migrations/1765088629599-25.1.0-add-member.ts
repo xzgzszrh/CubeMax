@@ -48,6 +48,13 @@ export class Migration1765088629599 implements MigrationInterface {
             `CREATE INDEX IF NOT EXISTS "IDX_c147874a31680a71702d6aed6e" ON "membership_order" ("level_id") `,
         );
         await queryRunner.query(`COMMENT ON TABLE "membership_order" IS '会员订单'`);
+        // TypeORM generated this migration against a database that already had
+        // user_subscription from synchronize(), so the original up() only created
+        // indexes/FKs. Fresh 25.0.0 installs never created the table.
+        await queryRunner.query(`CREATE EXTENSION IF NOT EXISTS "uuid-ossp"`);
+        await queryRunner.query(
+            `CREATE TABLE IF NOT EXISTS "user_subscription" ("id" uuid NOT NULL DEFAULT uuid_generate_v4(), "created_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(), "updated_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(), "user_id" uuid NOT NULL, "level_id" uuid, "order_id" uuid, "start_time" TIMESTAMP WITH TIME ZONE NOT NULL, "end_time" TIMESTAMP WITH TIME ZONE NOT NULL, CONSTRAINT "PK_user_subscription" PRIMARY KEY ("id"))`,
+        );
         await queryRunner.query(
             `CREATE INDEX IF NOT EXISTS "IDX_ec4e57f4138e339fb111948a16" ON "user_subscription" ("id") `,
         );

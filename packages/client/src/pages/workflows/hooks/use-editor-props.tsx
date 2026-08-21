@@ -24,7 +24,7 @@ import {
   createRuntimePlugin,
   createVariablePanelPlugin,
 } from "../plugins";
-import { WorkflowRuntimeService } from "../plugins/runtime-plugin/runtime-service";
+import { getWorkflowRuntimeService } from "../plugins/runtime-plugin/runtime-service";
 import type { ServerConfig } from "../plugins/runtime-plugin/type";
 import { CustomService, ValidateService } from "../services";
 import { shortcuts } from "../shortcuts";
@@ -254,7 +254,8 @@ export function useEditorProps(
       /**
        * Running line
        */
-      isFlowingLine: (ctx, line) => ctx.get(WorkflowRuntimeService).isFlowingLine(line),
+      isFlowingLine: (ctx, line) =>
+        getWorkflowRuntimeService(ctx.container)?.isFlowingLine(line) ?? false,
       /**
        * Shortcuts
        */

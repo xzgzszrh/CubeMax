@@ -3,27 +3,53 @@
  * SPDX-License-Identifier: MIT
  */
 
-import { WorkflowStatus } from "@flowgram.ai/runtime-interface";
+import type {
+  interfaces,
+  WorkflowLineEntity,
+  WorkflowNodeEntity,
+} from "@flowgram.ai/free-layout-editor";
+import {
+  Emitter,
+  inject,
+  injectable,
+  Playground,
+  WorkflowDocument,
+} from "@flowgram.ai/free-layout-editor";
 import type {
   IReport,
   NodeReport,
   WorkflowInputs,
   WorkflowOutputs,
 } from "@flowgram.ai/runtime-interface";
-import {
-  injectable,
-  inject,
-  WorkflowDocument,
-  Playground,
-  Emitter,
-} from "@flowgram.ai/free-layout-editor";
-import type { WorkflowLineEntity, WorkflowNodeEntity } from "@flowgram.ai/free-layout-editor";
+import { WorkflowStatus } from "@flowgram.ai/runtime-interface";
 
-import { WorkflowRuntimeClient } from "../client";
-import { GetGlobalVariableSchema } from "../../variable-panel-plugin";
 import { WorkflowNodeType } from "../../../nodes";
+import { GetGlobalVariableSchema } from "../../variable-panel-plugin";
+import { WorkflowRuntimeClient } from "../client";
 
 const SYNC_TASK_REPORT_INTERVAL = 500;
+
+/** Stable across Vite HMR; class identity is not. */
+export const WorkflowRuntimeServiceId = Symbol.for("CubeMax.WorkflowRuntimeService");
+
+export function getWorkflowRuntimeService(
+  container: Pick<interfaces.Container, "get" | "isBound"> | undefined,
+): WorkflowRuntimeService | undefined {
+  if (!container) return undefined;
+  const ids: interfaces.ServiceIdentifier<WorkflowRuntimeService>[] = [
+    WorkflowRuntimeServiceId,
+    WorkflowRuntimeService,
+  ];
+  for (const id of ids) {
+    if (!container.isBound(id)) continue;
+    try {
+      return container.get(id);
+    } catch {
+      continue;
+    }
+  }
+  return undefined;
+}
 
 type WorkflowRuntimeRequestContext = {
   projectId?: string;

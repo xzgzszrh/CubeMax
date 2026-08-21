@@ -22,22 +22,15 @@ import {
   X,
 } from "lucide-react";
 import type { FC, KeyboardEvent, MouseEvent } from "react";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import styled from "styled-components";
 
+import { useUserLuaNodes } from "../../context/UserLuaNodesContext";
 import { nodeRegistries, WorkflowNodeType } from "../../nodes";
 import type { FlowNodeRegistry } from "../../typings";
 import { canContainNode } from "../../utils";
-import { useUserLuaNodes } from "../../context/UserLuaNodesContext";
 
-type NodeCategoryId =
-  | "frequent"
-  | "ai"
-  | "logic"
-  | "device"
-  | "app"
-  | "integration"
-  | "user-lua";
+type NodeCategoryId = "frequent" | "ai" | "logic" | "device" | "app" | "integration" | "user-lua";
 
 type NodeCategory = {
   id: NodeCategoryId;
@@ -177,11 +170,7 @@ export function getVisibleRegistries(params: {
       }
       return true;
     })
-    .concat(
-      projectType === "conversation"
-        ? []
-        : userLuaRegistries,
-    );
+    .concat(projectType === "conversation" ? [] : userLuaRegistries);
 }
 
 interface NodeListProps {
@@ -267,7 +256,14 @@ function groupRegistries(registries: FlowNodeRegistry[]) {
 export const ConversationNodeList: FC<NodeListProps> = ({ onSelect, containerNode, fromPort }) => {
   const context = useClientContext();
   const { registries: userLuaRegistries } = useUserLuaNodes();
-  const groups = groupRegistries(getVisibleRegistries({ containerNode, fromPort, projectType: "conversation", userLuaRegistries }));
+  const groups = groupRegistries(
+    getVisibleRegistries({
+      containerNode,
+      fromPort,
+      projectType: "conversation",
+      userLuaRegistries,
+    }),
+  );
 
   return (
     <ConversationNodesWrap>
@@ -377,24 +373,12 @@ export const NodeList: FC<NodeListProps> = ({
   const context = useClientContext();
   const [activeCategory, setActiveCategory] = useState<NodeCategoryId>("frequent");
   const [keyword, setKeyword] = useState("");
-  const { registries: userLuaRegistries } = useUserLuaNodes();
+  const { registries: userLuaRegistries, isLoading: isUserLuaLoading } = useUserLuaNodes();
 
   const registries = useMemo(
     () => getVisibleRegistries({ containerNode, fromPort, projectType, userLuaRegistries }),
     [containerNode, fromPort, projectType, userLuaRegistries],
   );
-
-  const categoryCounts = useMemo(() => {
-    const counts = new Map<NodeCategoryId, number>();
-    registries.forEach((registry) => {
-      const category = getCategoryId(registry);
-      counts.set(category, (counts.get(category) ?? 0) + 1);
-      if (FREQUENT_NODE_TYPES.has(registry.type as string)) {
-        counts.set("frequent", (counts.get("frequent") ?? 0) + 1);
-      }
-    });
-    return counts;
-  }, [registries]);
 
   const visibleRegistries = useMemo(() => {
     const normalizedKeyword = keyword.trim().toLocaleLowerCase();
@@ -413,15 +397,6 @@ export const NodeList: FC<NodeListProps> = ({
     });
   }, [activeCategory, keyword, registries]);
 
-  useEffect(() => {
-    const categoryHasNodes = registries.some((registry) =>
-      activeCategory === "frequent"
-        ? FREQUENT_NODE_TYPES.has(registry.type as string)
-        : getCategoryId(registry) === activeCategory,
-    );
-    if (!categoryHasNodes) setActiveCategory("frequent");
-  }, [activeCategory, registries]);
-
   const handleSelect = (event: MouseEvent<HTMLButtonElement>, registry: FlowNodeRegistry) => {
     const json = registry.onAdd?.(context);
     onSelect({
@@ -430,6 +405,8 @@ export const NodeList: FC<NodeListProps> = ({
       nodeJSON: json,
     });
   };
+
+  const showUserLuaEmptyMessage = activeCategory === "user-lua" && !keyword.trim();
 
   return (
     <div className="workflow-node-library" role="dialog" aria-label="节点库">
@@ -477,13 +454,14 @@ export const NodeList: FC<NodeListProps> = ({
         <nav className="workflow-node-library-tabs" aria-label="节点分类">
           {CATEGORIES.map((category) => {
             const Icon = category.icon;
-            const count = categoryCounts.get(category.id) ?? 0;
             const isActive = category.id === activeCategory;
             return (
               <button
                 key={category.id}
                 type="button"
-                className={`workflow-node-library-tab${isActive ? " is-active" : ""}`}
+                className={["workflow-node-library-tab", isActive ? "is-active" : ""]
+                  .filter(Boolean)
+                  .join(" ")}
                 onClick={() => setActiveCategory(category.id)}
                 title={category.description}
                 aria-label={category.label}
@@ -521,10 +499,23 @@ export const NodeList: FC<NodeListProps> = ({
                 />
               ))
             ) : (
-              <div className="workflow-node-library-empty">
-                <Variable size={20} aria-hidden="true" />
-                <strong>没有找到合适的节点</strong>
-                <span>试试搜索“变量”“条件”或清空筛选。</span>
+              <div
+                className={[
+                  "workflow-node-library-empty",
+                  showUserLuaEmptyMessage ? "is-message" : "",
+                ]
+                  .filter(Boolean)
+                  .join(" ")}
+              >
+                {showUserLuaEmptyMessage ? (
+                  <span>{isUserLuaLoading ? "正在加载 Lua 模块…" : "当前工程暂无 Lua 模块"}</span>
+                ) : (
+                  <>
+                    <Variable size={20} aria-hidden="true" />
+                    <strong>没有找到合适的节点</strong>
+                    <span>试试搜索“变量”“条件”或清空筛选。</span>
+                  </>
+                )}
               </div>
             )}
           </div>

@@ -7,7 +7,11 @@ import type { PluginContext } from "@flowgram.ai/free-layout-editor";
 import { definePluginCreator } from "@flowgram.ai/free-layout-editor";
 
 import { WorkflowRuntimeClient, WorkflowRuntimeServerClient } from "./client";
-import { WorkflowRuntimeService } from "./runtime-service";
+import {
+  getWorkflowRuntimeService,
+  WorkflowRuntimeService,
+  WorkflowRuntimeServiceId,
+} from "./runtime-service";
 import type { RuntimePluginOptions } from "./type";
 
 function assertServerRuntimeOptions(
@@ -20,19 +24,28 @@ function assertServerRuntimeOptions(
 }
 
 export const createRuntimePlugin = definePluginCreator<RuntimePluginOptions, PluginContext>({
-  onBind({ bind, rebind }, options) {
+  onBind({ bind, rebind, isBound }, options) {
     assertServerRuntimeOptions(options);
 
-    bind(WorkflowRuntimeClient).toSelf().inSingletonScope();
-    bind(WorkflowRuntimeServerClient).toSelf().inSingletonScope();
+    if (!isBound(WorkflowRuntimeClient)) {
+      bind(WorkflowRuntimeClient).toSelf().inSingletonScope();
+    }
+    if (!isBound(WorkflowRuntimeServerClient)) {
+      bind(WorkflowRuntimeServerClient).toSelf().inSingletonScope();
+    }
     rebind(WorkflowRuntimeClient).to(WorkflowRuntimeServerClient);
-    bind(WorkflowRuntimeService).toSelf().inSingletonScope();
+    if (!isBound(WorkflowRuntimeService)) {
+      bind(WorkflowRuntimeService).toSelf().inSingletonScope();
+    }
+    if (!isBound(WorkflowRuntimeServiceId)) {
+      bind(WorkflowRuntimeServiceId).toService(WorkflowRuntimeService);
+    }
   },
   onInit(ctx, options) {
     assertServerRuntimeOptions(options);
 
     const serverClient = ctx.get<WorkflowRuntimeServerClient>(WorkflowRuntimeClient);
     serverClient.init(options.serverConfig);
-    ctx.get(WorkflowRuntimeService).setRuntimeContext(options.runtimeContext);
+    getWorkflowRuntimeService(ctx.container)?.setRuntimeContext(options.runtimeContext);
   },
 });

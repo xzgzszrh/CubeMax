@@ -2,17 +2,12 @@
  * 视觉节点表单 - 配置摄像头和 AI 分析
  */
 
-import { Divider, InputNumber, Select, Switch } from "@douyinfe/semi-ui";
+import { Divider, Select, Switch } from "@douyinfe/semi-ui";
 import { DisplayOutputs } from "@flowgram.ai/form-materials";
 import type { FormMeta } from "@flowgram.ai/free-layout-editor";
 import { Field } from "@flowgram.ai/free-layout-editor";
 
-import {
-  FormContent,
-  FormHeader,
-  FormItem,
-  ReadonlyValue,
-} from "../../form-components";
+import { FormContent, FormHeader, FormItem, ReadonlyValue } from "../../form-components";
 import { useIsSidebar, useNodeRenderContext } from "../../hooks";
 import type { FlowNodeJSON } from "../../typings";
 import { defaultFormMeta } from "../default-form-meta";
@@ -48,9 +43,13 @@ function CaptureModeSelect() {
           </FormItem>
         ) : (
           <FormItem name="拍摄模式" type="string">
-            <ReadonlyValue value={
-              CAPTURE_MODE_OPTIONS.find(o => o.value === field.value)?.label ?? field.value ?? "未设置"
-            } />
+            <ReadonlyValue
+              value={
+                CAPTURE_MODE_OPTIONS.find((o) => o.value === field.value)?.label ??
+                field.value ??
+                "未设置"
+              }
+            />
           </FormItem>
         )
       }
@@ -59,6 +58,37 @@ function CaptureModeSelect() {
 }
 
 function ModelSelect() {
+  const { readonly } = useNodeRenderContext();
+  const isSidebar = useIsSidebar();
+
+  return (
+    <Field<string> name="modelId">
+      {({ field }) =>
+        isSidebar ? (
+          <FormItem name="分析模型" type="string">
+            <Select
+              value={field.value || undefined}
+              disabled={readonly}
+              placeholder="暂未接入视觉模型，将使用默认模型"
+              emptyContent="暂无可用视觉模型"
+              optionList={[]}
+              onChange={(value) => field.onChange((value as string) ?? "")}
+              showClear
+              size="small"
+              style={{ width: "100%" }}
+            />
+          </FormItem>
+        ) : (
+          <FormItem name="分析模型" type="string">
+            <ReadonlyValue value={field.value || "默认模型"} />
+          </FormItem>
+        )
+      }
+    </Field>
+  );
+}
+
+function AnalysisPromptEditor() {
   const { readonly } = useNodeRenderContext();
   const isSidebar = useIsSidebar();
 
@@ -133,9 +163,7 @@ export const renderForm = () => {
         <Divider />
         <SaveImageSwitch />
         <Divider />
-        <Field<any> name="outputs">
-          {({ field }) => <DisplayOutputs value={field.value} />}
-        </Field>
+        <Field<any> name="outputs">{({ field }) => <DisplayOutputs value={field.value} />}</Field>
       </FormContent>
     </>
   );
