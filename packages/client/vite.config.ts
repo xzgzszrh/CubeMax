@@ -84,7 +84,7 @@ export default defineConfig({
     ],
   },
   server: {
-    host: host || "127.0.0.1",
+    host: host || "0.0.0.0",
     open: true,
     port: 4091,
     strictPort: true,

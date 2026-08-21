@@ -5,7 +5,7 @@
 
 import { Injectable } from "@nestjs/common";
 
-import { HttpErrorFactory } from "@buildingai/errors";
+import { HttpError, HttpErrorFactory } from "@buildingai/errors";
 
 export interface XiaozhiAgentPrompt {
   systemPrompt: string;
@@ -62,10 +62,10 @@ export class XiaozhiAgentService {
       
       return await response.json();
     } catch (error) {
-      if (error instanceof HttpErrorFactory) {
+      if (error instanceof HttpError) {
         throw error;
       }
-      throw HttpErrorFactory.internalServerError(`获取智能体配置失败: ${error}`);
+      throw HttpErrorFactory.internal(`获取智能体配置失败: ${error}`);
     }
   }
 
@@ -95,10 +95,10 @@ export class XiaozhiAgentService {
         previousPrompt: result.previousPrompt,
       };
     } catch (error) {
-      if (error instanceof HttpErrorFactory) {
+      if (error instanceof HttpError) {
         throw error;
       }
-      throw HttpErrorFactory.internalServerError(`切换提示词失败: ${error}`);
+      throw HttpErrorFactory.internal(`切换提示词失败: ${error}`);
     }
   }
 
@@ -123,10 +123,10 @@ export class XiaozhiAgentService {
       
       return { success: true };
     } catch (error) {
-      if (error instanceof HttpErrorFactory) {
+      if (error instanceof HttpError) {
         throw error;
       }
-      throw HttpErrorFactory.internalServerError(`启用智能体失败: ${error}`);
+      throw HttpErrorFactory.internal(`启用智能体失败: ${error}`);
     }
   }
 
@@ -151,10 +151,10 @@ export class XiaozhiAgentService {
       
       return { success: true };
     } catch (error) {
-      if (error instanceof HttpErrorFactory) {
+      if (error instanceof HttpError) {
         throw error;
       }
-      throw HttpErrorFactory.internalServerError(`停用智能体失败: ${error}`);
+      throw HttpErrorFactory.internal(`停用智能体失败: ${error}`);
     }
   }
 
@@ -182,10 +182,10 @@ export class XiaozhiAgentService {
         durationMs: result.durationMs,
       };
     } catch (error) {
-      if (error instanceof HttpErrorFactory) {
+      if (error instanceof HttpError) {
         throw error;
       }
-      throw HttpErrorFactory.internalServerError(`语音播报失败: ${error}`);
+      throw HttpErrorFactory.internal(`语音播报失败: ${error}`);
     }
   }
 
@@ -207,10 +207,10 @@ export class XiaozhiAgentService {
       const result = await response.json();
       return result.devices || [];
     } catch (error) {
-      if (error instanceof HttpErrorFactory) {
+      if (error instanceof HttpError) {
         throw error;
       }
-      throw HttpErrorFactory.internalServerError(`获取设备列表失败: ${error}`);
+      throw HttpErrorFactory.internal(`获取设备列表失败: ${error}`);
     }
   }
 
@@ -240,10 +240,10 @@ export class XiaozhiAgentService {
         response: result,
       };
     } catch (error) {
-      if (error instanceof HttpErrorFactory) {
+      if (error instanceof HttpError) {
         throw error;
       }
-      throw HttpErrorFactory.internalServerError(`设备控制失败: ${error}`);
+      throw HttpErrorFactory.internal(`设备控制失败: ${error}`);
     }
   }
 }

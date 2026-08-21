@@ -3,7 +3,7 @@
  * 为 xiaozhi.me 设备生成 MCP 调用指令
  */
 
-import { Button, Divider, Input, Textarea } from "@douyinfe/semi-ui";
+import { Button, Divider, Input } from "@douyinfe/semi-ui";
 import { DisplayOutputs } from "@flowgram.ai/form-materials";
 import type { FormMeta } from "@flowgram.ai/free-layout-editor";
 import { Field } from "@flowgram.ai/free-layout-editor";
@@ -57,13 +57,22 @@ function ToolDescriptionInput() {
       {({ field }) =>
         isSidebar ? (
           <FormItem name="工具描述" type="string">
-            <Textarea
+            <textarea
+              className="workflow-form-textarea"
               value={field.value ?? ""}
-              onChange={(value) => field.onChange(value as string)}
+              onChange={(e) => field.onChange(e.target.value)}
               disabled={readonly}
               placeholder="描述这个回传端点的用途..."
               rows={2}
-              style={{ width: "100%", resize: "none" }}
+              style={{
+                width: "100%",
+                resize: "none",
+                padding: "8px",
+                borderRadius: "6px",
+                border: "1px solid var(--border-color, #e2e8f0)",
+                fontSize: "13px",
+                fontFamily: "inherit",
+              }}
             />
           </FormItem>
         ) : (
@@ -219,11 +228,12 @@ function InputSchemaEditor() {
       {({ field }) =>
         isSidebar ? (
           <FormItem name="参数 Schema" type="object">
-            <Textarea
+            <textarea
+              className="workflow-form-textarea"
               value={JSON.stringify(field.value, null, 2)}
-              onChange={(value) => {
+              onChange={(e) => {
                 try {
-                  field.onChange(JSON.parse(value as string));
+                  field.onChange(JSON.parse(e.target.value));
                 } catch {
                   // 忽略无效 JSON
                 }
@@ -231,7 +241,15 @@ function InputSchemaEditor() {
               disabled={readonly}
               placeholder='{"type": "object", "properties": {...}}'
               rows={4}
-              style={{ width: "100%", resize: "vertical", fontFamily: "monospace", fontSize: "12px" }}
+              style={{
+                width: "100%",
+                resize: "vertical",
+                padding: "8px",
+                borderRadius: "6px",
+                border: "1px solid var(--border-color, #e2e8f0)",
+                fontSize: "12px",
+                fontFamily: "monospace",
+              }}
             />
           </FormItem>
         ) : (

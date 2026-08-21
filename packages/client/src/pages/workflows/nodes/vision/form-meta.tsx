@@ -2,7 +2,7 @@
  * 视觉节点表单 - 配置摄像头和 AI 分析
  */
 
-import { Divider, InputNumber, Select, Switch, Textarea } from "@douyinfe/semi-ui";
+import { Divider, InputNumber, Select, Switch } from "@douyinfe/semi-ui";
 import { DisplayOutputs } from "@flowgram.ai/form-materials";
 import type { FormMeta } from "@flowgram.ai/free-layout-editor";
 import { Field } from "@flowgram.ai/free-layout-editor";
@@ -58,41 +58,7 @@ function CaptureModeSelect() {
   );
 }
 
-function DeviceSelect() {
-  const { readonly } = useNodeRenderContext();
-  const isSidebar = useIsSidebar();
-
-  return (
-    <Field<string> name="deviceId">
-      {({ field }) =>
-        isSidebar ? (
-          <FormItem name="设备 ID" required type="string">
-            <input
-              className="workflow-form-input"
-              value={field.value ?? ""}
-              onChange={(e) => field.onChange(e.target.value)}
-              disabled={readonly}
-              placeholder="输入 CubeCat 设备 ID"
-              style={{
-                width: "100%",
-                padding: "6px 10px",
-                borderRadius: "6px",
-                border: "1px solid var(--border-color, #e2e8f0)",
-                fontSize: "13px",
-              }}
-            />
-          </FormItem>
-        ) : (
-          <FormItem name="设备 ID" type="string">
-            <ReadonlyValue value={field.value ?? "未设置"} />
-          </FormItem>
-        )
-      }
-    </Field>
-  );
-}
-
-function AnalysisPromptEditor() {
+function ModelSelect() {
   const { readonly } = useNodeRenderContext();
   const isSidebar = useIsSidebar();
 
@@ -101,58 +67,27 @@ function AnalysisPromptEditor() {
       {({ field }) =>
         isSidebar ? (
           <FormItem name="分析提示词" type="string">
-            <Textarea
+            <textarea
+              className="workflow-form-textarea"
               value={field.value ?? ""}
-              onChange={(value) => field.onChange(value as string)}
+              onChange={(e) => field.onChange(e.target.value)}
               disabled={readonly}
               placeholder="输入你希望 AI 分析图片的内容，例如：识别图片中的人物数量和动作"
               rows={4}
-              style={{ width: "100%", resize: "vertical" }}
+              style={{
+                width: "100%",
+                resize: "vertical",
+                padding: "8px",
+                borderRadius: "6px",
+                border: "1px solid var(--border-color, #e2e8f0)",
+                fontSize: "13px",
+                fontFamily: "inherit",
+              }}
             />
           </FormItem>
         ) : (
           <FormItem name="分析提示词" type="string">
             <ReadonlyValue value={field.value ?? "未设置"} />
-          </FormItem>
-        )
-      }
-    </Field>
-  );
-}
-
-function ModelSelect() {
-  const { readonly } = useNodeRenderContext();
-  const isSidebar = useIsSidebar();
-
-  // 常用的视觉模型
-  const visionModels = [
-    { value: "qwen-vl-max", label: "Qwen-VL Max" },
-    { value: "qwen-vl-plus", label: "Qwen-VL Plus" },
-    { value: "gpt-4o", label: "GPT-4o" },
-    { value: "claude-3-opus", label: "Claude 3 Opus" },
-    { value: "gemini-pro-vision", label: "Gemini Pro Vision" },
-  ];
-
-  return (
-    <Field<string> name="modelId">
-      {({ field }) =>
-        isSidebar ? (
-          <FormItem name="视觉模型" type="string">
-            <Select
-              value={field.value}
-              disabled={readonly}
-              onChange={(value) => field.onChange(value as string)}
-              placeholder="选择 AI 模型"
-              size="small"
-              style={{ width: "100%" }}
-              optionList={visionModels}
-            />
-          </FormItem>
-        ) : (
-          <FormItem name="视觉模型" type="string">
-            <ReadonlyValue value={
-              visionModels.find(m => m.value === field.value)?.label ?? field.value ?? "默认模型"
-            } />
           </FormItem>
         )
       }
@@ -191,7 +126,6 @@ export const renderForm = () => {
     <>
       <FormHeader />
       <FormContent>
-        <DeviceSelect />
         <CaptureModeSelect />
         <Divider />
         <ModelSelect />
@@ -210,9 +144,4 @@ export const renderForm = () => {
 export const formMeta: FormMeta<FlowNodeJSON> = {
   ...defaultFormMeta,
   render: renderForm,
-  validate: {
-    ...defaultFormMeta.validate,
-    deviceId: ({ value }: { value?: string }) =>
-      value ? undefined : "请输入设备 ID",
-  },
 };

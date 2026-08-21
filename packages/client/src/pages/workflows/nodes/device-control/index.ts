@@ -20,7 +20,7 @@ export const DeviceControlNodeRegistry: FlowNodeRegistry = {
   },
   meta: {
     nodePanelLabel: "设备控制",
-    nodePanelGroup: "application",
+    nodePanelGroup: "app",
     nodePanelGroupLabel: "智能交互",
     size: { width: 360, height: 420 },
     defaultPorts: [{ type: "output" }],
@@ -31,8 +31,7 @@ export const DeviceControlNodeRegistry: FlowNodeRegistry = {
       type: WorkflowNodeType.DeviceControl,
       data: {
         title: `设备控制_${++index}`,
-        // 设备 ID
-        deviceId: "",
+        // 设备 ID（由工程设置中配置）
         // 控制动作类型
         action: "led_toggle",
         // LED 控制参数
@@ -51,6 +50,18 @@ export const DeviceControlNodeRegistry: FlowNodeRegistry = {
         // GPIO 参数
         gpioPin: "",
         gpioValue: true,
+        // 输入定义（接收前置节点的控制参数）
+        inputs: {
+          type: "object",
+          properties: {
+            params: {
+              type: "object",
+              title: "控制参数",
+              description: "来自前置节点的控制参数",
+            },
+          },
+        },
+        inputsValues: {},
         // 输出定义
         outputs: {
           type: "object",

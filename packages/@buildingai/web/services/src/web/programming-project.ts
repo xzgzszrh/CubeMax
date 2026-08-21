@@ -27,6 +27,14 @@ export interface ProgrammingProjectItem {
     deviceId?: string | null;
     isPublished: boolean;
     publishedAt?: string | null;
+    publishedSnapshot?: {
+        version: number;
+        workflow: { id: string; name: string; schema: object };
+        luaModules: Array<{ id: string; name: string }>;
+        tools: ProgrammingProjectToolRef[];
+        runtime: { target: ProgrammingRuntimeTarget; simulatorSessionId?: string; deviceId?: string };
+        publishedAt: string;
+    };
     createBy: string;
     createdAt: string;
     updatedAt: string;

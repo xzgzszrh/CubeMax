@@ -27,40 +27,6 @@ const ACTION_OPTIONS = [
   { value: "pwm", label: "PWM 输出" },
 ];
 
-function DeviceIdInput() {
-  const { readonly } = useNodeRenderContext();
-  const isSidebar = useIsSidebar();
-
-  return (
-    <Field<string> name="deviceId">
-      {({ field }) =>
-        isSidebar ? (
-          <FormItem name="设备 ID" required type="string">
-            <input
-              className="workflow-form-input"
-              value={field.value ?? ""}
-              onChange={(e) => field.onChange(e.target.value)}
-              disabled={readonly}
-              placeholder="输入 CubeCat 设备 ID"
-              style={{
-                width: "100%",
-                padding: "6px 10px",
-                borderRadius: "6px",
-                border: "1px solid var(--border-color, #e2e8f0)",
-                fontSize: "13px",
-              }}
-            />
-          </FormItem>
-        ) : (
-          <FormItem name="设备 ID" type="string">
-            <ReadonlyValue value={field.value ?? "未设置"} />
-          </FormItem>
-        )
-      }
-    </Field>
-  );
-}
-
 function ActionSelect() {
   const { readonly } = useNodeRenderContext();
   const isSidebar = useIsSidebar();
@@ -303,7 +269,6 @@ export const renderForm = () => {
     <>
       <FormHeader />
       <FormContent>
-        <DeviceIdInput />
         <ActionSelect />
         <Divider />
         <DynamicParams />
@@ -319,9 +284,4 @@ export const renderForm = () => {
 export const formMeta: FormMeta<FlowNodeJSON> = {
   ...defaultFormMeta,
   render: renderForm,
-  validate: {
-    ...defaultFormMeta.validate,
-    deviceId: ({ value }: { value?: string }) =>
-      value ? undefined : "请输入设备 ID",
-  },
 };

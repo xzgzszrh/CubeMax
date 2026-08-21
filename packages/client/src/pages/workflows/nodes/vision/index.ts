@@ -20,7 +20,7 @@ export const VisionNodeRegistry: FlowNodeRegistry = {
   },
   meta: {
     nodePanelLabel: "视觉识别",
-    nodePanelGroup: "application",
+    nodePanelGroup: "app",
     nodePanelGroupLabel: "智能交互",
     size: { width: 380, height: 480 },
     defaultPorts: [{ type: "output" }],
@@ -31,8 +31,6 @@ export const VisionNodeRegistry: FlowNodeRegistry = {
       type: WorkflowNodeType.Vision,
       data: {
         title: `视觉识别_${++index}`,
-        // 设备 ID（CubeCat 设备）
-        deviceId: "",
         // 拍摄模式: photo = 单张拍照, continuous = 连续拍摄, stream = 视频流
         captureMode: "photo",
         // 分析提示词
@@ -41,6 +39,18 @@ export const VisionNodeRegistry: FlowNodeRegistry = {
         modelId: "",
         // 是否保存图片
         saveImage: false,
+        // 输入定义（可接收前置节点变量）
+        inputs: {
+          type: "object",
+          properties: {
+            context: {
+              type: "string",
+              title: "上下文",
+              description: "来自前置节点的上下文信息",
+            },
+          },
+        },
+        inputsValues: {},
         // 输出定义
         outputs: {
           type: "object",

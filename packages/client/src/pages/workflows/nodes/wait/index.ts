@@ -20,7 +20,7 @@ export const WaitNodeRegistry: FlowNodeRegistry = {
   },
   meta: {
     nodePanelLabel: "等待",
-    nodePanelGroup: "application",
+    nodePanelGroup: "app",
     nodePanelGroupLabel: "智能交互",
     size: { width: 360, height: 380 },
     defaultPorts: [
@@ -44,6 +44,18 @@ export const WaitNodeRegistry: FlowNodeRegistry = {
         expectedDataPath: "",
         // 期望的值（可选），用于条件判断
         expectedValue: "",
+        // 输入定义
+        inputs: {
+          type: "object",
+          properties: {
+            context: {
+              type: "string",
+              title: "上下文信息",
+              description: "来自前置节点的上下文信息",
+            },
+          },
+        },
+        inputsValues: {},
         // 输出定义
         outputs: {
           type: "object",

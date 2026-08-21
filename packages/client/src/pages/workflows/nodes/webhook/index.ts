@@ -21,7 +21,7 @@ export const WebhookNodeRegistry: FlowNodeRegistry = {
   },
   meta: {
     nodePanelLabel: "回传端点",
-    nodePanelGroup: "application",
+    nodePanelGroup: "app",
     nodePanelGroupLabel: "智能交互",
     size: { width: 380, height: 480 },
     defaultPorts: [

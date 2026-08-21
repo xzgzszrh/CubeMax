@@ -11,10 +11,8 @@ import {
   Blocks,
   BrainCircuit,
   ChevronRight,
-  Code2,
   Cpu,
   GitBranch,
-  LayoutGrid,
   Link2,
   LockKeyhole,
   Search,
@@ -30,63 +28,57 @@ import { nodeRegistries, WorkflowNodeType } from "../../nodes";
 import type { FlowNodeRegistry } from "../../typings";
 import { canContainNode } from "../../utils";
 
-type NodeCategoryId = "all" | "frequent" | "ai" | "logic" | "device" | "integration" | "developer" | "application";
+type NodeCategoryId =
+  | "frequent"
+  | "ai"
+  | "logic"
+  | "device"
+  | "app"
+  | "integration";
 
 type NodeCategory = {
   id: NodeCategoryId;
   label: string;
   description: string;
-  icon: typeof LayoutGrid;
+  icon: typeof Activity;
 };
 
 const CATEGORIES: NodeCategory[] = [
   {
-    id: "all",
-    label: "全部",
-    description: "浏览工作流中可以使用的所有积木",
-    icon: LayoutGrid,
-  },
-  {
     id: "frequent",
     label: "常用",
-    description: "最适合刚开始搭建流程的节点",
+    description: "最常用的节点",
     icon: Sparkles,
   },
   {
     id: "ai",
-    label: "智能",
-    description: "让 AI 理解、生成或分析内容",
+    label: "AI",
+    description: "大模型对话与理解",
     icon: BrainCircuit,
   },
   {
     id: "logic",
     label: "逻辑",
-    description: "控制分支、循环和变量",
+    description: "条件分支与循环控制",
     icon: GitBranch,
   },
   {
     id: "device",
     label: "设备",
-    description: "连接 CubeCat、开发板和硬件能力",
+    description: "硬件控制与设备交互",
     icon: Cpu,
   },
   {
-    id: "application",
+    id: "app",
     label: "智能交互",
-    description: "智能体、等待、回传和视觉识别",
+    description: "智能体、等待、回传与感知",
     icon: Activity,
   },
   {
     id: "integration",
     label: "连接",
-    description: "调用 MCP 工具和外部接口",
+    description: "MCP 工具与 HTTP 接口",
     icon: Link2,
-  },
-  {
-    id: "developer",
-    label: "进阶",
-    description: "编写代码、调试和补充说明",
-    icon: Code2,
   },
 ];
 
@@ -96,16 +88,20 @@ const FREQUENT_NODE_TYPES = new Set<string>([
   WorkflowNodeType.Lua,
   WorkflowNodeType.Variable,
   WorkflowNodeType.Condition,
-  WorkflowNodeType.Loop,
   WorkflowNodeType.HTTP,
+  WorkflowNodeType.Agent,
 ]);
 
-const DEVICE_GROUPS = new Set([
-  "embedded-device",
-  "embedded-serial",
-  "embedded-gpio",
-  "embedded-analog-pwm",
-  "embedded-i2c",
+/**
+ * 智能交互类节点（仅应用工作流可用）
+ */
+const APP_NODE_TYPES = new Set<string>([
+  WorkflowNodeType.Agent,
+  WorkflowNodeType.Wait,
+  WorkflowNodeType.Webhook,
+  WorkflowNodeType.Vision,
+  WorkflowNodeType.Speech,
+  WorkflowNodeType.DeviceControl,
 ]);
 
 const CATEGORY_BY_TYPE: Partial<Record<WorkflowNodeType | string, NodeCategoryId>> = {
@@ -119,25 +115,20 @@ const CATEGORY_BY_TYPE: Partial<Record<WorkflowNodeType | string, NodeCategoryId
   [WorkflowNodeType.Loop]: "logic",
   [WorkflowNodeType.Continue]: "logic",
   [WorkflowNodeType.Break]: "logic",
-  [WorkflowNodeType.Code]: "developer",
-  [WorkflowNodeType.Comment]: "developer",
-  // 应用工作流专用节点
-  [WorkflowNodeType.Agent]: "application",
-  [WorkflowNodeType.Wait]: "application",
-  [WorkflowNodeType.Webhook]: "application",
-  [WorkflowNodeType.Vision]: "application",
-  [WorkflowNodeType.Speech]: "application",
-  [WorkflowNodeType.DeviceControl]: "application",
+  [WorkflowNodeType.Code]: "device",
+  [WorkflowNodeType.Comment]: "logic",
+  [WorkflowNodeType.Agent]: "app",
+  [WorkflowNodeType.Wait]: "app",
+  [WorkflowNodeType.Webhook]: "app",
+  [WorkflowNodeType.Vision]: "app",
+  [WorkflowNodeType.Speech]: "app",
+  [WorkflowNodeType.DeviceControl]: "app",
 };
 
-const APPLICATION_GROUPS = new Set([
-  "application",
-]);
-
 function getCategoryId(registry: FlowNodeRegistry): NodeCategoryId {
-  if (DEVICE_GROUPS.has(registry.meta.nodePanelGroup ?? "")) return "device";
-  if (APPLICATION_GROUPS.has(registry.meta.nodePanelGroup ?? "")) return "application";
-  return CATEGORY_BY_TYPE[registry.type as string] ?? "developer";
+  if (registry.meta.nodePanelGroup === "device") return "device";
+  if (registry.meta.nodePanelGroup === "app") return "app";
+  return CATEGORY_BY_TYPE[registry.type as string] ?? "logic";
 }
 
 function getNodeLabel(registry: FlowNodeRegistry): string {
@@ -147,18 +138,6 @@ function getNodeLabel(registry: FlowNodeRegistry): string {
 function getNodeDescription(registry: FlowNodeRegistry): string {
   return registry.info?.description || "把这个积木拖入流程，完成一个具体步骤。";
 }
-
-/**
- * 应用工作流专用的节点类型
- */
-const APPLICATION_NODE_TYPES = new Set<string>([
-  WorkflowNodeType.Agent,
-  WorkflowNodeType.Wait,
-  WorkflowNodeType.Webhook,
-  WorkflowNodeType.Vision,
-  WorkflowNodeType.Speech,
-  WorkflowNodeType.DeviceControl,
-]);
 
 export function getVisibleRegistries(params: {
   containerNode: WorkflowNodeEntity | undefined;
@@ -170,8 +149,8 @@ export function getVisibleRegistries(params: {
   return nodeRegistries
     .filter((registry) => registry.meta.nodePanelVisible !== false)
     .filter((registry) => {
-      // 对话流过滤掉应用专用节点
-      if (projectType === "conversation" && APPLICATION_NODE_TYPES.has(registry.type as string)) {
+      // 对话流过滤掉智能交互节点
+      if (projectType === "conversation" && APP_NODE_TYPES.has(registry.type as string)) {
         return false;
       }
       if (fromPort && registry.type === WorkflowNodeType.Comment) return false;
@@ -405,23 +384,20 @@ export const NodeList: FC<NodeListProps> = ({
         label.includes(normalizedKeyword) ||
         description.includes(normalizedKeyword);
       const matchesCategory =
-        activeCategory === "all" ||
-        (activeCategory === "frequent"
+        activeCategory === "frequent"
           ? FREQUENT_NODE_TYPES.has(registry.type as string)
-          : getCategoryId(registry) === activeCategory);
+          : getCategoryId(registry) === activeCategory;
       return matchesKeyword && matchesCategory;
     });
   }, [activeCategory, keyword, registries]);
 
   useEffect(() => {
-    const categoryHasNodes =
-      activeCategory === "all" ||
-      registries.some((registry) =>
-        activeCategory === "frequent"
-          ? FREQUENT_NODE_TYPES.has(registry.type as string)
-          : getCategoryId(registry) === activeCategory,
-      );
-    if (!categoryHasNodes) setActiveCategory("all");
+    const categoryHasNodes = registries.some((registry) =>
+      activeCategory === "frequent"
+        ? FREQUENT_NODE_TYPES.has(registry.type as string)
+        : getCategoryId(registry) === activeCategory,
+    );
+    if (!categoryHasNodes) setActiveCategory("frequent");
   }, [activeCategory, registries]);
 
   const handleSelect = (event: MouseEvent<HTMLButtonElement>, registry: FlowNodeRegistry) => {
@@ -457,7 +433,7 @@ export const NodeList: FC<NodeListProps> = ({
           onChange={(event) => {
             const nextKeyword = event.target.value;
             setKeyword(nextKeyword);
-            if (nextKeyword.trim()) setActiveCategory("all");
+            if (nextKeyword.trim()) setActiveCategory("frequent");
           }}
           onKeyDown={handleSearchKeyDown}
           placeholder="搜索节点，例如：条件、Lua、MCP"
@@ -479,22 +455,19 @@ export const NodeList: FC<NodeListProps> = ({
         <nav className="workflow-node-library-tabs" aria-label="节点分类">
           {CATEGORIES.map((category) => {
             const Icon = category.icon;
-            const count =
-              category.id === "all" ? registries.length : (categoryCounts.get(category.id) ?? 0);
+            const count = categoryCounts.get(category.id) ?? 0;
             const isActive = category.id === activeCategory;
             return (
               <button
                 key={category.id}
                 type="button"
-                className={`workflow-node-library-tab${isActive ? "is-active" : ""}`}
+                className={`workflow-node-library-tab${isActive ? " is-active" : ""}`}
                 onClick={() => setActiveCategory(category.id)}
                 title={category.description}
-                aria-label={`${category.label}：${category.description}`}
+                aria-label={category.label}
                 aria-pressed={isActive}
               >
-                <Icon size={16} aria-hidden="true" />
-                <span>{category.label}</span>
-                <span className="workflow-node-library-tab-count">{count}</span>
+                <Icon size={17} aria-hidden="true" />
               </button>
             );
           })}

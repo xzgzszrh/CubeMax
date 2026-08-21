@@ -20,7 +20,7 @@ export const AgentNodeRegistry: FlowNodeRegistry = {
   },
   meta: {
     nodePanelLabel: "智能体",
-    nodePanelGroup: "application",
+    nodePanelGroup: "app",
     nodePanelGroupLabel: "智能交互",
     size: { width: 360, height: 420 },
     defaultPorts: [{ type: "output" }],
@@ -33,12 +33,24 @@ export const AgentNodeRegistry: FlowNodeRegistry = {
         title: `智能体_${++index}`,
         // 智能体操作类型: switch_prompt = 切换提示词, enable = 启用, disable = 停用
         action: "switch_prompt",
-        // 目标智能体 ID
+        // 目标智能体 ID（现在由工程设置中配置，不再在工作流中配置）
         agentId: "",
         // 新的提示词内容
         prompt: "",
         // 提示词名称（用于显示）
         promptName: "",
+        // 输入定义（可接收前置节点的触发信息）
+        inputs: {
+          type: "object",
+          properties: {
+            trigger: {
+              type: "string",
+              title: "触发信息",
+              description: "来自前置节点的可选触发信息",
+            },
+          },
+        },
+        inputsValues: {},
         // 输出定义
         outputs: {
           type: "object",

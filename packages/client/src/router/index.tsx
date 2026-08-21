@@ -24,6 +24,8 @@ import ProgrammingProjectsPage from "@/pages/programming";
 import ProgrammingWorkspaceLayout from "@/pages/programming/layout";
 import ProgrammingCanvasPage from "@/pages/programming/program";
 import ProgrammingToolsPage from "@/pages/programming/tools";
+import ProjectSettingsPage from "@/pages/programming/settings";
+import ProjectPublishPage from "@/pages/programming/publish";
 import SimulatorPage from "@/pages/simulator";
 import SmartHomePage from "@/pages/smart-home";
 import TriggersPage from "@/pages/triggers";
@@ -156,6 +158,14 @@ export const router = createBrowserRouter([
           {
             path: "tools",
             element: <ProgrammingToolsPage />,
+          },
+          {
+            path: "settings",
+            element: <ProjectSettingsPage />,
+          },
+          {
+            path: "publish",
+            element: <ProjectPublishPage />,
           },
         ],
       },
