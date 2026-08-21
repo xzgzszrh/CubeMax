@@ -156,11 +156,11 @@ export class XiaozhiService {
                 organizationId: managedOrganizationId,
                 ownerUserId: userId,
                 label: dto.label.trim(),
-                usernameEncrypted: this.credentialCrypto.encrypt(dto.username.trim()),
-                passwordEncrypted: this.credentialCrypto.encrypt(dto.password),
-                accessTokenEncrypted: this.credentialCrypto.encrypt(login.token),
+                usernameEncrypted: this.encryptCredential(dto.username.trim()),
+                passwordEncrypted: this.encryptCredential(dto.password),
+                accessTokenEncrypted: this.encryptCredential(login.token),
                 sessionCookieEncrypted: login.sessionCookie
-                    ? this.credentialCrypto.encrypt(login.sessionCookie)
+                    ? this.encryptCredential(login.sessionCookie)
                     : null,
                 upstreamUserId: login.upstreamUserId,
                 status: XiaozhiAccountStatus.ACTIVE,
@@ -380,11 +380,11 @@ export class XiaozhiService {
             captchaCode: dto.captchaCode,
             challengeId: dto.challengeId,
         });
-        account.usernameEncrypted = this.credentialCrypto.encrypt(username);
-        account.passwordEncrypted = this.credentialCrypto.encrypt(password);
-        account.accessTokenEncrypted = this.credentialCrypto.encrypt(login.token);
+        account.usernameEncrypted = this.encryptCredential(username);
+        account.passwordEncrypted = this.encryptCredential(password);
+        account.accessTokenEncrypted = this.encryptCredential(login.token);
         account.sessionCookieEncrypted = login.sessionCookie
-            ? this.credentialCrypto.encrypt(login.sessionCookie)
+            ? this.encryptCredential(login.sessionCookie)
             : null;
         account.upstreamUserId = login.upstreamUserId ?? account.upstreamUserId;
         account.status = XiaozhiAccountStatus.ACTIVE;
@@ -1219,7 +1219,7 @@ export class XiaozhiService {
                 ? this.decryptCredential(account.sessionCookieEncrypted)
                 : "";
             await this.ensureCredentialWrite();
-            account.sessionCookieEncrypted = this.credentialCrypto.encrypt(
+            account.sessionCookieEncrypted = this.encryptCredential(
                 this.mergeCookies(current, freshCookies),
             );
             await this.accountRepository.save(account);
@@ -1312,6 +1312,14 @@ export class XiaozhiService {
     private async ensureCredentialWrite() {
         try {
             await this.credentialCrypto.ensureWritable();
+        } catch (error) {
+            throw this.credentialCrypto.toHttpError(error);
+        }
+    }
+
+    private encryptCredential(value: string) {
+        try {
+            return this.credentialCrypto.encrypt(value);
         } catch (error) {
             throw this.credentialCrypto.toHttpError(error);
         }

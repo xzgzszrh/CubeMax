@@ -443,6 +443,14 @@ export class XiaozhiMcpGatewayService implements OnModuleInit, OnModuleDestroy {
                 this.credentialCrypto.decrypt(connection.endpointEncrypted),
             ) as GatewaySocket;
         } catch (error) {
+            if (this.credentialCrypto.isCredentialError(error)) {
+                await this.updateStatus(
+                    connection.id,
+                    XiaozhiMcpConnectionStatus.ERROR,
+                    error.message,
+                );
+                return;
+            }
             this.scheduleReconnect(state, safeErrorMessage(error));
             return;
         }
@@ -1201,13 +1209,13 @@ export class XiaozhiMcpService {
 
     /** Ask the upstream console to mint an MCP endpoint token for one agent. */
     private async generateEndpointToken(account: XiaozhiAccount, agent: XiaozhiAgentBinding) {
-        await this.credentialCrypto.ensureReadable();
+        await this.ensureCredentialRead();
         const headers: Record<string, string> = {
             Accept: "application/json",
-            Authorization: `Bearer ${this.credentialCrypto.decrypt(account.accessTokenEncrypted)}`,
+            Authorization: `Bearer ${this.decryptCredential(account.accessTokenEncrypted)}`,
         };
         if (account.sessionCookieEncrypted) {
-            headers.Cookie = this.credentialCrypto.decrypt(account.sessionCookieEncrypted);
+            headers.Cookie = this.decryptCredential(account.sessionCookieEncrypted);
         }
         let response: Response;
         try {
@@ -1237,9 +1245,41 @@ export class XiaozhiMcpService {
         return token;
     }
 
+    private async ensureCredentialRead() {
+        try {
+            await this.credentialCrypto.ensureReadable();
+        } catch (error) {
+            throw this.credentialCrypto.toHttpError(error);
+        }
+    }
+
+    private async ensureCredentialWrite() {
+        try {
+            await this.credentialCrypto.ensureWritable();
+        } catch (error) {
+            throw this.credentialCrypto.toHttpError(error);
+        }
+    }
+
+    private encryptCredential(value: string) {
+        try {
+            return this.credentialCrypto.encrypt(value);
+        } catch (error) {
+            throw this.credentialCrypto.toHttpError(error);
+        }
+    }
+
+    private decryptCredential(value: string) {
+        try {
+            return this.credentialCrypto.decrypt(value);
+        } catch (error) {
+            throw this.credentialCrypto.toHttpError(error);
+        }
+    }
+
     /** One connection per agent binding; soft-deleted rows are revived. */
     private async upsertConnection(agent: XiaozhiAgentBinding, endpoint: string) {
-        await this.credentialCrypto.ensureWritable();
+        await this.ensureCredentialWrite();
         const existing = await this.connectionRepository.findOne({
             where: { agentBindingId: agent.id },
             withDeleted: true,
@@ -1255,7 +1295,7 @@ export class XiaozhiMcpService {
         connection.organizationId = agent.organizationId;
         connection.ownerUserId = agent.ownerUserId;
         connection.agentName = agent.name;
-        connection.endpointEncrypted = this.credentialCrypto.encrypt(endpoint);
+        connection.endpointEncrypted = this.encryptCredential(endpoint);
         connection.enabled = true;
         connection.status = XiaozhiMcpConnectionStatus.CONNECTING;
         connection.lastError = null;

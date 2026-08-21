@@ -1,5 +1,5 @@
 import { DataSource } from "@buildingai/db/typeorm";
-import { HttpErrorFactory } from "@buildingai/errors";
+import { HttpErrorFactory, HttpStatus } from "@buildingai/errors";
 import { Injectable, Logger, OnModuleInit } from "@nestjs/common";
 import { createCipheriv, createDecipheriv, createHash, randomBytes } from "crypto";
 
@@ -48,8 +48,14 @@ export class XiaozhiCredentialCryptoService implements OnModuleInit {
     constructor(private readonly dataSource: DataSource) {}
 
     async onModuleInit() {
-        this.requireConfigured();
-        await this.ensureWritable();
+        try {
+            await this.ensureWritable();
+        } catch (error) {
+            // Missing/mismatched key only disables Xiaozhi credentials.
+            // The rest of the API must keep serving.
+            if (this.isCredentialError(error)) return;
+            throw error;
+        }
         this.logger.log(
             `小智凭据加密已启用（密钥指纹 ${this.fingerprint?.slice(0, FINGERPRINT_LENGTH)}）`,
         );
@@ -129,23 +135,32 @@ export class XiaozhiCredentialCryptoService implements OnModuleInit {
 
     toHttpError(error: unknown) {
         if (!this.isCredentialError(error)) return error;
-        return HttpErrorFactory.serviceUnavailable(error.message, {
-            code: `xiaozhi_credential_${error.code}`,
-            recoverable: error.code !== "not_configured",
+        const message =
+            error.code === "not_configured"
+                ? "小智账号功能暂时不可用，请联系管理员配置后再试"
+                : error.message;
+        return HttpErrorFactory.create(message, {
+            httpStatus: HttpStatus.SERVICE_UNAVAILABLE,
+            businessCode: 50001,
+            data: {
+                code: `xiaozhi_credential_${error.code}`,
+                recoverable: error.code !== "not_configured",
+            },
+            level: "warn",
         });
     }
 
     private requireConfigured(): Buffer {
         if (!this.key || !this.fingerprint) {
-            throw new XiaozhiCredentialCryptoError(
+            throw this.fail(
                 "not_configured",
-                "服务端尚未配置 XIAOZHI_ENCRYPTION_KEY，暂时不能读取或保存小智账号",
+                "服务端尚未配置 XIAOZHI_ENCRYPTION_KEY，小智账号功能暂不可用，其他服务不受影响",
             );
         }
         if (this.rawKey.length < 32) {
-            throw new XiaozhiCredentialCryptoError(
+            throw this.fail(
                 "not_configured",
-                "XIAOZHI_ENCRYPTION_KEY 长度不足，请配置至少 32 个字符的独立随机密钥",
+                "XIAOZHI_ENCRYPTION_KEY 长度不足，请配置至少 32 个字符的独立随机密钥；小智账号功能暂不可用，其他服务不受影响",
             );
         }
         return this.key;
@@ -220,13 +235,19 @@ export class XiaozhiCredentialCryptoService implements OnModuleInit {
     }
 
     private keyMismatch(message = XIAOZHI_CREDENTIAL_RECOVERY_MESSAGE) {
-        return new XiaozhiCredentialCryptoError("key_mismatch", message);
+        return this.fail("key_mismatch", message);
     }
 
     private invalidCiphertext() {
-        return new XiaozhiCredentialCryptoError(
+        return this.fail(
             "invalid_ciphertext",
             "小智账号凭据格式无效，请由老师或组织管理员重新登录该账号",
         );
+    }
+
+    private fail(code: CredentialErrorCode, message: string): XiaozhiCredentialCryptoError {
+        const error = new XiaozhiCredentialCryptoError(code, message);
+        this.logger.warn(error.message);
+        return error;
     }
 }

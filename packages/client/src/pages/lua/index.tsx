@@ -1247,12 +1247,12 @@ export default function LuaModulesPage({ projectId: projectIdProp }: { projectId
       </Dialog>
 
       <Dialog open={importModuleDialogOpen} onOpenChange={setImportModuleDialogOpen}>
-        <DialogContent className="sm:max-w-lg">
+        <DialogContent className="grid-cols-1 sm:max-w-lg">
           <DialogHeader>
             <DialogTitle>导入 Lua 模块</DialogTitle>
             <DialogDescription>选择一个尚未归属工程的模块。</DialogDescription>
           </DialogHeader>
-          <ScrollArea className="max-h-80 border">
+          <div className="max-h-80 min-w-0 overflow-y-auto rounded-md border">
             <div className="divide-y">
               {unassignedModulesQuery.isLoading ? (
                 <div className="text-muted-foreground p-6 text-center text-sm">正在加载模块</div>
@@ -1260,7 +1260,7 @@ export default function LuaModulesPage({ projectId: projectIdProp }: { projectId
                 <div className="text-muted-foreground p-6 text-center text-sm">暂无可导入模块</div>
               ) : (
                 unassignedModulesQuery.data?.items.map((module) => (
-                  <div key={module.id} className="flex items-center gap-3 px-4 py-3">
+                  <div key={module.id} className="flex min-w-0 items-center gap-3 px-4 py-3">
                     <FileCode2 className="text-muted-foreground size-4 shrink-0" />
                     <div className="min-w-0 flex-1">
                       <div className="truncate text-sm font-medium">{module.name}</div>
@@ -1271,6 +1271,7 @@ export default function LuaModulesPage({ projectId: projectIdProp }: { projectId
                     <Button
                       size="sm"
                       variant="outline"
+                      className="shrink-0"
                       disabled={!projectId || importMutation.isPending}
                       onClick={() =>
                         projectId && importMutation.mutate({ projectId, moduleId: module.id })
@@ -1282,8 +1283,8 @@ export default function LuaModulesPage({ projectId: projectIdProp }: { projectId
                 ))
               )}
             </div>
-          </ScrollArea>
-          <DialogFooter>
+          </div>
+          <DialogFooter className="min-w-0">
             <Button variant="outline" onClick={() => setImportModuleDialogOpen(false)}>
               关闭
             </Button>
