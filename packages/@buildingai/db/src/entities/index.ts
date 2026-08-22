@@ -105,7 +105,11 @@ export {
     type ProgrammingProjectLuaSnapshot,
     type ProgrammingProjectPublishedSnapshot,
     ProgrammingProjectTool,
+    type ProgrammingProjectToolKind,
     type ProgrammingProjectToolSnapshot,
+    programmingProjectToolKey,
+    programmingProjectToolKind,
+    normalizeProgrammingProjectTool,
     type ProgrammingProjectType,
     type ProgrammingRuntimeTarget,
 } from "./programming-project.entity";
@@ -141,6 +145,16 @@ export {
     type XiaomiHomeServer,
     type XiaomiHomeSummary,
 } from "./xiaomi-home.entity";
+export {
+    YeelightProAccount,
+    YeelightProAccountStatus,
+    type YeelightProAccountStatusType,
+    type YeelightProCapability,
+    YeelightProDevice,
+    type YeelightProHomeSummary,
+    YeelightProQrSession,
+    type YeelightProRegion,
+} from "./yeelight-pro.entity";
 export {
     XiaozhiAccount,
     XiaozhiAccountStatus,

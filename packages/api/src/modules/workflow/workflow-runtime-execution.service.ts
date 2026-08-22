@@ -13,6 +13,7 @@ import { WorkflowEmbeddedExecutorService } from "./workflow-embedded-executor.se
 import { WorkflowLlmExecutorService } from "./workflow-llm-executor.service";
 import { WorkflowLuaExecutorService } from "./workflow-lua-executor.service";
 import { WorkflowMcpExecutorService } from "./workflow-mcp-executor.service";
+import { WorkflowSmartHomeExecutorService } from "./workflow-smart-home-executor.service";
 import { WorkflowService } from "./workflow.service";
 import type {
     PublishedWorkflowRuntimeTaskDto,
@@ -39,6 +40,7 @@ export class WorkflowRuntimeExecutionService {
         private readonly workflowEmbeddedExecutorService: WorkflowEmbeddedExecutorService,
         private readonly workflowLlmExecutorService: WorkflowLlmExecutorService,
         private readonly workflowLuaExecutorService: WorkflowLuaExecutorService,
+        private readonly workflowSmartHomeExecutorService: WorkflowSmartHomeExecutorService,
         private readonly workflowService: WorkflowService,
         private readonly programmingProjectService: ProgrammingProjectService,
     ) {}
@@ -48,6 +50,9 @@ export class WorkflowRuntimeExecutionService {
         runtime.registerMCPExecutor((input) => this.workflowMcpExecutorService.execute(input));
         runtime.registerLLMExecutor((input) => this.workflowLlmExecutorService.execute(input));
         runtime.registerLuaExecutor((input) => this.workflowLuaExecutorService.execute(input));
+        runtime.registerSmartHomeExecutor((input) =>
+            this.workflowSmartHomeExecutorService.execute(input),
+        );
         return runtime;
     }
 

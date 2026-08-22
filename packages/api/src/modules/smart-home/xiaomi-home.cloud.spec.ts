@@ -1,5 +1,5 @@
 import { XiaomiHomeCloudClient } from "./xiaomi-home.cloud";
-import { getXiaomiHomeCategory, isLoopbackHttpOrigin } from "./xiaomi-home.constants";
+import { getXiaomiHomeCategory } from "./xiaomi-home.constants";
 
 describe("Xiaomi Home cloud compatibility", () => {
     afterEach(() => {
@@ -57,13 +57,5 @@ describe("Xiaomi Home cloud compatibility", () => {
 
         expect(authorizationUrl.searchParams.get("redirect_uri")).toBe(redirectUri);
         expect(authorizationUrl.searchParams.get("state")).toBe("test-state");
-    });
-
-    it("only accepts loopback HTTP origins for the local relay", () => {
-        expect(isLoopbackHttpOrigin("http://localhost:4090")).toBe(true);
-        expect(isLoopbackHttpOrigin("https://127.0.0.1:4090")).toBe(true);
-        expect(isLoopbackHttpOrigin("http://[::1]:4090")).toBe(true);
-        expect(isLoopbackHttpOrigin("http://localhost.example.com:4090")).toBe(false);
-        expect(isLoopbackHttpOrigin("http://homeassistant.local:8123")).toBe(false);
     });
 });

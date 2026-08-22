@@ -30,6 +30,7 @@ export * from "./user";
 export * from "./user-memory";
 export * from "./workflow";
 export * from "./xiaomi-home";
+export * from "./yeelight-pro";
 export * from "./lua-module";
 export * from "./lua-device";
 export * from "./simulator";

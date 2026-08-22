@@ -52,7 +52,9 @@ function useAvailableMcpServers() {
   const servers = useMemo(() => {
     if (!project) return query.data ?? [];
     const allowed = new Set(
-      project.tools.map((tool) => `${tool.mcpServerId}\u0000${tool.toolName}`),
+      project.tools
+        .filter((tool) => (tool.kind ?? "mcp") === "mcp")
+        .map((tool) => `${tool.mcpServerId}\u0000${tool.toolName}`),
     );
     return (query.data ?? [])
       .map((server) => ({
@@ -116,6 +118,8 @@ function McpConfig() {
                 }
 
                 return (
+                  <Field<boolean | undefined> name="toolBound">
+                    {({ field: boundField }) => (
                   <Field<JsonSchema> name="inputs">
                     {({ field: inputsField }) => (
                       <Field<Record<string, IFlowValue>> name="inputsValues">
@@ -124,6 +128,9 @@ function McpConfig() {
                             {({ field: toolInputSchemaField }) => (
                               <>
                                 <FormItem name="MCP 服务" required type="string">
+                                  {boundField.value ? (
+                                    <ReadonlyValue value={serverDisplay} />
+                                  ) : (
                                   <Select
                                     value={serverField.value}
                                     onChange={(value) => {
@@ -142,9 +149,13 @@ function McpConfig() {
                                     size="small"
                                     style={{ width: "100%" }}
                                   />
+                                  )}
                                 </FormItem>
 
                                 <FormItem name="工具" required type="string">
+                                  {boundField.value ? (
+                                    <ReadonlyValue value={toolDisplay} />
+                                  ) : (
                                   <Select
                                     value={toolField.value}
                                     onChange={(value) => {
@@ -172,12 +183,15 @@ function McpConfig() {
                                     size="small"
                                     style={{ width: "100%" }}
                                   />
+                                  )}
                                 </FormItem>
                               </>
                             )}
                           </Field>
                         )}
                       </Field>
+                    )}
+                  </Field>
                     )}
                   </Field>
                 );

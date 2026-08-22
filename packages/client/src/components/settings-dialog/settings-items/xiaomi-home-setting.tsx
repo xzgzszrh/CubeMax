@@ -57,6 +57,7 @@ import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
 import { SettingItem, SettingItemGroup } from "../setting-item";
+import { YeelightProSetting } from "./yeelight-pro-setting";
 
 function formatDate(value: string | null | undefined): string {
   if (!value) return "尚未同步";
@@ -221,11 +222,12 @@ export function XiaomiHomeSetting() {
 
   return (
     <div className="flex flex-col gap-4">
+      <YeelightProSetting />
       <SettingItemGroup label="连接新账号">
         <SettingItem
           icon={<Cloud className="size-5" />}
           title="小米账号"
-          description="授权后会同步该云区内的家庭、房间和受支持设备"
+          description="测试登录会在前端生成一条命令。请在本机 BuildingAI 源码仓库根目录执行，浏览器会在那台电脑上打开；完成后把凭据贴回这里。"
           className="flex-col items-stretch gap-3 sm:flex-row sm:items-center"
           contentClassName="min-w-0"
         >
@@ -248,24 +250,22 @@ export function XiaomiHomeSetting() {
             <Button
               type="button"
               size="sm"
+              onClick={() => void startLocalTokenLogin()}
+              loading={startOAuthMutation.isPending}
+            >
+              <TerminalSquare />
+              生成本地登录命令
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
               onClick={() => void connectAccount()}
               loading={startOAuthMutation.isPending}
             >
               <Plus />
-              连接账号
+              官方授权
             </Button>
-            {import.meta.env.DEV ? (
-              <Button
-                type="button"
-                size="sm"
-                variant="outline"
-                onClick={() => void startLocalTokenLogin()}
-                loading={startOAuthMutation.isPending}
-              >
-                <TerminalSquare />
-                本地脚本登录
-              </Button>
-            ) : null}
           </div>
         </SettingItem>
       </SettingItemGroup>
@@ -361,7 +361,9 @@ export function XiaomiHomeSetting() {
                 <HousePlug />
               </EmptyMedia>
               <EmptyTitle>尚未连接小米账号</EmptyTitle>
-              <EmptyDescription>选择账号所在云区，然后完成小米授权。</EmptyDescription>
+              <EmptyDescription>
+                选择云区后点「生成本地登录命令」，在本机源码仓库执行，再把凭据贴回来。
+              </EmptyDescription>
             </EmptyHeader>
           </Empty>
         )}
@@ -419,15 +421,17 @@ export function XiaomiHomeSetting() {
           <DialogHeader>
             <DialogTitle>使用本地脚本登录小米账号</DialogTitle>
             <DialogDescription>
-              脚本会在本机模拟 Home Assistant 完成登录，并在本地页面生成一次性凭据。
+              即使当前页面是远程 IP 打开的，下面这条命令也必须在有 BuildingAI
+              源码的电脑上执行。脚本会在那台电脑上占用 8123 端口并打开浏览器。
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <Alert>
               <TerminalSquare />
-              <AlertTitle>第一步：运行本地命令</AlertTitle>
+              <AlertTitle>第一步：在本机源码仓库执行</AlertTitle>
               <AlertDescription>
-                在项目目录执行下面的命令，然后在打开的浏览器中登录小米账号并授权。
+                打开本机 BuildingAI
+                项目根目录，粘贴并运行下面的命令。随后在弹出的浏览器里登录小米账号并授权。
               </AlertDescription>
             </Alert>
             <div className="relative">
@@ -451,7 +455,7 @@ export function XiaomiHomeSetting() {
               </Button>
             </div>
             <div className="space-y-2">
-              <div className="text-sm font-medium">第二步：导入脚本生成的凭据</div>
+              <div className="text-sm font-medium">第二步：把本地页面生成的 JSON 贴回这里</div>
               <Textarea
                 value={localCredentials}
                 onChange={(event) => setLocalCredentials(event.target.value)}
@@ -462,7 +466,8 @@ export function XiaomiHomeSetting() {
                 aria-label="小米本地登录凭据"
               />
               <p className="text-muted-foreground text-xs leading-5">
-                服务端会校验凭据与当前登录用户的授权会话，其他用户无法访问或导入此账号。
+                登录完成后浏览器会显示一次性凭据。复制完整 JSON 贴到此处即可，不需要把 token
+                发到别处。
               </p>
             </div>
           </div>

@@ -35,7 +35,7 @@ const NAV_ITEMS = [
   { path: "program", label: "主流程", description: "编排工程执行顺序", icon: Hammer },
   { path: "lua", label: "Lua 模块", description: "管理可调用的模块", icon: Braces },
   { path: "simulator", label: "仿真", description: "检查设备执行效果", icon: MonitorPlay },
-  { path: "tools", label: "工具", description: "配置外部服务调用", icon: Wrench },
+  { path: "tools", label: "工具", description: "MCP 与物联网设备", icon: Wrench },
   { path: "settings", label: "设置", description: "目标设备与运行配置", icon: Settings },
   { path: "publish", label: "发布", description: "发布到设备或设置触发器", icon: Rocket },
 ] as const;

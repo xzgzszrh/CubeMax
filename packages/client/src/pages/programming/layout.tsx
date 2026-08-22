@@ -15,6 +15,7 @@ import { Outlet, useNavigate, useParams } from "react-router-dom";
 import { ProgrammingProjectContext } from "./context";
 import { ProjectNameDialog } from "./project-name-dialog";
 import { ProgrammingSidebar } from "./workspace-sidebar";
+import { ProjectToolsProvider } from "../workflows/context/ProjectToolsContext";
 import { UserLuaNodesProvider } from "../workflows/context/UserLuaNodesContext";
 
 function WorkspaceTopbar({
@@ -113,6 +114,7 @@ export default function ProgrammingWorkspaceLayout() {
   return (
     <ProgrammingProjectContext.Provider value={project}>
       <UserLuaNodesProvider projectId={project.id}>
+      <ProjectToolsProvider>
       <SidebarProvider storageKey="__programming_workspace_sidebar__" className="h-dvh min-h-0">
         <ProgrammingSidebar project={project} onEdit={() => setEditDialogOpen(true)} />
         <SidebarInset className="h-dvh min-h-0 overflow-hidden rounded-none!">
@@ -137,6 +139,7 @@ export default function ProgrammingWorkspaceLayout() {
           onSubmit={() => {}}
         />
       </SidebarProvider>
+      </ProjectToolsProvider>
       </UserLuaNodesProvider>
     </ProgrammingProjectContext.Provider>
   );

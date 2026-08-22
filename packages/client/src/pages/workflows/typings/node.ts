@@ -57,6 +57,7 @@ export interface FlowNodeMeta extends WorkflowNodeMeta {
   nodePanelLabel?: string;
   nodePanelGroup?: string;
   nodePanelGroupLabel?: string;
+  toolKey?: string;
   wrapperStyle?: React.CSSProperties;
   onlyInContainer?: WorkflowNodeType;
 }

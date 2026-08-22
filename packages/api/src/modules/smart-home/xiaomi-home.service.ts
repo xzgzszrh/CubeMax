@@ -16,9 +16,16 @@ import { Injectable } from "@nestjs/common";
 
 import { XiaomiHomeCloudClient, XiaomiHomeCloudError } from "./xiaomi-home.cloud";
 import {
+    expandXiaomiLightWrites,
+    isRgbColorCapability,
+    parsePackedRgb,
+    rewriteInvalidBoolWrites,
+    XIAOMI_MIOT_INVALID_VALUE,
+    type XiaomiLightWrite,
+} from "./xiaomi-home.light";
+import {
     getXiaomiHomeCategory,
     getXiaomiHomeCategoryLabel,
-    isLoopbackHttpOrigin,
     XIAOMI_HOME_DEFAULT_FRONTEND_ORIGIN,
     XIAOMI_HOME_HOME_ASSISTANT_CLIENT_ID,
     XIAOMI_HOME_LOCAL_OAUTH_ENABLED,
@@ -149,9 +156,6 @@ export class XiaomiHomeService {
         if (localToken) {
             if (!XIAOMI_HOME_LOCAL_OAUTH_ENABLED) {
                 throw HttpErrorFactory.badRequest("本地小米凭据导入未启用");
-            }
-            if (!isLoopbackHttpOrigin(apiOrigin) || !isLoopbackHttpOrigin(frontendOrigin)) {
-                throw HttpErrorFactory.badRequest("本地小米凭据导入仅允许在本机访问");
             }
             if (XIAOMI_HOME_OAUTH_CLIENT_ID !== XIAOMI_HOME_HOME_ASSISTANT_CLIENT_ID) {
                 throw HttpErrorFactory.badRequest("本地脚本仅适用于 Home Assistant 官方 client ID");
@@ -433,18 +437,23 @@ export class XiaomiHomeService {
             throw HttpErrorFactory.badRequest("该设备属性不可控制");
         }
         const value = this.validateValue(capability, command.value);
+        const writes = expandXiaomiLightWrites({
+            did: device.did,
+            capabilities: device.capabilities,
+            state: device.state,
+            capability,
+            value,
+        });
         try {
             await this.withCloud(account, async (cloud) => {
-                const result = await cloud.setProperty([
-                    { did: device.did, siid: command.siid, piid: command.piid, value },
-                ]);
-                const failed = result.find((item) => item.code !== undefined && item.code !== 0);
-                if (failed) throw new XiaomiHomeCloudError(`设备拒绝了属性设置（${failed.code}）`);
+                const applied = await this.applyPropertyWrites(cloud, device.capabilities, writes);
+                for (const write of applied) {
+                    device.state = {
+                        ...device.state,
+                        [this.propertyKey(write.siid, write.piid)]: write.value,
+                    };
+                }
             });
-            device.state = {
-                ...device.state,
-                [this.propertyKey(command.siid, command.piid)]: value,
-            };
             device.lastStateAt = new Date();
             await this.deviceRepository.save(device);
             return this.toPublicDevice(device);
@@ -974,11 +983,45 @@ export class XiaomiHomeService {
         };
     }
 
+    private async applyPropertyWrites(
+        cloud: XiaomiHomeCloudClient,
+        capabilities: XiaomiHomeCapability[],
+        writes: XiaomiLightWrite[],
+    ): Promise<XiaomiLightWrite[]> {
+        if (!writes.length) return [];
+        let pending = writes;
+        const result = await cloud.setProperty(pending);
+        const failed = result.find((item) => item.code !== undefined && item.code !== 0);
+        if (!failed) return pending;
+        if (Number(failed.code) === XIAOMI_MIOT_INVALID_VALUE) {
+            const retried = rewriteInvalidBoolWrites(pending, capabilities);
+            const same = retried.every((write, index) => write.value === pending[index]?.value);
+            if (!same) {
+                pending = retried;
+                const retryResult = await cloud.setProperty(pending);
+                const retryFailed = retryResult.find(
+                    (item) => item.code !== undefined && item.code !== 0,
+                );
+                if (!retryFailed) return pending;
+                throw new XiaomiHomeCloudError(`设备拒绝了属性设置（${retryFailed.code}）`);
+            }
+        }
+        throw new XiaomiHomeCloudError(`设备拒绝了属性设置（${failed.code}）`);
+    }
+
     private validateValue(
-        capability: Pick<XiaomiHomeCapability, "format" | "valueRange" | "valueList">,
+        capability: Pick<
+            XiaomiHomeCapability,
+            "format" | "valueRange" | "valueList" | "name" | "unit"
+        >,
         value: unknown,
     ): unknown {
         let normalized = value;
+        if (isRgbColorCapability(capability)) {
+            const rgb = parsePackedRgb(value);
+            if (rgb === null) throw HttpErrorFactory.badRequest("颜色值无效");
+            normalized = rgb;
+        }
         if (capability.format === "bool") {
             if (value === true || value === false) normalized = value;
             else if (value === 1 || value === "1" || value === "true") normalized = true;
@@ -998,7 +1041,7 @@ export class XiaomiHomeService {
                 "double",
             ].includes(capability.format || "")
         ) {
-            const number = typeof value === "number" ? value : Number(value);
+            const number = typeof normalized === "number" ? normalized : Number(normalized);
             if (!Number.isFinite(number)) throw HttpErrorFactory.badRequest("属性值必须是数字");
             const format = capability.format || "";
             const isInteger = !["float", "double"].includes(format);
@@ -1020,6 +1063,9 @@ export class XiaomiHomeService {
             throw HttpErrorFactory.badRequest("属性值不在设备允许的选项中");
         }
         if (capability.valueRange && typeof normalized === "number") {
+            if (isRgbColorCapability(capability) && normalized < capability.valueRange.min) {
+                normalized = capability.valueRange.min;
+            }
             if (normalized < capability.valueRange.min || normalized > capability.valueRange.max) {
                 throw HttpErrorFactory.badRequest(
                     `属性值必须在 ${capability.valueRange.min} 到 ${capability.valueRange.max} 之间`,

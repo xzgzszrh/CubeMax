@@ -88,3 +88,16 @@ export type LuaExecutorHandler = (
 ) => Promise<Record<string, unknown>> | Record<string, unknown>;
 
 export declare const registerLuaExecutor: (executor: LuaExecutorHandler) => void;
+
+export type SmartHomeExecutorInput = {
+    userId?: string;
+    runtimeContext?: WorkflowRuntimeExecutorContext;
+    node: { id: string; type: string; data?: Record<string, unknown> };
+    inputs: Record<string, unknown>;
+};
+
+export type SmartHomeExecutorHandler = (
+    input: SmartHomeExecutorInput,
+) => Promise<Record<string, unknown>> | Record<string, unknown>;
+
+export declare const registerSmartHomeExecutor: (executor: SmartHomeExecutorHandler) => void;

@@ -5,6 +5,8 @@ import {
     ProgrammingProject,
     ProgrammingProjectTool,
     ProgrammingTrigger,
+    normalizeProgrammingProjectTool,
+    programmingProjectToolKey,
     type ProgrammingProjectPublishedSnapshot,
     type ProgrammingProjectToolSnapshot,
     type ProgrammingRuntimeTarget,
@@ -12,6 +14,8 @@ import {
 import { Repository } from "@buildingai/db/typeorm";
 import { HttpErrorFactory } from "@buildingai/errors";
 import { LuaDeviceGatewayService } from "@modules/lua-device/lua-device-gateway.service";
+import { XiaomiHomeService } from "@modules/smart-home/xiaomi-home.service";
+import { YeelightProService } from "@modules/smart-home/yeelight-pro.service";
 import { Injectable } from "@nestjs/common";
 
 import type { CreateLuaModuleDto, QueryLuaModuleDto } from "../lua/lua-module.dto";
@@ -49,14 +53,26 @@ function isRecord(value: unknown): value is Record<string, unknown> {
     return !!value && typeof value === "object" && !Array.isArray(value);
 }
 
-function uniqueTools(tools: ProgrammingProjectToolSnapshot[]): ProgrammingProjectToolSnapshot[] {
+function uniqueTools(
+    tools: Array<{
+        kind?: string | null;
+        mcpServerId?: string | null;
+        toolName?: string | null;
+        deviceId?: string | null;
+    }>,
+): ProgrammingProjectToolSnapshot[] {
     const seen = new Set<string>();
-    return tools.filter((tool) => {
-        const key = `${tool.mcpServerId}\u0000${tool.toolName}`;
-        if (seen.has(key)) return false;
+    const result: ProgrammingProjectToolSnapshot[] = [];
+    for (const tool of tools) {
+        const normalized = normalizeProgrammingProjectTool(tool);
+        if (normalized.kind === "mcp" && (!normalized.mcpServerId || !normalized.toolName)) continue;
+        if (normalized.kind !== "mcp" && !normalized.deviceId) continue;
+        const key = programmingProjectToolKey(normalized);
+        if (seen.has(key)) continue;
         seen.add(key);
-        return true;
-    });
+        result.push(normalized);
+    }
+    return result;
 }
 
 @Injectable()
@@ -74,6 +90,8 @@ export class ProgrammingProjectService {
         private readonly luaModuleService: LuaModuleService,
         private readonly simulatorService: SimulatorService,
         private readonly luaDeviceGatewayService: LuaDeviceGatewayService,
+        private readonly xiaomiHomeService: XiaomiHomeService,
+        private readonly yeelightProService: YeelightProService,
     ) {}
 
     async findAll(
@@ -199,12 +217,22 @@ export class ProgrammingProjectService {
     ): Promise<ProgrammingProjectDetail> {
         const project = await this.findOne(id, userId);
         const deduped = uniqueTools(tools);
+        await this.assertToolsOwned(userId, deduped);
         await this.projectRepository.manager.transaction(async (manager) => {
             const repository = manager.getRepository(ProgrammingProjectTool);
             await repository.delete({ projectId: project.id });
             if (deduped.length) {
                 await repository.save(
-                    deduped.map((tool) => repository.create({ ...tool, projectId: project.id })),
+                    deduped.map((tool) =>
+                        repository.create({
+                            projectId: project.id,
+                            kind: tool.kind,
+                            mcpServerId: tool.mcpServerId ?? null,
+                            toolName: tool.toolName ?? null,
+                            deviceId: tool.deviceId ?? null,
+                            toolKey: programmingProjectToolKey(tool),
+                        }),
+                    ),
                 );
             }
         });
@@ -221,7 +249,14 @@ export class ProgrammingProjectService {
     ): Promise<void> {
         await this.findOne(projectId, userId);
         const enabled = await this.projectToolRepository.findOne({
-            where: { projectId, mcpServerId, toolName },
+            where: {
+                projectId,
+                toolKey: programmingProjectToolKey({
+                    kind: "mcp",
+                    mcpServerId,
+                    toolName,
+                }),
+            },
         });
         if (!enabled) {
             throw HttpErrorFactory.badRequest(`工具 ${toolName} 未加入当前工程`);
@@ -251,15 +286,15 @@ export class ProgrammingProjectService {
             }),
         );
         const enabledTools = await this.listToolRefs(project.id);
-        const enabledToolKeys = new Set(
-            enabledTools.map((tool) => `${tool.mcpServerId}\u0000${tool.toolName}`),
-        );
+        const enabledToolKeys = new Set(enabledTools.map((tool) => programmingProjectToolKey(tool)));
         const unavailableTools = references.tools.filter(
-            (tool) => !enabledToolKeys.has(`${tool.mcpServerId}\u0000${tool.toolName}`),
+            (tool) => !enabledToolKeys.has(programmingProjectToolKey(tool)),
         );
         if (unavailableTools.length) {
             throw HttpErrorFactory.badRequest(
-                `主流程引用了未加入工程的工具：${unavailableTools.map((tool) => tool.toolName).join("、")}`,
+                `主流程引用了未加入工程的工具：${unavailableTools
+                    .map((tool) => tool.toolName || tool.deviceId || programmingProjectToolKey(tool))
+                    .join("、")}`,
             );
         }
         await this.assertRuntimeTarget(project, userId);
@@ -406,7 +441,30 @@ export class ProgrammingProjectService {
             where: { projectId },
             order: { createdAt: "ASC" },
         });
-        return rows.map(({ mcpServerId, toolName }) => ({ mcpServerId, toolName }));
+        return rows.map((row) => normalizeProgrammingProjectTool(row));
+    }
+
+    private async assertToolsOwned(
+        userId: string,
+        tools: ProgrammingProjectToolSnapshot[],
+    ): Promise<void> {
+        await Promise.all(
+            tools.map(async (tool) => {
+                if (tool.kind === "xiaomi") {
+                    if (!tool.deviceId) throw HttpErrorFactory.badRequest("米家设备缺少 deviceId");
+                    await this.xiaomiHomeService.getDevice(userId, tool.deviceId);
+                    return;
+                }
+                if (tool.kind === "yeelight") {
+                    if (!tool.deviceId) throw HttpErrorFactory.badRequest("易来设备缺少 deviceId");
+                    await this.yeelightProService.getDevice(userId, tool.deviceId);
+                    return;
+                }
+                if (!tool.mcpServerId || !tool.toolName) {
+                    throw HttpErrorFactory.badRequest("MCP 工具缺少服务或名称");
+                }
+            }),
+        );
     }
 
     private extractReferences(schema: Record<string, unknown>): WorkflowReferences {
@@ -432,7 +490,22 @@ export class ProgrammingProjectService {
                 typeof data.toolName === "string" &&
                 data.toolName
             ) {
-                tools.push({ mcpServerId: data.mcpServerId, toolName: data.toolName });
+                tools.push({
+                    kind: "mcp",
+                    mcpServerId: data.mcpServerId,
+                    toolName: data.toolName,
+                });
+            }
+            if (
+                node.type === "smart_home" &&
+                (data?.provider === "xiaomi" || data?.provider === "yeelight") &&
+                typeof data?.deviceId === "string" &&
+                data.deviceId
+            ) {
+                tools.push({
+                    kind: data.provider,
+                    deviceId: data.deviceId,
+                });
             }
             Object.values(node).forEach(visit);
         };
