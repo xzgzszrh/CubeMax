@@ -1,3 +1,4 @@
+import type { ProgrammingProjectType } from "@buildingai/db/entities";
 import { Transform, Type } from "class-transformer";
 import {
     ArrayMaxSize,
@@ -13,8 +14,6 @@ import {
     Min,
     ValidateNested,
 } from "class-validator";
-
-import type { ProgrammingProjectType } from "@buildingai/db/entities";
 
 export class QueryProgrammingProjectDto {
     @IsOptional()
@@ -80,6 +79,10 @@ export class UpdateProgrammingProjectDto {
     @IsOptional()
     @IsString()
     deviceId?: string | null;
+
+    @IsOptional()
+    @IsString()
+    xiaozhiAgentId?: string | null;
 }
 
 export class ProgrammingProjectToolDto {

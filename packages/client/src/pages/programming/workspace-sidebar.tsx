@@ -157,14 +157,14 @@ export function ProgrammingSidebar({ project, onEdit }: ProgrammingSidebarProps)
                       tooltip={label}
                       size="lg"
                       className={cn(
-                        "h-11 gap-3",
+                        "h-11 gap-3 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:gap-0",
                         isActive &&
                           "bg-primary/10 text-primary hover:bg-primary/15 hover:text-primary",
                       )}
                     >
                       <Button
                         variant="ghost"
-                        className="w-full justify-start"
+                        className="w-full justify-start group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0"
                         onClick={() => handleNavigate(`${basePath}/${path}`)}
                       >
                         <Icon />

@@ -941,6 +941,50 @@ export class XiaozhiService {
     }
 
     /**
+     * Workflow runtime has no organization header. Resolve the agent by id,
+     * check the caller can write it, then replace the device character prompt.
+     */
+    async switchCharacterForUser(userId: string, agentId: string, character: string) {
+        const agent = await this.agentRepository.findOne({ where: { id: agentId } });
+        if (!agent) throw HttpErrorFactory.notFound("方糖猫智能体不存在");
+
+        const access = await this.organizationService.requireWorkspace(
+            userId,
+            agent.organizationId,
+        );
+        const canWrite =
+            access.type === "personal" ||
+            access.permissions.includes(OrganizationPermission.ASSET_MANAGE) ||
+            agent.assignedUserId === userId;
+        if (!canWrite) throw HttpErrorFactory.forbidden("该方糖猫没有分发给你");
+        if (
+            !this.isAssetManager(access) &&
+            (await this.classroomKit.isDeviceLockedForStudents(agent.id))
+        ) {
+            throw HttpErrorFactory.forbidden("课堂活动进行中，暂时无法修改这台方糖猫的设置");
+        }
+        if (!this.isAssetManager(access) && agent.lockedConfigKeys?.includes("character")) {
+            throw HttpErrorFactory.forbidden("角色提示词已被老师锁定，无法由工作流修改");
+        }
+
+        const account = await this.accountRepository.findOne({
+            where: { id: agent.xiaozhiAccountId },
+        });
+        if (!account) throw HttpErrorFactory.notFound("方糖猫所属的小智账号不存在");
+
+        const detail = await this.request<{ agent?: Record<string, unknown> }>(
+            account,
+            `/agents/${agent.upstreamAgentId}`,
+        );
+        const current = detail.data?.agent;
+        if (!current) throw HttpErrorFactory.badGateway("小智智能体详情响应不完整");
+        const previousCharacter = typeof current.character === "string" ? current.character : "";
+
+        await this.pushCharacter(account, agent, character);
+        return { previousCharacter, agentName: agent.name };
+    }
+
+    /**
      * Link (or unlink with a null id) a BuildingAI agent to this xiaozhi
      * agent and immediately sync its role prompt into the device character.
      */

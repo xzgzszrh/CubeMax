@@ -56,6 +56,7 @@ export type WorkflowRuntimeExecutorContext = {
     runtimeTarget?: "local" | "simulator" | "device";
     simulatorSessionId?: string;
     deviceId?: string;
+    xiaozhiAgentId?: string;
     publishedSnapshot?: unknown;
 };
 
@@ -88,3 +89,16 @@ export type LuaExecutorHandler = (
 ) => Promise<Record<string, unknown>> | Record<string, unknown>;
 
 export declare const registerLuaExecutor: (executor: LuaExecutorHandler) => void;
+
+export type AgentExecutorInput = {
+    userId?: string;
+    runtimeContext?: WorkflowRuntimeExecutorContext;
+    node: { id: string; type: string; data?: Record<string, unknown> };
+    inputs: Record<string, unknown>;
+};
+
+export type AgentExecutorHandler = (
+    input: AgentExecutorInput,
+) => Promise<Record<string, unknown>> | Record<string, unknown>;
+
+export declare const registerAgentExecutor: (executor: AgentExecutorHandler) => void;

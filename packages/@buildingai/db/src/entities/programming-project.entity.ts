@@ -34,6 +34,7 @@ export type ProgrammingProjectPublishedSnapshot = {
         target: ProgrammingRuntimeTarget;
         simulatorSessionId?: string;
         deviceId?: string;
+        xiaozhiAgentId?: string;
     };
     publishedAt: string;
 };
@@ -68,6 +69,9 @@ export class ProgrammingProject extends BaseEntity {
 
     @Column({ name: "device_id", type: "varchar", length: 36, nullable: true })
     deviceId?: string | null;
+
+    @Column({ name: "xiaozhi_agent_id", type: "uuid", nullable: true, comment: "工程绑定的方糖猫智能体" })
+    xiaozhiAgentId?: string | null;
 
     @Column({ name: "is_published", type: "boolean", default: false })
     isPublished: boolean;

@@ -25,6 +25,7 @@ export interface ProgrammingProjectItem {
     runtimeTarget: ProgrammingRuntimeTarget;
     simulatorSessionId?: string | null;
     deviceId?: string | null;
+    xiaozhiAgentId?: string | null;
     isPublished: boolean;
     publishedAt?: string | null;
     publishedSnapshot?: {
@@ -32,7 +33,12 @@ export interface ProgrammingProjectItem {
         workflow: { id: string; name: string; schema: object };
         luaModules: Array<{ id: string; name: string }>;
         tools: ProgrammingProjectToolRef[];
-        runtime: { target: ProgrammingRuntimeTarget; simulatorSessionId?: string; deviceId?: string };
+        runtime: {
+            target: ProgrammingRuntimeTarget;
+            simulatorSessionId?: string;
+            deviceId?: string;
+            xiaozhiAgentId?: string;
+        };
         publishedAt: string;
     };
     createBy: string;
@@ -64,6 +70,7 @@ export interface UpdateProgrammingProjectDto {
     runtimeTarget?: ProgrammingRuntimeTarget;
     simulatorSessionId?: string | null;
     deviceId?: string | null;
+    xiaozhiAgentId?: string | null;
 }
 
 export const programmingProjectQueryKeys = {

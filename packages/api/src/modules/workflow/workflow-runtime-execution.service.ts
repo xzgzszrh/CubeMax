@@ -9,11 +9,12 @@ import type {
 import { Injectable } from "@nestjs/common";
 
 import { ProgrammingProjectService } from "./programming-project.service";
+import { WorkflowService } from "./workflow.service";
+import { WorkflowAgentExecutorService } from "./workflow-agent-executor.service";
 import { WorkflowEmbeddedExecutorService } from "./workflow-embedded-executor.service";
 import { WorkflowLlmExecutorService } from "./workflow-llm-executor.service";
 import { WorkflowLuaExecutorService } from "./workflow-lua-executor.service";
 import { WorkflowMcpExecutorService } from "./workflow-mcp-executor.service";
-import { WorkflowService } from "./workflow.service";
 import type {
     PublishedWorkflowRuntimeTaskDto,
     WorkflowRuntimeTaskDto,
@@ -39,6 +40,7 @@ export class WorkflowRuntimeExecutionService {
         private readonly workflowEmbeddedExecutorService: WorkflowEmbeddedExecutorService,
         private readonly workflowLlmExecutorService: WorkflowLlmExecutorService,
         private readonly workflowLuaExecutorService: WorkflowLuaExecutorService,
+        private readonly workflowAgentExecutorService: WorkflowAgentExecutorService,
         private readonly workflowService: WorkflowService,
         private readonly programmingProjectService: ProgrammingProjectService,
     ) {}
@@ -48,6 +50,7 @@ export class WorkflowRuntimeExecutionService {
         runtime.registerMCPExecutor((input) => this.workflowMcpExecutorService.execute(input));
         runtime.registerLLMExecutor((input) => this.workflowLlmExecutorService.execute(input));
         runtime.registerLuaExecutor((input) => this.workflowLuaExecutorService.execute(input));
+        runtime.registerAgentExecutor((input) => this.workflowAgentExecutorService.execute(input));
         return runtime;
     }
 
@@ -93,6 +96,7 @@ export class WorkflowRuntimeExecutionService {
                       runtimeTarget: projectPublished.snapshot.runtime.target,
                       simulatorSessionId: projectPublished.snapshot.runtime.simulatorSessionId,
                       deviceId: projectPublished.snapshot.runtime.deviceId,
+                      xiaozhiAgentId: projectPublished.snapshot.runtime.xiaozhiAgentId,
                       publishedSnapshot: projectPublished.snapshot,
                   },
               }
@@ -126,6 +130,7 @@ export class WorkflowRuntimeExecutionService {
             runtimeTarget: snapshot.runtime.target,
             simulatorSessionId: snapshot.runtime.simulatorSessionId,
             deviceId: snapshot.runtime.deviceId,
+            xiaozhiAgentId: snapshot.runtime.xiaozhiAgentId,
             publishedSnapshot: snapshot,
         });
     }

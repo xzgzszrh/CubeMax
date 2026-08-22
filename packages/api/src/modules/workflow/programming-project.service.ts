@@ -3,11 +3,11 @@ import {
     AiWorkflow,
     LuaModule,
     ProgrammingProject,
-    ProgrammingProjectTool,
-    ProgrammingTrigger,
     type ProgrammingProjectPublishedSnapshot,
+    ProgrammingProjectTool,
     type ProgrammingProjectToolSnapshot,
     type ProgrammingRuntimeTarget,
+    ProgrammingTrigger,
 } from "@buildingai/db/entities";
 import { Repository } from "@buildingai/db/typeorm";
 import { HttpErrorFactory } from "@buildingai/errors";
@@ -180,6 +180,9 @@ export class ProgrammingProjectService {
         project.runtimeTarget = target;
         project.simulatorSessionId = simulatorSessionId;
         project.deviceId = deviceId;
+        if (dto.xiaozhiAgentId !== undefined) {
+            project.xiaozhiAgentId = dto.xiaozhiAgentId || null;
+        }
         const saved = await this.projectRepository.save(project);
 
         if (dto.name !== undefined || dto.description !== undefined) {
@@ -238,7 +241,9 @@ export class ProgrammingProjectService {
             references.luaModuleIds.map(async (moduleId) => {
                 const luaModule = await this.luaModuleService.findOne(moduleId, userId);
                 if (luaModule.projectId !== project.id) {
-                    throw HttpErrorFactory.badRequest(`Lua 模块「${luaModule.name}」不属于当前工程`);
+                    throw HttpErrorFactory.badRequest(
+                        `Lua 模块「${luaModule.name}」不属于当前工程`,
+                    );
                 }
                 await this.luaModuleService.validateDraft(luaModule);
                 return {
@@ -276,6 +281,7 @@ export class ProgrammingProjectService {
                     ? { simulatorSessionId: project.simulatorSessionId }
                     : {}),
                 ...(project.deviceId ? { deviceId: project.deviceId } : {}),
+                ...(project.xiaozhiAgentId ? { xiaozhiAgentId: project.xiaozhiAgentId } : {}),
             },
             publishedAt: publishedAt.toISOString(),
         };
@@ -324,10 +330,14 @@ export class ProgrammingProjectService {
         this.simulatorService.removeForProject(project.id, userId);
         await this.projectRepository.manager.transaction(async (manager) => {
             await manager.getRepository(ProgrammingProjectTool).delete({ projectId: project.id });
-            await manager.getRepository(ProgrammingTrigger).delete({ projectId: project.id, createBy: userId });
+            await manager
+                .getRepository(ProgrammingTrigger)
+                .delete({ projectId: project.id, createBy: userId });
             await manager.getRepository(LuaModule).delete({ projectId: project.id });
             await manager.getRepository(AiWorkflow).delete({ projectId: project.id });
-            await manager.getRepository(ProgrammingProject).delete({ id: project.id, createBy: userId });
+            await manager
+                .getRepository(ProgrammingProject)
+                .delete({ id: project.id, createBy: userId });
         });
     }
 
@@ -356,7 +366,9 @@ export class ProgrammingProjectService {
     }
 
     listSimulatorSessions(userId: string, projectId: string) {
-        return this.findOne(projectId, userId).then(() => this.simulatorService.list(userId, projectId));
+        return this.findOne(projectId, userId).then(() =>
+            this.simulatorService.list(userId, projectId),
+        );
     }
 
     async createSimulatorSession(
@@ -377,6 +389,7 @@ export class ProgrammingProjectService {
             runtimeTarget: project.runtimeTarget,
             simulatorSessionId: project.simulatorSessionId ?? undefined,
             deviceId: project.deviceId ?? undefined,
+            xiaozhiAgentId: project.xiaozhiAgentId ?? undefined,
         };
     }
 
@@ -384,12 +397,17 @@ export class ProgrammingProjectService {
         const [mainWorkflow, tools, luaModuleCount] = await Promise.all([
             this.getMainWorkflow(project, project.createBy),
             this.listToolRefs(project.id),
-            this.luaModuleRepository.count({ where: { projectId: project.id, createBy: project.createBy } }),
+            this.luaModuleRepository.count({
+                where: { projectId: project.id, createBy: project.createBy },
+            }),
         ]);
         return Object.assign(project, { mainWorkflow, tools, luaModuleCount });
     }
 
-    private async getMainWorkflow(project: ProgrammingProject, userId: string): Promise<AiWorkflow> {
+    private async getMainWorkflow(
+        project: ProgrammingProject,
+        userId: string,
+    ): Promise<AiWorkflow> {
         const workflow = project.mainWorkflowId
             ? await this.workflowRepository.findOne({
                   where: { id: project.mainWorkflowId, projectId: project.id, createBy: userId },

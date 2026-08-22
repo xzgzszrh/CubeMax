@@ -28,7 +28,6 @@ type WorkflowSchemaNode = {
 };
 
 export interface AgentNodeData {
-  agentId: string;
   action: "switch_prompt" | "enable" | "disable";
   prompt?: string;
   promptName?: string;
@@ -108,10 +107,6 @@ export class WorkflowApplicationExecutorService {
    */
   validateAgentNode(data: AgentNodeData): { valid: boolean; errors: string[] } {
     const errors: string[] = [];
-    
-    if (!data.agentId) {
-      errors.push("Agent 节点缺少 agentId");
-    }
     
     if (!data.action) {
       errors.push("Agent 节点缺少 action");

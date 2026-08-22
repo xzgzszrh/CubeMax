@@ -19,6 +19,7 @@ import { LuaModuleModule } from "@modules/lua/lua.module";
 import { LuaDeviceModule } from "@modules/lua-device/lua-device.module";
 import { Module } from "@nestjs/common";
 
+import { OrganizationModule } from "../organization/organization.module";
 import { SimulatorModule } from "../simulator/simulator.module";
 import { ProgrammingProjectController } from "./programming-project.controller";
 import { ProgrammingProjectService } from "./programming-project.service";
@@ -26,6 +27,7 @@ import { ProgrammingTriggerController } from "./programming-trigger.controller";
 import { ProgrammingTriggerService } from "./programming-trigger.service";
 import { WorkflowController } from "./workflow.controller";
 import { WorkflowService } from "./workflow.service";
+import { WorkflowAgentExecutorService } from "./workflow-agent-executor.service";
 import { WorkflowEmbeddedExecutorService } from "./workflow-embedded-executor.service";
 import { WorkflowLlmExecutorService } from "./workflow-llm-executor.service";
 import { WorkflowLuaExecutorService } from "./workflow-lua-executor.service";
@@ -38,6 +40,7 @@ import { WorkflowRuntimeExecutionService } from "./workflow-runtime-execution.se
         AiMcpModule,
         LuaModuleModule,
         LuaDeviceModule,
+        OrganizationModule,
         SimulatorModule,
         TypeOrmModule.forFeature([
             AiWorkflow,
@@ -68,6 +71,7 @@ import { WorkflowRuntimeExecutionService } from "./workflow-runtime-execution.se
         WorkflowEmbeddedExecutorService,
         WorkflowLlmExecutorService,
         WorkflowLuaExecutorService,
+        WorkflowAgentExecutorService,
         WorkflowRuntimeExecutionService,
         SecretService,
     ],

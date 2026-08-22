@@ -16,6 +16,10 @@ export class WorkflowRuntimeContextDto {
     @IsOptional()
     @IsString()
     deviceId?: string;
+
+    @IsOptional()
+    @IsString()
+    xiaozhiAgentId?: string;
 }
 
 export class WorkflowRuntimeTaskDto {

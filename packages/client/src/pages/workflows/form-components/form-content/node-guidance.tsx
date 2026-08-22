@@ -80,6 +80,16 @@ const NODE_GUIDANCE: Partial<Record<string, NodeGuidanceContent>> = {
     result: "返回值会按照输出结构提供给后续节点。",
     example: "把两个数字相加，再把结果命名为 total。",
   },
+  [WorkflowNodeType.Agent]: {
+    summary: "切换 CubeCat 的角色提示词，改变它之后怎么和用户说话。",
+    steps: [
+      "在工程设置里绑定 CubeCat 智能体",
+      "写好要切换的提示词，或从上游变量接入",
+      "需要时把触发信息接到输入",
+    ],
+    result: "设备会使用新的角色提示词；上一个提示词会作为输出给后续节点。",
+    example: "用户说「开始计时」后，把提示词切成计时助手。",
+  },
   [WorkflowNodeType.Comment]: {
     summary: "在画布上写下解释，帮助同学读懂这段程序。",
     steps: ["写清楚这段流程的目的", "放在对应节点附近", "流程运行时它不会执行"],

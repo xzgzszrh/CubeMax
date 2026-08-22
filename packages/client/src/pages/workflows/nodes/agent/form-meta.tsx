@@ -2,21 +2,29 @@
  * 智能体节点表单 - 配置智能体提示词切换
  */
 
-import { Divider, Select } from "@douyinfe/semi-ui";
-import { DisplayOutputs } from "@flowgram.ai/form-materials";
-import type { FieldRenderProps, FormMeta } from "@flowgram.ai/free-layout-editor";
-import { Field } from "@flowgram.ai/free-layout-editor";
 import { useXiaozhiAgentsQuery } from "@buildingai/services/web";
+import { Divider, Select } from "@douyinfe/semi-ui";
+import { DisplayOutputs, validateFlowValue } from "@flowgram.ai/form-materials";
+import type { FormMeta } from "@flowgram.ai/free-layout-editor";
+import { Field } from "@flowgram.ai/free-layout-editor";
 
+import { useOptionalProgrammingProject } from "../../../programming/context";
 import {
   FormContent,
   FormHeader,
+  FormInputs,
   FormItem,
   ReadonlyValue,
 } from "../../form-components";
 import { useIsSidebar, useNodeRenderContext } from "../../hooks";
-import type { FlowNodeJSON } from "../../typings";
+import type { FlowNodeJSON, JsonSchema } from "../../typings";
 import { defaultFormMeta } from "../default-form-meta";
+
+const ACTION_LABELS: Record<string, string> = {
+  switch_prompt: "切换提示词",
+  enable: "启用智能体",
+  disable: "停用智能体",
+};
 
 function AgentActionSelect() {
   const { readonly } = useNodeRenderContext();
@@ -35,16 +43,17 @@ function AgentActionSelect() {
               style={{ width: "100%" }}
             >
               <Select.Option value="switch_prompt">切换提示词</Select.Option>
-              <Select.Option value="enable">启用智能体</Select.Option>
-              <Select.Option value="disable">停用智能体</Select.Option>
+              <Select.Option value="enable" disabled>
+                启用智能体（尚未接入）
+              </Select.Option>
+              <Select.Option value="disable" disabled>
+                停用智能体（尚未接入）
+              </Select.Option>
             </Select>
           </FormItem>
         ) : (
           <FormItem name="操作类型" type="string">
-            <ReadonlyValue value={
-              field.value === "switch_prompt" ? "切换提示词" :
-              field.value === "enable" ? "启用智能体" : "停用智能体"
-            } />
+            <ReadonlyValue value={ACTION_LABELS[field.value ?? ""] ?? field.value ?? "未设置"} />
           </FormItem>
         )
       }
@@ -52,72 +61,22 @@ function AgentActionSelect() {
   );
 }
 
-function AgentSelect() {
-  const { readonly } = useNodeRenderContext();
-  const isSidebar = useIsSidebar();
-  const { data: agents, isLoading } = useXiaozhiAgentsQuery();
+function ProjectAgentHint() {
+  const project = useOptionalProgrammingProject();
+  const { data: agents = [], isLoading } = useXiaozhiAgentsQuery({
+    enabled: Boolean(project),
+  });
+  const bound = agents.find((item) => item.id === project?.xiaozhiAgentId);
+
+  let value = "未绑定，请到工程设置中选择 CubeCat 智能体";
+  if (isLoading && project?.xiaozhiAgentId) value = "智能体加载中...";
+  else if (bound) value = bound.name;
+  else if (project?.xiaozhiAgentId) value = "已绑定，但当前工作空间看不到这台智能体";
 
   return (
-    <Field<string> name="agentId">
-      {({ field }) =>
-        isSidebar ? (
-          <FormItem name="目标智能体" required type="string">
-            <Select
-              value={field.value}
-              disabled={readonly || isLoading}
-              placeholder={isLoading ? "加载中..." : "选择智能体"}
-              emptyContent="暂无智能体"
-              optionList={agents?.map((item) => ({ label: item.name, value: item.agentId })) ?? []}
-              onChange={(value) => field.onChange(value as string)}
-              filter
-              size="small"
-              style={{ width: "100%" }}
-            />
-          </FormItem>
-        ) : (
-          <FormItem name="目标智能体" type="string">
-            <ReadonlyValue value={agents?.find(a => a.agentId === field.value)?.name ?? field.value ?? "未设置"} />
-          </FormItem>
-        )
-      }
-    </Field>
-  );
-}
-
-function PromptEditor() {
-  const { readonly } = useNodeRenderContext();
-  const isSidebar = useIsSidebar();
-
-  return (
-    <Field<string> name="prompt">
-      {({ field }) =>
-        isSidebar ? (
-          <FormItem name="提示词内容" required type="string">
-            <textarea
-              className="workflow-form-textarea"
-              value={field.value ?? ""}
-              onChange={(e) => field.onChange(e.target.value)}
-              disabled={readonly}
-              placeholder="输入智能体的新提示词..."
-              rows={6}
-              style={{
-                width: "100%",
-                resize: "vertical",
-                padding: "8px",
-                borderRadius: "6px",
-                border: "1px solid var(--border-color, #e2e8f0)",
-                fontSize: "13px",
-                fontFamily: "inherit",
-              }}
-            />
-          </FormItem>
-        ) : (
-          <FormItem name="提示词内容" type="string">
-            <ReadonlyValue value={field.value ?? "未设置"} />
-          </FormItem>
-        )
-      }
-    </Field>
+    <FormItem name="目标智能体" type="string">
+      <ReadonlyValue value={value} />
+    </FormItem>
   );
 }
 
@@ -135,7 +94,7 @@ function PromptNameInput() {
               value={field.value ?? ""}
               onChange={(e) => field.onChange(e.target.value)}
               disabled={readonly}
-              placeholder="例如：智能语音助手、导航模式..."
+              placeholder="例如：计时助手、导航模式..."
               style={{
                 width: "100%",
                 padding: "6px 10px",
@@ -160,11 +119,15 @@ export const renderForm = () => {
     <>
       <FormHeader />
       <FormContent>
+        <ProjectAgentHint />
         <AgentActionSelect />
-        <AgentSelect />
-        <Divider />
         <PromptNameInput />
-        <PromptEditor />
+        <Divider />
+        <FormInputs />
+        <Divider />
+        <Field<JsonSchema> name="outputs">
+          {({ field }) => <DisplayOutputs value={field.value} />}
+        </Field>
       </FormContent>
     </>
   );
@@ -173,15 +136,53 @@ export const renderForm = () => {
 export const formMeta: FormMeta<FlowNodeJSON> = {
   ...defaultFormMeta,
   render: renderForm,
+  formatOnInit: (value) => {
+    if (!value || typeof value !== "object") return value;
+    const data = value as FlowNodeJSON & {
+      prompt?: string;
+      inputsValues?: Record<string, unknown>;
+      inputs?: JsonSchema;
+    };
+    if (typeof data.prompt === "string" && data.prompt && !data.inputsValues?.prompt) {
+      return {
+        ...data,
+        inputs: data.inputs ?? {
+          type: "object",
+          properties: {
+            prompt: {
+              type: "string",
+              title: "提示词内容",
+              extra: { formComponent: "prompt-editor" },
+            },
+            trigger: {
+              type: "string",
+              title: "触发信息",
+              description: "可选。来自上游的文字会追加到提示词后面。",
+            },
+          },
+        },
+        inputsValues: {
+          ...data.inputsValues,
+          prompt: { type: "constant", content: data.prompt },
+        },
+      };
+    }
+    return value;
+  },
   validate: {
     ...defaultFormMeta.validate,
-    agentId: ({ value }: { value?: string }) =>
-      value ? undefined : "请选择目标智能体",
-    prompt: ({ value, formData }: { value?: string; formData?: FlowNodeJSON }) => {
-      if (formData?.action === "switch_prompt" && !value) {
-        return "切换提示词时必须填写提示词内容";
-      }
-      return undefined;
+    "inputsValues.prompt": ({ value, formValues, context }) => {
+      if (formValues.action && formValues.action !== "switch_prompt") return undefined;
+      const property = formValues.inputs?.properties?.prompt;
+      const fieldLabel =
+        property && typeof property.title === "string" ? property.title : "提示词内容";
+      return validateFlowValue(value, {
+        node: context.node,
+        required: true,
+        errorMessages: {
+          required: `${fieldLabel}为必填项`,
+        },
+      });
     },
   },
 };

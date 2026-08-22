@@ -1,0 +1,89 @@
+import type { ProgrammingProjectPublishedSnapshot } from "@buildingai/db/entities";
+import { HttpErrorFactory } from "@buildingai/errors";
+import { Injectable } from "@nestjs/common";
+
+import { XiaozhiService } from "../organization/services/xiaozhi.service";
+
+export type WorkflowAgentExecutorInput = {
+    userId?: string;
+    runtimeContext?: {
+        projectId?: string;
+        xiaozhiAgentId?: string;
+        publishedSnapshot?: unknown;
+    };
+    node: {
+        id: string;
+        type: string;
+        data?: Record<string, unknown>;
+    };
+    inputs: Record<string, unknown>;
+};
+
+function isPublishedSnapshot(value: unknown): value is ProgrammingProjectPublishedSnapshot {
+    return (
+        !!value &&
+        typeof value === "object" &&
+        (value as ProgrammingProjectPublishedSnapshot).version === 1
+    );
+}
+
+function asText(value: unknown): string {
+    if (typeof value === "string") return value;
+    if (value === undefined || value === null) return "";
+    return String(value);
+}
+
+@Injectable()
+export class WorkflowAgentExecutorService {
+    constructor(private readonly xiaozhiService: XiaozhiService) {}
+
+    async execute(input: WorkflowAgentExecutorInput): Promise<Record<string, unknown>> {
+        if (!input.userId) {
+            throw HttpErrorFactory.unauthorized("智能体节点需要登录后执行");
+        }
+
+        const action = asText(input.node.data?.action) || "switch_prompt";
+        if (action !== "switch_prompt") {
+            throw HttpErrorFactory.badRequest("当前仅支持「切换提示词」。启用/停用尚未接入。");
+        }
+
+        const agentId = this.resolveAgentId(input);
+        if (!agentId) {
+            throw HttpErrorFactory.badRequest("请先在工程设置中绑定 CubeCat 智能体");
+        }
+
+        const prompt = asText(input.inputs.prompt) || asText(input.node.data?.prompt);
+        if (!prompt.trim()) {
+            throw HttpErrorFactory.badRequest("请填写要切换的提示词内容");
+        }
+
+        const trigger = asText(input.inputs.trigger).trim();
+        const character = trigger
+            ? `${prompt.trim()}\n\n【工作流触发信息】\n${trigger}`
+            : prompt.trim();
+
+        const result = await this.xiaozhiService.switchCharacterForUser(
+            input.userId,
+            agentId,
+            character,
+        );
+
+        return {
+            success: true,
+            previousPrompt: result.previousCharacter,
+            currentPrompt: character,
+            agentName: result.agentName,
+        };
+    }
+
+    private resolveAgentId(input: WorkflowAgentExecutorInput): string | undefined {
+        const snapshot = isPublishedSnapshot(input.runtimeContext?.publishedSnapshot)
+            ? input.runtimeContext?.publishedSnapshot
+            : undefined;
+        const fromSnapshot = snapshot?.runtime.xiaozhiAgentId;
+        const fromContext = input.runtimeContext?.xiaozhiAgentId;
+        if (typeof fromSnapshot === "string" && fromSnapshot) return fromSnapshot;
+        if (typeof fromContext === "string" && fromContext) return fromContext;
+        return undefined;
+    }
+}

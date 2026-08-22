@@ -1,9 +1,9 @@
 import {
-  type ProgrammingProjectItem,
   type ProgrammingRuntimeTarget,
   useLuaDevicesQuery,
   useProjectSimulatorSessionsQuery,
   useUpdateProgrammingProjectMutation,
+  useXiaozhiAgentsQuery,
 } from "@buildingai/services/web";
 import { Badge } from "@buildingai/ui/components/ui/badge";
 import { Button } from "@buildingai/ui/components/ui/button";
@@ -38,6 +38,9 @@ export default function ProjectSettingsPage() {
   const navigate = useNavigate();
   const sessionsQuery = useProjectSimulatorSessionsQuery(project.id);
   const devicesQuery = useLuaDevicesQuery();
+  const agentsQuery = useXiaozhiAgentsQuery({
+    enabled: project.projectType === "application",
+  });
 
   const updateMutation = useUpdateProgrammingProjectMutation({
     onSuccess: () => toast.success("设置已保存"),
@@ -209,6 +212,47 @@ export default function ProjectSettingsPage() {
             </Select>
           ) : (
             <p className="text-muted-foreground text-sm">没有可用的 CubeCat 设备</p>
+          )}
+        </section>
+      )}
+
+      {project.projectType === "application" && (
+        <section className="space-y-4">
+          <Separator />
+          <div className="space-y-1">
+            <h2 className="text-sm font-medium">CubeCat 智能体</h2>
+            <p className="text-muted-foreground text-xs">
+              智能体节点会改这台方糖猫的角色提示词。请选择当前工程要控制的智能体。
+            </p>
+          </div>
+          {agentsQuery.isLoading ? (
+            <Skeleton className="h-10 w-full" />
+          ) : agentsQuery.data && agentsQuery.data.length > 0 ? (
+            <Select
+              value={project.xiaozhiAgentId ?? ""}
+              onValueChange={(xiaozhiAgentId) =>
+                updateMutation.mutate({
+                  id: project.id,
+                  dto: { xiaozhiAgentId: xiaozhiAgentId || null },
+                })
+              }
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="选择 CubeCat 智能体" />
+              </SelectTrigger>
+              <SelectContent>
+                {agentsQuery.data.map((agent) => (
+                  <SelectItem key={agent.id} value={agent.id}>
+                    {agent.name}
+                    {agent.onlineDeviceCount > 0 ? (
+                      <span className="text-muted-foreground text-xs"> · 在线</span>
+                    ) : null}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          ) : (
+            <p className="text-muted-foreground text-sm">当前工作空间没有可用的 CubeCat 智能体</p>
           )}
         </section>
       )}
