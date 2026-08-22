@@ -33,8 +33,20 @@ import { useLocation, useNavigate } from "react-router-dom";
 
 const NAV_ITEMS = [
   { path: "program", label: "主流程", description: "编排工程执行顺序", icon: Hammer },
-  { path: "lua", label: "Lua 模块", description: "管理可调用的模块", icon: Braces },
-  { path: "simulator", label: "仿真", description: "检查设备执行效果", icon: MonitorPlay },
+  {
+    path: "lua",
+    label: "Lua 模块",
+    description: "管理可调用的模块",
+    icon: Braces,
+    applicationOnly: true,
+  },
+  {
+    path: "simulator",
+    label: "仿真",
+    description: "检查设备执行效果",
+    icon: MonitorPlay,
+    applicationOnly: true,
+  },
   { path: "tools", label: "工具", description: "配置外部服务调用", icon: Wrench },
   { path: "settings", label: "设置", description: "目标设备与运行配置", icon: Settings },
   { path: "publish", label: "发布", description: "发布到设备或设置触发器", icon: Rocket },
@@ -147,7 +159,9 @@ export function ProgrammingSidebar({ project, onEdit }: ProgrammingSidebarProps)
           </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {NAV_ITEMS.map(({ path, label, description, icon: Icon }) => {
+              {NAV_ITEMS.filter(
+                (item) => project.projectType === "application" || !("applicationOnly" in item),
+              ).map(({ path, label, description, icon: Icon }) => {
                 const isActive = location.pathname.startsWith(`${basePath}/${path}`);
                 return (
                   <SidebarMenuItem key={path}>
@@ -197,7 +211,9 @@ export function ProgrammingSidebar({ project, onEdit }: ProgrammingSidebarProps)
           </div>
         </div>
         <p className="text-muted-foreground px-2 pb-1 text-[10px] leading-4 group-data-[collapsible=icon]:hidden">
-          一个工程包含一个主流程和多个可复用模块
+          {project.projectType === "application"
+            ? "一个工程包含一个主流程和多个可复用模块"
+            : "一个工程包含一个主流程和可配置的外部工具"}
         </p>
       </SidebarFooter>
       <SidebarRail />

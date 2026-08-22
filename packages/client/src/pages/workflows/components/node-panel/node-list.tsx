@@ -106,6 +106,16 @@ const APP_NODE_TYPES = new Set<string>([
   WorkflowNodeType.DeviceControl,
 ]);
 
+/**
+ * 对话流不使用 Lua 模块与硬件仿真相关节点。
+ */
+const CONVERSATION_HIDDEN_NODE_TYPES = new Set<string>([...APP_NODE_TYPES, WorkflowNodeType.Lua]);
+
+function isEmbeddedOrUserLuaNode(registry: FlowNodeRegistry): boolean {
+  const group = String(registry.meta.nodePanelGroup ?? "");
+  return group === "user-lua" || group.startsWith("embedded");
+}
+
 const CATEGORY_BY_TYPE: Partial<Record<WorkflowNodeType | string, NodeCategoryId>> = {
   [WorkflowNodeType.LLM]: "ai",
   [WorkflowNodeType.MCP]: "integration",
@@ -153,12 +163,11 @@ export function getVisibleRegistries(params: {
   return nodeRegistries
     .filter((registry) => registry.meta.nodePanelVisible !== false)
     .filter((registry) => {
-      // 对话流过滤掉智能交互节点
-      if (projectType === "conversation" && APP_NODE_TYPES.has(registry.type as string)) {
-        return false;
-      }
-      // 对话流过滤掉用户 Lua 模块节点
-      if (projectType === "conversation" && registry.meta.nodePanelGroup === "user-lua") {
+      if (
+        projectType === "conversation" &&
+        (CONVERSATION_HIDDEN_NODE_TYPES.has(registry.type as string) ||
+          isEmbeddedOrUserLuaNode(registry))
+      ) {
         return false;
       }
       if (fromPort && registry.type === WorkflowNodeType.Comment) return false;
@@ -452,7 +461,11 @@ export const NodeList: FC<NodeListProps> = ({
 
       <div className="workflow-node-library-body">
         <nav className="workflow-node-library-tabs" aria-label="节点分类">
-          {CATEGORIES.map((category) => {
+          {CATEGORIES.filter(
+            (category) =>
+              projectType === "application" ||
+              (category.id !== "user-lua" && category.id !== "app"),
+          ).map((category) => {
             const Icon = category.icon;
             const isActive = category.id === activeCategory;
             return (

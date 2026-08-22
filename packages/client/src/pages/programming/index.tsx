@@ -122,7 +122,10 @@ export default function ProgrammingProjectsPage() {
     try {
       await confirm({
         title: "删除工程？",
-        description: `工程「${project.name}」中的主流程、Lua 模块和仿真会话将一并删除。`,
+        description:
+          project.projectType === "application"
+            ? `工程「${project.name}」中的主流程、Lua 模块和仿真会话将一并删除。`
+            : `工程「${project.name}」中的主流程将被删除。`,
         confirmText: "删除工程",
         cancelText: "取消",
         confirmVariant: "destructive",
@@ -208,7 +211,7 @@ export default function ProgrammingProjectsPage() {
               </EmptyMedia>
               <EmptyTitle>{deferredKeyword ? "没有匹配的工程" : "暂无编程工程"}</EmptyTitle>
               <EmptyDescription>
-                {deferredKeyword ? "尝试调整搜索内容。" : "创建工程后即可编辑主流程和 Lua 模块。"}
+                {deferredKeyword ? "尝试调整搜索内容。" : "创建工程后即可开始编排主流程。"}
               </EmptyDescription>
             </EmptyHeader>
             {!deferredKeyword && (
@@ -266,9 +269,14 @@ export default function ProgrammingProjectsPage() {
                 </div>
                 <div className="text-muted-foreground pointer-events-none relative mt-auto flex flex-wrap items-center gap-x-3 gap-y-1 pt-3 text-xs">
                   <span>{getNodeCount(project)} 个节点</span>
-                  <span>{project.luaModuleCount} 个 Lua 模块</span>
+                  {project.projectType === "application" && (
+                    <span>{project.luaModuleCount} 个 Lua 模块</span>
+                  )}
                   <span>{project.tools.length} 个工具</span>
-                  <span>{RUNTIME_LABELS[project.runtimeTarget]}</span>
+                  {(project.projectType === "application" ||
+                    project.runtimeTarget !== "simulator") && (
+                    <span>{RUNTIME_LABELS[project.runtimeTarget]}</span>
+                  )}
                   <span className="ml-auto">{formatTime(project.updatedAt)}</span>
                   <ArrowRight className="size-4 transition-transform group-hover:translate-x-0.5" />
                 </div>

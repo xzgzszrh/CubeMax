@@ -104,7 +104,7 @@ export const initialData: FlowDocumentJSON = {
 
 /**
  * Application programs start without a conversational input contract. Students
- * add actions and device nodes after this single entry point.
+ * add actions and device nodes between this entry point and the end node.
  */
 export const applicationInitialData: FlowDocumentJSON = {
   nodes: [
@@ -125,8 +125,31 @@ export const applicationInitialData: FlowDocumentJSON = {
         },
       },
     },
+    {
+      id: "end_0",
+      type: "end",
+      meta: {
+        position: {
+          x: 640,
+          y: 300,
+        },
+      },
+      data: {
+        title: "结束",
+        inputsValues: {},
+        inputs: {
+          type: "object",
+          properties: {},
+        },
+      },
+    },
   ],
-  edges: [],
+  edges: [
+    {
+      sourceNodeID: "start_0",
+      targetNodeID: "end_0",
+    },
+  ],
   globalVariable: {
     type: "object",
     required: [],

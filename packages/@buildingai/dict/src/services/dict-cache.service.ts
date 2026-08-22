@@ -6,6 +6,7 @@ import { Injectable, Logger } from "@nestjs/common";
 import { OnEvent } from "@nestjs/event-emitter";
 
 import { DICT_CACHE_EVENTS } from "../constants/dict-events.constant";
+import { isDatabaseUnreachableError } from "../utils/database-unreachable";
 import { DictService } from "./dict.service";
 
 /**
@@ -166,6 +167,7 @@ export class DictCacheService {
 
             return value;
         } catch (error) {
+            if (isDatabaseUnreachableError(error)) throw error;
             this.logger.error(`Get dict cache failed: ${key}@${group}`, error);
             return defaultValue as T;
         }

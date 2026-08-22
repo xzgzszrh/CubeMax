@@ -12,6 +12,7 @@ import { EventEmitter2 } from "@nestjs/event-emitter";
 import { DICT_CACHE_EVENTS } from "../constants/dict-events.constant";
 import { CreateDictDto } from "../dto/create-dict.dto";
 import { UpdateDictDto } from "../dto/update-dict.dto";
+import { isDatabaseUnreachableError } from "../utils/database-unreachable";
 
 /**
  * Dictionary Configuration Service
@@ -132,6 +133,7 @@ export class DictService extends BaseService<Dict> {
 
             return result;
         } catch (error) {
+            if (isDatabaseUnreachableError(error)) throw error;
             this.logger.error(`get dict failed: ${key}@${group}`, error);
             return defaultValue as T;
         }

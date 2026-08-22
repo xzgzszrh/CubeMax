@@ -10,7 +10,7 @@ import {
 import { Skeleton } from "@buildingai/ui/components/ui/skeleton";
 import { Code2, Pencil, Radio } from "lucide-react";
 import { useState } from "react";
-import { Outlet, useNavigate, useParams } from "react-router-dom";
+import { Navigate, Outlet, useLocation, useNavigate, useParams } from "react-router-dom";
 
 import { ProgrammingProjectContext } from "./context";
 import { ProjectNameDialog } from "./project-name-dialog";
@@ -75,6 +75,7 @@ function WorkspaceTopbar({
 export default function ProgrammingWorkspaceLayout() {
   const { projectId } = useParams<{ projectId: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const projectQuery = useProgrammingProjectQuery(projectId, { refetchOnMount: "always" });
   const project = projectQuery.data;
@@ -110,34 +111,45 @@ export default function ProgrammingWorkspaceLayout() {
     );
   }
 
+  const pageSegment = location.pathname.split("/").filter(Boolean).at(-1);
+  if (
+    project.projectType !== "application" &&
+    (pageSegment === "lua" || pageSegment === "simulator")
+  ) {
+    return <Navigate to={`/programming/${project.id}/program`} replace />;
+  }
+
+  const workspace = (
+    <SidebarProvider storageKey="__programming_workspace_sidebar__" className="h-dvh min-h-0">
+      <ProgrammingSidebar project={project} onEdit={() => setEditDialogOpen(true)} />
+      <SidebarInset className="h-dvh min-h-0 overflow-hidden rounded-none!">
+        <div className="flex h-full min-h-0 flex-col overflow-hidden">
+          <WorkspaceTopbar project={project} onEdit={() => setEditDialogOpen(true)} />
+          <main className="min-h-0 min-w-0 flex-1 overflow-hidden">
+            <Outlet />
+          </main>
+        </div>
+      </SidebarInset>
+
+      <ProjectNameDialog
+        mode="edit"
+        open={editDialogOpen}
+        initialName={project.name}
+        initialDescription={project.description ?? ""}
+        isPending={false}
+        onOpenChange={setEditDialogOpen}
+        onSubmit={() => {}}
+      />
+    </SidebarProvider>
+  );
+
   return (
     <ProgrammingProjectContext.Provider value={project}>
-      <UserLuaNodesProvider projectId={project.id}>
-      <SidebarProvider storageKey="__programming_workspace_sidebar__" className="h-dvh min-h-0">
-        <ProgrammingSidebar project={project} onEdit={() => setEditDialogOpen(true)} />
-        <SidebarInset className="h-dvh min-h-0 overflow-hidden rounded-none!">
-          <div className="flex h-full min-h-0 flex-col overflow-hidden">
-            <WorkspaceTopbar
-              project={project}
-              onEdit={() => setEditDialogOpen(true)}
-            />
-            <main className="min-h-0 min-w-0 flex-1 overflow-hidden">
-              <Outlet />
-            </main>
-          </div>
-        </SidebarInset>
-
-        <ProjectNameDialog
-          mode="edit"
-          open={editDialogOpen}
-          initialName={project.name}
-          initialDescription={project.description ?? ""}
-          isPending={false}
-          onOpenChange={setEditDialogOpen}
-          onSubmit={() => {}}
-        />
-      </SidebarProvider>
-      </UserLuaNodesProvider>
+      {project.projectType === "application" ? (
+        <UserLuaNodesProvider projectId={project.id}>{workspace}</UserLuaNodesProvider>
+      ) : (
+        workspace
+      )}
     </ProgrammingProjectContext.Provider>
   );
 }

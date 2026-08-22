@@ -59,6 +59,37 @@ function uniqueTools(tools: ProgrammingProjectToolSnapshot[]): ProgrammingProjec
     });
 }
 
+function isPopulatedSchema(
+    schema?: Record<string, unknown>,
+): schema is Record<string, unknown> {
+    return Boolean(schema && Array.isArray(schema.nodes) && schema.nodes.length > 0);
+}
+
+function defaultMainWorkflowSchema(): Record<string, unknown> {
+    return {
+        nodes: [
+            {
+                id: "start_0",
+                type: "start",
+                meta: { position: { x: 180, y: 300 } },
+                data: { title: "开始", outputs: { type: "object", properties: {} } },
+            },
+            {
+                id: "end_0",
+                type: "end",
+                meta: { position: { x: 640, y: 300 } },
+                data: {
+                    title: "结束",
+                    inputsValues: {},
+                    inputs: { type: "object", properties: {} },
+                },
+            },
+        ],
+        edges: [{ sourceNodeID: "start_0", targetNodeID: "end_0" }],
+        globalVariable: { type: "object", required: [], properties: {} },
+    };
+}
+
 @Injectable()
 export class ProgrammingProjectService {
     constructor(
@@ -133,7 +164,9 @@ export class ProgrammingProjectService {
                 workflowRepository.create({
                     name: dto.name,
                     description: dto.description ?? "",
-                    schema: dto.schema ?? { nodes: [], edges: [] },
+                    schema: isPopulatedSchema(dto.schema)
+                        ? dto.schema
+                        : defaultMainWorkflowSchema(),
                     createBy: userId,
                     projectId: createdProject.id,
                     isMain: true,
@@ -166,6 +199,7 @@ export class ProgrammingProjectService {
             simulatorSessionId = null;
             deviceId = null;
         } else if (target === "simulator") {
+            this.assertApplicationOnly(project, "硬件仿真");
             if (!simulatorSessionId) {
                 throw HttpErrorFactory.badRequest("请选择工程的仿真会话");
             }
@@ -342,17 +376,20 @@ export class ProgrammingProjectService {
     }
 
     async listLuaModules(userId: string, projectId: string, query: QueryLuaModuleDto) {
-        await this.findOne(projectId, userId);
+        const project = await this.findOne(projectId, userId);
+        this.assertApplicationOnly(project, "Lua 模块");
         return this.luaModuleService.findAll(userId, { ...query, projectId });
     }
 
     async createLuaModule(userId: string, projectId: string, dto: CreateLuaModuleDto) {
-        await this.findOne(projectId, userId);
+        const project = await this.findOne(projectId, userId);
+        this.assertApplicationOnly(project, "Lua 模块");
         return this.luaModuleService.create(userId, dto, projectId);
     }
 
     async listUnassignedLuaModules(userId: string, projectId: string) {
-        await this.findOne(projectId, userId);
+        const project = await this.findOne(projectId, userId);
+        this.assertApplicationOnly(project, "Lua 模块");
         return this.luaModuleService.findAll(userId, {
             page: 1,
             pageSize: 100,
@@ -361,14 +398,15 @@ export class ProgrammingProjectService {
     }
 
     async importLuaModule(userId: string, projectId: string, moduleId: string) {
-        await this.findOne(projectId, userId);
+        const project = await this.findOne(projectId, userId);
+        this.assertApplicationOnly(project, "Lua 模块");
         return this.luaModuleService.cloneIntoProject(moduleId, userId, projectId);
     }
 
-    listSimulatorSessions(userId: string, projectId: string) {
-        return this.findOne(projectId, userId).then(() =>
-            this.simulatorService.list(userId, projectId),
-        );
+    async listSimulatorSessions(userId: string, projectId: string) {
+        const project = await this.findOne(projectId, userId);
+        this.assertApplicationOnly(project, "硬件仿真");
+        return this.simulatorService.list(userId, projectId);
     }
 
     async createSimulatorSession(
@@ -377,7 +415,8 @@ export class ProgrammingProjectService {
         name?: string,
         boardType?: SimulatorBoardType,
     ) {
-        await this.findOne(projectId, userId);
+        const project = await this.findOne(projectId, userId);
+        this.assertApplicationOnly(project, "硬件仿真");
         return this.simulatorService.create(userId, name, boardType, projectId);
     }
 
@@ -458,9 +497,15 @@ export class ProgrammingProjectService {
         return { luaModuleIds: [...luaModuleIds], tools: uniqueTools(tools) };
     }
 
+    private assertApplicationOnly(project: ProgrammingProject, feature: string): void {
+        if (project.projectType === "application") return;
+        throw HttpErrorFactory.badRequest(`对话流工程不支持${feature}`);
+    }
+
     private async assertRuntimeTarget(project: ProgrammingProject, userId: string): Promise<void> {
         if (project.runtimeTarget === "local") return;
         if (project.runtimeTarget === "simulator") {
+            this.assertApplicationOnly(project, "硬件仿真");
             if (!project.simulatorSessionId) {
                 throw HttpErrorFactory.badRequest("工程尚未选择仿真会话");
             }

@@ -56,7 +56,7 @@ export default function ProjectPublishPage() {
         </div>
 
         {project.isPublished && project.publishedAt && (
-          <div className="rounded-lg border bg-muted/30 p-4">
+          <div className="bg-muted/30 rounded-lg border p-4">
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <p className="text-muted-foreground text-xs">发布时间</p>
@@ -64,10 +64,14 @@ export default function ProjectPublishPage() {
                   {new Date(project.publishedAt).toLocaleString("zh-CN")}
                 </p>
               </div>
-              <div>
-                <p className="text-muted-foreground text-xs">Lua 模块</p>
-                <p className="text-sm font-medium">{project.publishedSnapshot?.luaModules?.length ?? 0} 个</p>
-              </div>
+              {project.projectType === "application" && (
+                <div>
+                  <p className="text-muted-foreground text-xs">Lua 模块</p>
+                  <p className="text-sm font-medium">
+                    {project.publishedSnapshot?.luaModules?.length ?? 0} 个
+                  </p>
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -80,7 +84,9 @@ export default function ProjectPublishPage() {
         <div className="space-y-1">
           <h2 className="text-sm font-medium">发布操作</h2>
           <p className="text-muted-foreground text-xs">
-            发布前请确保主流程完整（包含开始和结束节点）且引用的 Lua 模块已发布
+            {project.projectType === "application"
+              ? "发布前请确保主流程完整（包含开始和结束节点）且引用的 Lua 模块已发布"
+              : "发布前请确保主流程完整（包含开始和结束节点）"}
           </p>
         </div>
 

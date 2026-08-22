@@ -36,7 +36,9 @@ const RUNTIME_ITEMS: Array<{
 export default function ProjectSettingsPage() {
   const project = useProgrammingProject();
   const navigate = useNavigate();
-  const sessionsQuery = useProjectSimulatorSessionsQuery(project.id);
+  const sessionsQuery = useProjectSimulatorSessionsQuery(project.id, {
+    enabled: project.projectType === "application",
+  });
   const devicesQuery = useLuaDevicesQuery();
   const agentsQuery = useXiaozhiAgentsQuery({
     enabled: project.projectType === "application",
@@ -47,10 +49,21 @@ export default function ProjectSettingsPage() {
     onError: (error) => toast.error(error.message || "设置保存失败"),
   });
 
+  const runtimeItems = RUNTIME_ITEMS.filter(
+    (item) =>
+      project.projectType === "application" ||
+      item.value !== "simulator" ||
+      project.runtimeTarget === "simulator",
+  );
+
   const handleRuntimeChange = (target: ProgrammingRuntimeTarget) => {
     if (target === project.runtimeTarget) return;
 
     if (target === "simulator") {
+      if (project.projectType !== "application") {
+        toast.error("对话流工程不支持硬件仿真");
+        return;
+      }
       const sessionId = project.simulatorSessionId ?? sessionsQuery.data?.find(Boolean)?.id ?? null;
       if (!sessionId) {
         toast.error("请先创建一个工程仿真会话");
@@ -104,7 +117,7 @@ export default function ProjectSettingsPage() {
           className="w-full justify-start"
           disabled={updateMutation.isPending}
         >
-          {RUNTIME_ITEMS.map(({ value, label, icon: Icon }) => (
+          {runtimeItems.map(({ value, label, icon: Icon }) => (
             <ToggleGroupItem key={value} value={value} aria-label={label} className="flex-1">
               <Icon className="mr-1.5 size-4" />
               {label}
@@ -114,7 +127,7 @@ export default function ProjectSettingsPage() {
       </section>
 
       {/* 仿真会话选择 */}
-      {project.runtimeTarget === "simulator" && (
+      {project.projectType === "application" && project.runtimeTarget === "simulator" && (
         <section className="space-y-4">
           <Separator />
           <div className="space-y-1">
@@ -287,10 +300,18 @@ export default function ProjectSettingsPage() {
               {project.isPublished ? "已发布" : "草稿"}
             </Badge>
           </div>
-          <div>
-            <p className="text-muted-foreground text-xs">Lua 模块</p>
-            <p className="text-sm">{project.luaModuleCount} 个</p>
-          </div>
+          {project.projectType === "application" && (
+            <div>
+              <p className="text-muted-foreground text-xs">Lua 模块</p>
+              <p className="text-sm">{project.luaModuleCount} 个</p>
+            </div>
+          )}
+          {project.projectType !== "application" && (
+            <div>
+              <p className="text-muted-foreground text-xs">工具</p>
+              <p className="text-sm">{project.tools.length} 个</p>
+            </div>
+          )}
         </div>
       </section>
     </div>

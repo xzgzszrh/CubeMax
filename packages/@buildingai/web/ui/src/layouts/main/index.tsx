@@ -27,7 +27,7 @@ const MainLayout = () => {
   const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
   const queryClient = useQueryClient();
-  const { data } = useCheckInitializeStatus();
+  const { data, isSuccess } = useCheckInitializeStatus();
   const { websiteConfig } = useRefreshWebsiteConfig();
   const { initAppearance } = useUserConfigStore((s) => s.userConfigActions);
   const { setIsInitialized } = useConfigStore((s) => s.configActions);
@@ -71,7 +71,7 @@ const MainLayout = () => {
     return <Outlet />;
   }
 
-  if (data?.isInitialized === false) {
+  if (isSuccess && data?.isInitialized === false) {
     return <Navigate to="/install" />;
   }
 

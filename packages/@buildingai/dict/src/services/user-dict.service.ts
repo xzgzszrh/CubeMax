@@ -5,6 +5,7 @@ import { Repository } from "@buildingai/db/typeorm";
 import { Injectable } from "@nestjs/common";
 
 import type { UserDictItem, UserDictKey, UserDictSetOptions } from "../types/user-dict.types";
+import { isDatabaseUnreachableError } from "../utils/database-unreachable";
 
 /**
  * User Dictionary Configuration Service
@@ -57,6 +58,7 @@ export class UserDictService extends BaseService<UserDict> {
 
             return config.value as T;
         } catch (error) {
+            if (isDatabaseUnreachableError(error)) throw error;
             this.logger.error(`get user config failed: ${userId}/${key}@${group}`, error);
             return defaultValue as T;
         }

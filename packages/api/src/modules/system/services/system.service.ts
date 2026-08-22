@@ -4,7 +4,7 @@ import { InjectRepository } from "@buildingai/db/@nestjs/typeorm";
 import { User } from "@buildingai/db/entities";
 import { Repository } from "@buildingai/db/typeorm";
 import { DictService } from "@buildingai/dict";
-import { HttpErrorFactory } from "@buildingai/errors";
+import { HttpErrorFactory, HttpStatus } from "@buildingai/errors";
 import { generateNo } from "@buildingai/utils";
 import { SYSTEM_CONFIG } from "@common/constants";
 import { AuthService } from "@common/modules/auth/services/auth.service";
@@ -37,15 +37,27 @@ export class SystemService {
     ) {}
 
     async getSystemInfo() {
-        const isInitialized = await this.dictService.get<boolean>(
-            "isInitialized",
-            false,
-            SYSTEM_CONFIG,
-        );
-        return {
-            isInitialized,
-            version: AppConfig.version,
-        };
+        try {
+            const isInitialized = await this.dictService.get<boolean>(
+                "isInitialized",
+                false,
+                SYSTEM_CONFIG,
+            );
+            return {
+                isInitialized,
+                version: AppConfig.version,
+            };
+        } catch (error) {
+            const detail = error instanceof Error ? error.message : String(error);
+            throw HttpErrorFactory.create(
+                `数据库无法连接，请检查 DB_HOST 是否可达（${detail}）`,
+                {
+                    httpStatus: HttpStatus.SERVICE_UNAVAILABLE,
+                    businessCode: 50300,
+                    level: "error",
+                },
+            );
+        }
     }
 
     /**
