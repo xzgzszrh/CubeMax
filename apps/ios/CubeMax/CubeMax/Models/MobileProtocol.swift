@@ -25,7 +25,7 @@ extension MobileEnvelope {
             v: 1,
             type: type,
             id: UUID().uuidString.lowercased(),
-            ts: ISO8601DateFormatter.mobile.string(from: Date()),
+            ts: Date.now.ISO8601Format(.init(includingFractionalSeconds: true)),
             replyTo: replyTo,
             data: data
         )
@@ -40,12 +40,4 @@ extension MobileEnvelope {
     var maxBytes: Int { Int(data["max_bytes"]?.numberValue ?? 2_097_152) }
     var maxEdgePx: Int { Int(data["max_edge_px"]?.numberValue ?? 1920) }
     var consentPrompt: String? { data["consent_prompt"]?.stringValue }
-}
-
-extension ISO8601DateFormatter {
-    static let mobile: ISO8601DateFormatter = {
-        let formatter = ISO8601DateFormatter()
-        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-        return formatter
-    }()
 }

@@ -125,8 +125,7 @@ actor APIClient {
         width: Int,
         height: Int
     ) async throws -> CameraCaptureUploadResponse {
-        let path = "/mobile/camera/captures"
-        guard let url = URL(string: path, relativeTo: baseURL)?.absoluteURL else { throw APIClientError.invalidBaseURL }
+        let url = baseURL.appendingPathComponent("mobile/camera/captures")
         let boundary = "Boundary-\(UUID().uuidString)"
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
