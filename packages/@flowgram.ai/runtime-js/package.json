@@ -1,6 +1,7 @@
 {
   "name": "@flowgram.ai/runtime-js",
   "version": "1.0.11",
+  "private": true,
   "homepage": "https://flowgram.ai/",
   "repository": "https://github.com/bytedance/flowgram.ai",
   "license": "MIT",
@@ -8,7 +9,7 @@
   "exports": {
     "types": "./src/index.d.ts",
     "import": "./src/index.ts",
-    "require": "./src/index.ts"
+    "default": "./src/index.ts"
   },
   "main": "./src/index.ts",
   "module": "./src/index.ts",
@@ -20,7 +21,7 @@
   "scripts": {
     "build": "pnpm run check-types",
     "check-types": "tsc --noEmit",
-    "clean": "node -e \"require('fs').rmSync('dist',{recursive:true,force:true})\""
+    "clean": "node -e \"for (const p of ['dist', '.turbo']) require('fs').rmSync(p,{recursive:true,force:true})\""
   },
   "dependencies": {
     "@flowgram.ai/runtime-interface": "1.0.11",
