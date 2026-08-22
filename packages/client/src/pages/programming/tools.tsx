@@ -21,6 +21,8 @@ import { useDeferredValue, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 
+import { localizeMcpTool } from "@/lib/mcp-tool-i18n";
+
 import { useProgrammingProject } from "./context";
 
 function toolKey(tool: ProgrammingProjectToolRef) {
@@ -44,7 +46,8 @@ export default function ProgrammingToolsPage() {
       (serversQuery.data ?? []).flatMap((server) => {
         const tools = (server.tools ?? []).filter((tool) => {
           if (!deferredKeyword) return true;
-          return [server.alias, server.name, tool.title, tool.name, tool.description]
+          const localized = localizeMcpTool(tool);
+          return [server.alias, server.name, localized.title, tool.name, localized.description]
             .filter(Boolean)
             .some((value) => value!.toLocaleLowerCase().includes(deferredKeyword));
         });
@@ -191,6 +194,7 @@ export default function ProgrammingToolsPage() {
                       const reference = { mcpServerId: server.id, toolName: tool.name };
                       const checked = selectedKeys.has(toolKey(reference));
                       const checkboxId = `tool-${server.id}-${tool.id}`;
+                      const localized = localizeMcpTool(tool);
                       return (
                         <label
                           key={tool.id}
@@ -204,16 +208,11 @@ export default function ProgrammingToolsPage() {
                             className="mt-0.5"
                           />
                           <span className="min-w-0 flex-1">
-                            <span className="block text-sm font-medium">
-                              {tool.title || tool.name}
-                            </span>
+                            <span className="block text-sm font-medium">{localized.title}</span>
                             <span className="text-muted-foreground mt-0.5 block text-xs leading-4">
-                              {tool.description || tool.name}
+                              {localized.description || localized.title}
                             </span>
                           </span>
-                          <code className="text-muted-foreground hidden max-w-48 truncate text-[11px] sm:block">
-                            {tool.name}
-                          </code>
                         </label>
                       );
                     })}

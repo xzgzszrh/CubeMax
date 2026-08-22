@@ -6,10 +6,21 @@ import { Injectable } from "@nestjs/common";
 import { LuaDeviceGatewayService } from "../lua-device/lua-device-gateway.service";
 import { LuaModuleService } from "../lua/lua-module.service";
 import { LuaRuntimeService } from "../lua/lua-runtime.service";
-import { SimulatorService } from "../simulator/simulator.service";
 import { WorkflowRuntimeDeviceService } from "./workflow-runtime-device.service";
 
 type RuntimeContext = NonNullable<LuaExecutorInput["runtimeContext"]>;
+
+const USER_LUA_TYPE_PREFIX = "user_lua_";
+
+function resolveLuaModuleId(node: { type: string; data?: Record<string, unknown> }): string | undefined {
+    const fromData = node.data?.luaModuleId;
+    if (typeof fromData === "string" && fromData) return fromData;
+    if (node.type.startsWith(USER_LUA_TYPE_PREFIX)) {
+        const fromType = node.type.slice(USER_LUA_TYPE_PREFIX.length);
+        return fromType || undefined;
+    }
+    return undefined;
+}
 
 function isPublishedSnapshot(value: unknown): value is ProgrammingProjectPublishedSnapshot {
     return (
@@ -25,15 +36,14 @@ export class WorkflowLuaExecutorService {
     constructor(
         private readonly luaModuleService: LuaModuleService,
         private readonly luaRuntimeService: LuaRuntimeService,
-        private readonly simulatorService: SimulatorService,
         private readonly luaDeviceGatewayService: LuaDeviceGatewayService,
         private readonly runtimeDeviceService: WorkflowRuntimeDeviceService,
     ) {}
 
     async execute(input: LuaExecutorInput): Promise<Record<string, unknown>> {
         if (!input.userId) throw HttpErrorFactory.unauthorized("Lua 节点需要登录后执行");
-        const moduleId = input.node.data?.luaModuleId;
-        if (typeof moduleId !== "string" || !moduleId) {
+        const moduleId = resolveLuaModuleId(input.node);
+        if (!moduleId) {
             throw HttpErrorFactory.badRequest("Lua 节点尚未选择模块");
         }
         const context = input.runtimeContext;
@@ -84,24 +94,6 @@ export class WorkflowLuaExecutorService {
         const target = context?.runtimeTarget ?? "local";
         if (target === "local") {
             return (await this.luaRuntimeService.execute(source, inputs)).output;
-        }
-
-        if (target === "simulator") {
-            if (!context?.simulatorSessionId) {
-                throw HttpErrorFactory.badRequest("工程尚未选择仿真会话");
-            }
-            if (context.projectId) {
-                this.simulatorService.getForProjectUser(
-                    context.simulatorSessionId,
-                    userId,
-                    context.projectId,
-                );
-            } else {
-                this.simulatorService.getForUser(context.simulatorSessionId, userId);
-            }
-            return (
-                await this.luaRuntimeService.execute(source, inputs, context.simulatorSessionId)
-            ).output;
         }
 
         const deviceId = await this.runtimeDeviceService.resolveLuaDeviceId(userId, context);

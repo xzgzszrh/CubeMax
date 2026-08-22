@@ -16,8 +16,6 @@ import {
   useImportProjectLuaModuleMutation,
   useLuaModulesQuery,
   usePublishLuaModuleMutation,
-  useProjectSimulatorSessionsQuery,
-  useSimulatorSessionsQuery,
   useStopLuaDeviceRunMutation,
   useUnassignedProjectLuaModulesQuery,
   useUnpublishLuaModuleMutation,
@@ -52,7 +50,6 @@ import {
   ChevronLeft,
   ChevronRight,
   Code2,
-  Cpu,
   FileCode2,
   FolderInput,
   Loader2,
@@ -70,7 +67,6 @@ import {
   X,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 
 import { useOptionalProgrammingProject } from "../programming/context";
@@ -280,13 +276,7 @@ export default function LuaModulesPage({ projectId: projectIdProp }: { projectId
   const projectId = projectIdProp ?? project?.id;
   const isMobile = useIsMobile();
   const modulesQuery = useLuaModulesQuery(projectId ? { projectId } : undefined);
-  const simulatorSessionsQuery = useSimulatorSessionsQuery({ enabled: !projectId });
-  const projectSimulatorSessionsQuery = useProjectSimulatorSessionsQuery(projectId);
-  const simulatorSessions = projectId
-    ? (projectSimulatorSessionsQuery.data ?? [])
-    : (simulatorSessionsQuery.data ?? []);
   const physicalDevicesQuery = useLuaDevicesQuery();
-  const navigate = useNavigate();
   const { confirm } = useAlertDialog();
   const providersQuery = useAiProvidersQuery({ supportedModelTypes: "llm" });
   const modules = modulesQuery.data?.items ?? [];
@@ -301,7 +291,6 @@ export default function LuaModulesPage({ projectId: projectIdProp }: { projectId
   const [messages, setMessages] = useState<LuaChatMessage[]>([]);
   const [fileSidebarOpen, setFileSidebarOpen] = useState(true);
   const [detailsOpen, setDetailsOpen] = useState(false);
-  const [simulatorSessionId, setSimulatorSessionId] = useState<string>("none");
   const [physicalDeviceId, setPhysicalDeviceId] = useState<string>("none");
   const [physicalRunId, setPhysicalRunId] = useState<string>();
   const [newModuleDialogOpen, setNewModuleDialogOpen] = useState(false);
@@ -375,7 +364,6 @@ export default function LuaModulesPage({ projectId: projectIdProp }: { projectId
 
   useEffect(() => {
     if (!project) return;
-    setSimulatorSessionId(project.simulatorSessionId ?? "none");
     setPhysicalDeviceId(project.deviceId ?? "none");
   }, [project]);
 
@@ -527,7 +515,7 @@ export default function LuaModulesPage({ projectId: projectIdProp }: { projectId
     createMutation.mutate(editorToDto(initialEditor, []));
   };
 
-  const run = async (targetSimulatorSessionId?: string) => {
+  const run = async () => {
     try {
       if (!selectedId) {
         toast.error("请先新建模块");
@@ -538,7 +526,6 @@ export default function LuaModulesPage({ projectId: projectIdProp }: { projectId
         selectedId,
         parseObject(editor.testParams, "测试参数"),
         editor.draftCode,
-        targetSimulatorSessionId,
       );
       setResult(JSON.stringify(response, null, 2));
       setDetailsOpen(true);
@@ -577,16 +564,8 @@ export default function LuaModulesPage({ projectId: projectIdProp }: { projectId
   };
 
   const runOnProjectTarget = () => {
-    if (!project || project.runtimeTarget === "local") {
+    if (!project || project.runtimeTarget !== "device") {
       void run();
-      return;
-    }
-    if (project.runtimeTarget === "simulator") {
-      if (!project.simulatorSessionId) {
-        toast.error("工程尚未选择仿真会话");
-        return;
-      }
-      void run(project.simulatorSessionId);
       return;
     }
     try {
@@ -666,7 +645,6 @@ export default function LuaModulesPage({ projectId: projectIdProp }: { projectId
       setPrompt("");
       setGenerating(true);
       const generated = await generateLuaModule({
-        target: "device",
         modelId,
         message: userMessage,
         messages: history,
@@ -740,9 +718,7 @@ export default function LuaModulesPage({ projectId: projectIdProp }: { projectId
         <Button
           variant="outline"
           onClick={() =>
-            projectId
-              ? runOnProjectTarget()
-              : void run(simulatorSessionId === "none" ? undefined : simulatorSessionId)
+            projectId ? runOnProjectTarget() : void run()
           }
           disabled={
             running ||
@@ -1100,37 +1076,6 @@ export default function LuaModulesPage({ projectId: projectIdProp }: { projectId
                       className="min-h-44 font-mono text-xs"
                     />
                   </div>
-                </div>
-                <div className="space-y-1.5">
-                  <div className="flex items-center justify-between gap-2">
-                    <Label>仿真设备</Label>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-6 px-1.5 text-xs"
-                      onClick={() =>
-                        navigate(projectId ? `/programming/${projectId}/simulator` : "/simulator")
-                      }
-                    >
-                      <Cpu className="size-3" /> 打开硬件仿真
-                    </Button>
-                  </div>
-                  <Select value={simulatorSessionId} onValueChange={setSimulatorSessionId}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="不使用仿真设备" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="none">不使用仿真设备</SelectItem>
-                      {simulatorSessions.map((session) => (
-                        <SelectItem key={session.id} value={session.id}>
-                          {session.name} · {session.id.slice(0, 8)}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <p className="text-muted-foreground text-xs">
-                    选择后，AI 生成的代码可以通过 device.* 控制虚拟开发板。
-                  </p>
                 </div>
                 <div className="space-y-3 border-t pt-4">
                   <div className="flex items-center justify-between gap-2">

@@ -128,20 +128,23 @@ export default function ProjectPublishPage() {
         </div>
       </section>
 
-      <Separator />
+      {project.projectType === "application" && (
+        <>
+          <Separator />
 
-      {/* 运行日志 */}
-      <section className="space-y-4">
-        <div className="space-y-1">
-          <h2 className="text-sm font-medium">运行日志</h2>
-          <p className="text-muted-foreground text-xs">查看工程在设备上的运行记录</p>
-        </div>
+          <section className="space-y-4">
+            <div className="space-y-1">
+              <h2 className="text-sm font-medium">运行日志</h2>
+              <p className="text-muted-foreground text-xs">查看工程在设备上的运行记录</p>
+            </div>
 
-        <div className="rounded-lg border border-dashed p-6 text-center">
-          <p className="text-muted-foreground text-sm">运行日志功能开发中</p>
-          <p className="text-muted-foreground text-xs">即将支持实时日志和历史记录</p>
-        </div>
-      </section>
+            <div className="rounded-lg border border-dashed p-6 text-center">
+              <p className="text-muted-foreground text-sm">运行日志功能开发中</p>
+              <p className="text-muted-foreground text-xs">即将支持实时日志和历史记录</p>
+            </div>
+          </section>
+        </>
+      )}
     </div>
   );
 }

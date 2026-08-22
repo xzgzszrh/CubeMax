@@ -23,11 +23,21 @@ export class WorkflowRuntimeExecutor implements IExecutor {
 
     public async execute(context: ExecutionContext): Promise<ExecutionResult> {
         const nodeType = context.node.type;
-        const nodeExecutor = this.nodeExecutors.get(nodeType);
+        const nodeExecutor = this.getExecutor(nodeType);
         if (!nodeExecutor) {
             throw new Error(`No executor found for node type ${nodeType}`);
         }
         const output = await nodeExecutor.execute(context);
         return output;
+    }
+
+    private getExecutor(nodeType: FlowGramNode): INodeExecutor | undefined {
+        const direct = this.nodeExecutors.get(nodeType);
+        if (direct) return direct;
+        // "我的模块" nodes are per-module types that run the same Lua runtime.
+        if (typeof nodeType === "string" && nodeType.startsWith("user_lua_")) {
+            return this.nodeExecutors.get("lua" as FlowGramNode);
+        }
+        return undefined;
     }
 }

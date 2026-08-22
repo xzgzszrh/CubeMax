@@ -29,6 +29,8 @@ import {
 import { defaultFormMeta } from "../default-form-meta";
 import { resolveMcpToolInputUi } from "./tool-input-ui/registry";
 import { McpToolValueInput } from "./tool-input-ui/tool-value-input";
+import { localizeMcpTool } from "@/lib/mcp-tool-i18n";
+
 import { useOptionalProgrammingProject } from "../../../programming/context";
 
 function getServerLabel(server: McpServer): string {
@@ -36,8 +38,7 @@ function getServerLabel(server: McpServer): string {
 }
 
 function getToolLabel(tool: McpTool): string {
-  const name = tool.title || tool.name;
-  return tool.description ? `${name} - ${tool.description}` : name;
+  return localizeMcpTool(tool).title;
 }
 
 function findTool(servers: McpServer[], serverId?: string, toolName?: string): McpTool | undefined {

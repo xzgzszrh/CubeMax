@@ -202,10 +202,6 @@ export class TestLuaModuleDto {
 }
 
 export class GenerateLuaModuleDto {
-    @IsOptional()
-    @IsIn(["simulator", "device"])
-    target?: "simulator" | "device";
-
     @IsString()
     @IsNotEmpty({ message: "请选择生成代码所使用的模型" })
     modelId: string;

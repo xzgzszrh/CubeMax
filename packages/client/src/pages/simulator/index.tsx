@@ -4,7 +4,6 @@ import {
   useApplySimulatorOperationsMutation,
   useCreateSimulatorSessionMutation,
   useDeleteSimulatorSessionMutation,
-  useLuaModulesQuery,
   useProjectSimulatorSessionsQuery,
   useResetSimulatorSessionMutation,
   useSimulatorSessionQuery,
@@ -31,7 +30,6 @@ import {
   CircleGauge,
   Copy,
   Cpu,
-  FileCode2,
   Lightbulb,
   Plus,
   RotateCcw,
@@ -45,8 +43,6 @@ import { toast } from "sonner";
 
 import { useOptionalProgrammingProject } from "../programming/context";
 import { EspClawRuntime, type SimulatorDraft } from "./esp-claw-runtime";
-
-const EXAMPLE_LUA_SOURCE = "example";
 
 const SIMULATOR_BOARDS: Array<{
   type: SimulatorBoardType;
@@ -198,16 +194,11 @@ export default function SimulatorPage({ projectId: projectIdProp }: { projectId?
   const projectId = projectIdProp ?? project?.id;
   const sessionsQuery = useSimulatorSessionsQuery({ enabled: !projectId });
   const projectSessionsQuery = useProjectSimulatorSessionsQuery(projectId);
-  const modulesQuery = useLuaModulesQuery(projectId ? { projectId } : undefined, {
-    enabled: Boolean(projectId),
-  });
   const sessions = projectId ? (projectSessionsQuery.data ?? []) : (sessionsQuery.data ?? []);
-  const modules = modulesQuery.data?.items ?? [];
   const [selectedId, setSelectedId] = useState<string>();
   const [potentiometer, setPotentiometer] = useState(2048);
   const [serialInput, setSerialInput] = useState("");
-  const [simulatorDraft, setSimulatorDraft] = useState<SimulatorDraft>(DEFAULT_DISPLAY_DRAFT);
-  const [luaSource, setLuaSource] = useState(EXAMPLE_LUA_SOURCE);
+  const [simulatorDraft] = useState<SimulatorDraft>(DEFAULT_DISPLAY_DRAFT);
   const [preferredBoardType, setPreferredBoardType] =
     useState<SimulatorBoardType>("esp32-devkit-v1");
   const [runtimeResetVersion, setRuntimeResetVersion] = useState(0);
@@ -316,22 +307,6 @@ export default function SimulatorPage({ projectId: projectIdProp }: { projectId?
     if (session && text) serialMutation.mutate({ id: session.id, text });
   };
 
-  const selectLuaSource = (value: string) => {
-    if (value === EXAMPLE_LUA_SOURCE) {
-      setSimulatorDraft({ ...DEFAULT_DISPLAY_DRAFT, params: { ...DEFAULT_DISPLAY_DRAFT.params } });
-      setLuaSource(value);
-      return;
-    }
-    const module = modules.find((item) => item.id === value);
-    if (!module) return;
-    setSimulatorDraft({
-      name: module.name,
-      code: module.draftCode,
-      params: module.testParams ?? {},
-    });
-    setLuaSource(value);
-  };
-
   return (
     <div className="bg-background flex h-full min-h-0 flex-col overflow-hidden">
       <header className="flex min-h-16 flex-wrap items-center gap-3 border-b px-4 py-2.5">
@@ -340,26 +315,7 @@ export default function SimulatorPage({ projectId: projectIdProp }: { projectId?
           <h1 className="truncate text-base font-semibold">
             {projectId ? "工程仿真" : "硬件仿真"}
           </h1>
-          <p className="text-muted-foreground truncate text-xs">Lua + LVGL 应用层仿真</p>
-        </div>
-        <div className="flex min-w-0 items-center gap-1.5 max-md:order-3 max-md:w-full">
-          <FileCode2 className="text-muted-foreground size-4 shrink-0" />
-          <Select value={luaSource} onValueChange={selectLuaSource}>
-            <SelectTrigger
-              className="h-9 w-[min(300px,calc(100vw-10rem))] min-w-0"
-              aria-label="选择 Lua 文件"
-            >
-              <SelectValue placeholder="选择 Lua 文件" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value={EXAMPLE_LUA_SOURCE}>虚拟屏幕示例</SelectItem>
-              {modules.map((module) => (
-                <SelectItem key={module.id} value={module.id}>
-                  {module.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <p className="text-muted-foreground truncate text-xs">固定演示：虚拟屏幕与板载外设</p>
         </div>
         <Button
           variant="outline"

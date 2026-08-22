@@ -32,6 +32,8 @@ import {
 } from "lucide-react";
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 
+import { localizeMcpTool } from "@/lib/mcp-tool-i18n";
+
 type McpTab = "all" | "user" | "system";
 
 function coerceIds(input: unknown): string[] {
@@ -536,20 +538,21 @@ export const McpTools = memo(
                     </div>
                   ))
                 ) : toolsDialogTools.length > 0 ? (
-                  toolsDialogTools.map((tool) => (
-                    <div key={tool.id} className="flex flex-col gap-1.5 rounded-lg border p-3">
-                      <div className="flex items-center gap-2">
-                        <Badge variant="secondary" className="font-mono text-xs">
-                          {tool.name}
-                        </Badge>
+                  toolsDialogTools.map((tool) => {
+                    const localized = localizeMcpTool(tool);
+                    return (
+                      <div key={tool.id} className="flex flex-col gap-1.5 rounded-lg border p-3">
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-medium">{localized.title}</span>
+                        </div>
+                        {localized.description && (
+                          <p className="text-muted-foreground text-xs leading-relaxed">
+                            {localized.description}
+                          </p>
+                        )}
                       </div>
-                      {tool.description && (
-                        <p className="text-muted-foreground text-xs leading-relaxed">
-                          {tool.description}
-                        </p>
-                      )}
-                    </div>
-                  ))
+                    );
+                  })
                 ) : (
                   <div className="text-muted-foreground flex h-24 items-center justify-center text-sm">
                     暂无工具数据，请先检测连接以同步工具
