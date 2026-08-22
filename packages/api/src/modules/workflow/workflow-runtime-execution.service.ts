@@ -19,7 +19,10 @@ import type {
     PublishedWorkflowRuntimeTaskDto,
     WorkflowRuntimeTaskDto,
     WorkflowRuntimeTaskIdDto,
+    WorkflowWaitEventDto,
 } from "./workflow-runtime.dto";
+import { WorkflowWaitExecutorService } from "./workflow-wait-executor.service";
+import { WorkflowWaitRegistry } from "./workflow-wait-registry.service";
 
 type WorkflowRuntimeJsModule = typeof import("@flowgram.ai/runtime-js");
 
@@ -41,6 +44,8 @@ export class WorkflowRuntimeExecutionService {
         private readonly workflowLlmExecutorService: WorkflowLlmExecutorService,
         private readonly workflowLuaExecutorService: WorkflowLuaExecutorService,
         private readonly workflowAgentExecutorService: WorkflowAgentExecutorService,
+        private readonly workflowWaitExecutorService: WorkflowWaitExecutorService,
+        private readonly waitRegistry: WorkflowWaitRegistry,
         private readonly workflowService: WorkflowService,
         private readonly programmingProjectService: ProgrammingProjectService,
     ) {}
@@ -51,6 +56,7 @@ export class WorkflowRuntimeExecutionService {
         runtime.registerLLMExecutor((input) => this.workflowLlmExecutorService.execute(input));
         runtime.registerLuaExecutor((input) => this.workflowLuaExecutorService.execute(input));
         runtime.registerAgentExecutor((input) => this.workflowAgentExecutorService.execute(input));
+        runtime.registerWaitExecutor((input) => this.workflowWaitExecutorService.execute(input));
         return runtime;
     }
 
@@ -148,6 +154,21 @@ export class WorkflowRuntimeExecutionService {
     async cancel(query: WorkflowRuntimeTaskIdDto): Promise<TaskCancelOutput> {
         const runtime = await this.loadConfiguredRuntime();
         return runtime.TaskCancelAPI(query);
+    }
+
+    async emitWaitEvent(
+        dto: WorkflowWaitEventDto,
+        user: Pick<UserPlayground, "id">,
+    ): Promise<{ resumed: number }> {
+        if (dto.projectId) {
+            await this.programmingProjectService.findOne(dto.projectId, user.id);
+        }
+        const resumed = this.waitRegistry.emit({
+            triggerId: dto.triggerId.trim(),
+            projectId: dto.projectId,
+            data: dto.data ?? {},
+        });
+        return { resumed };
     }
 
     private async runSchema(

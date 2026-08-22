@@ -132,6 +132,9 @@ export class WorkflowApplicationExecutorService {
     if ((data.waitType === "mcp_call" || data.waitType === "webhook") && !data.triggerId) {
       errors.push("MCP 调用或 Webhook 触发需要 triggerId");
     }
+    if (data.waitType === "timeout" && !(Number(data.timeoutMs) > 0)) {
+      errors.push("超时等待需要大于 0 的 timeoutMs");
+    }
     
     return { valid: errors.length === 0, errors };
   }

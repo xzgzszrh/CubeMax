@@ -1,4 +1,4 @@
-import { IsIn, IsObject, IsOptional, IsString } from "class-validator";
+import { IsIn, IsNotEmpty, IsObject, IsOptional, IsString } from "class-validator";
 
 export class WorkflowRuntimeContextDto {
     @IsOptional()
@@ -45,4 +45,18 @@ export class PublishedWorkflowRuntimeTaskDto {
 
     @IsObject()
     inputs: Record<string, unknown>;
+}
+
+export class WorkflowWaitEventDto {
+    @IsString()
+    @IsNotEmpty()
+    triggerId: string;
+
+    @IsOptional()
+    @IsObject()
+    data?: Record<string, unknown>;
+
+    @IsOptional()
+    @IsString()
+    projectId?: string;
 }

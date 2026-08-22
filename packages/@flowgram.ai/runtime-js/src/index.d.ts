@@ -102,3 +102,22 @@ export type AgentExecutorHandler = (
 ) => Promise<Record<string, unknown>> | Record<string, unknown>;
 
 export declare const registerAgentExecutor: (executor: AgentExecutorHandler) => void;
+
+export type WaitExecutorInput = {
+    userId?: string;
+    runtimeContext?: WorkflowRuntimeExecutorContext;
+    node: { id: string; type: string; data?: Record<string, unknown> };
+    inputs: Record<string, unknown>;
+    signal?: AbortSignal;
+};
+
+export type WaitExecutorResult = {
+    outputs: Record<string, unknown>;
+    branch: "continue" | "timeout";
+};
+
+export type WaitExecutorHandler = (
+    input: WaitExecutorInput,
+) => Promise<WaitExecutorResult> | WaitExecutorResult;
+
+export declare const registerWaitExecutor: (executor: WaitExecutorHandler) => void;

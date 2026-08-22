@@ -34,6 +34,8 @@ import { WorkflowLuaExecutorService } from "./workflow-lua-executor.service";
 import { WorkflowMcpExecutorService } from "./workflow-mcp-executor.service";
 import { WorkflowRuntimeController } from "./workflow-runtime.controller";
 import { WorkflowRuntimeExecutionService } from "./workflow-runtime-execution.service";
+import { WorkflowWaitExecutorService } from "./workflow-wait-executor.service";
+import { WorkflowWaitRegistry } from "./workflow-wait-registry.service";
 
 @Module({
     imports: [
@@ -72,6 +74,8 @@ import { WorkflowRuntimeExecutionService } from "./workflow-runtime-execution.se
         WorkflowLlmExecutorService,
         WorkflowLuaExecutorService,
         WorkflowAgentExecutorService,
+        WorkflowWaitRegistry,
+        WorkflowWaitExecutorService,
         WorkflowRuntimeExecutionService,
         SecretService,
     ],

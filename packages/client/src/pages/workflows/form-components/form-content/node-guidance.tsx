@@ -80,6 +80,16 @@ const NODE_GUIDANCE: Partial<Record<string, NodeGuidanceContent>> = {
     result: "返回值会按照输出结构提供给后续节点。",
     example: "把两个数字相加，再把结果命名为 total。",
   },
+  [WorkflowNodeType.Wait]: {
+    summary: "让流程在这里停一下，等到时间到、CubeCat 调用工具，或收到回传再继续。",
+    steps: [
+      "选择等待超时、MCP 调用或 Webhook",
+      "超时要填等待时长；MCP/Webhook 要填工具名或标识",
+      "把「继续」和「超时」分别连到不同的下一步",
+    ],
+    result: "等到事件后，回传数据会出现在输出里；超时则走超时出口。",
+    example: "先设置智能体提示词，再等待 CubeCat 调用 timer_complete。",
+  },
   [WorkflowNodeType.Agent]: {
     summary: "切换 CubeCat 的角色提示词，改变它之后怎么和用户说话。",
     steps: [

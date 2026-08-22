@@ -40,6 +40,13 @@ import { XiaozhiCredentialCryptoService } from "./xiaozhi-credential-crypto.serv
  * report is answered with `accepted: false, reason: "no_active_classroom"`.
  */
 export const XIAOZHI_MCP_TASK_COMPLETED_EVENT = "xiaozhi.mcp.task-completed";
+export const XIAOZHI_MCP_TOOL_CALLED_EVENT = "xiaozhi.mcp.tool-called";
+
+export type XiaozhiMcpToolCalledEvent = {
+    agentBindingId: string;
+    toolName: string;
+    arguments: Record<string, unknown>;
+};
 
 export type XiaozhiMcpTaskCompletedEvent = {
     connectionId: string;
@@ -728,6 +735,11 @@ export class XiaozhiMcpGatewayService implements OnModuleInit, OnModuleDestroy {
                     : {}),
                 isError: false,
             });
+            this.notifyToolCalled(
+                state,
+                String(params.name || exposed.toolName),
+                (params.arguments || {}) as Record<string, unknown>,
+            );
         } catch (error) {
             this.sendError(socket, id, -32603, safeErrorMessage(error));
         }
@@ -735,6 +747,7 @@ export class XiaozhiMcpGatewayService implements OnModuleInit, OnModuleDestroy {
 
     /** Proxy one tools/call to the BuildingAI MCP server that owns the tool. */
     private async handleBuildingToolCall(
+        state: ConnectorState,
         socket: GatewaySocket,
         id: JsonRpcId,
         exposed: ExposedTool,
@@ -784,6 +797,7 @@ export class XiaozhiMcpGatewayService implements OnModuleInit, OnModuleDestroy {
                     isError: false,
                 });
             }
+            this.notifyToolCalled(state, String(params.name || exposed.toolName), args);
         } catch (error) {
             this.sendError(socket, id, -32603, safeErrorMessage(error));
         } finally {
@@ -933,7 +947,7 @@ export class XiaozhiMcpGatewayService implements OnModuleInit, OnModuleDestroy {
                 return;
             }
             if (exposed?.server) {
-                await this.handleBuildingToolCall(socket, id, exposed, params);
+                await this.handleBuildingToolCall(state, socket, id, exposed, params);
                 return;
             }
             this.sendError(socket, id, -32602, `未知工具: ${String(params.name || "")}`);
@@ -980,9 +994,24 @@ export class XiaozhiMcpGatewayService implements OnModuleInit, OnModuleDestroy {
                 structuredContent: response,
                 isError: false,
             });
+            this.notifyToolCalled(state, state.settings.toolName, args);
         } catch (error) {
             this.sendError(socket, id, -32603, safeErrorMessage(error));
         }
+    }
+
+    private notifyToolCalled(
+        state: ConnectorState,
+        toolName: string,
+        args: Record<string, unknown>,
+    ) {
+        const snapshot = state.snapshot;
+        if (!snapshot || !toolName) return;
+        this.eventEmitter.emit(XIAOZHI_MCP_TOOL_CALLED_EVENT, {
+            agentBindingId: snapshot.agentBindingId,
+            toolName,
+            arguments: args,
+        } satisfies XiaozhiMcpToolCalledEvent);
     }
 }
 

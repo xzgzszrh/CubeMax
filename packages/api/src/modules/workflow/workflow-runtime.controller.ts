@@ -9,12 +9,13 @@ import type {
 } from "@flowgram.ai/runtime-interface";
 import { Body, Get, Post, Put, Query } from "@nestjs/common";
 
-import { WorkflowRuntimeExecutionService } from "./workflow-runtime-execution.service";
 import {
     PublishedWorkflowRuntimeTaskDto,
     WorkflowRuntimeTaskDto,
     WorkflowRuntimeTaskIdDto,
+    WorkflowWaitEventDto,
 } from "./workflow-runtime.dto";
+import { WorkflowRuntimeExecutionService } from "./workflow-runtime-execution.service";
 
 @SkipTransform()
 @WebController("task")
@@ -52,5 +53,10 @@ export class WorkflowRuntimeController {
     @Put("cancel")
     async cancel(@Body() dto: WorkflowRuntimeTaskIdDto): Promise<TaskCancelOutput> {
         return this.runtimeExecutionService.cancel(dto);
+    }
+
+    @Post("wait-events")
+    async waitEvents(@Body() dto: WorkflowWaitEventDto, @Playground() user: UserPlayground) {
+        return this.runtimeExecutionService.emitWaitEvent(dto, user);
     }
 }

@@ -16,16 +16,17 @@ export const WaitNodeRegistry: FlowNodeRegistry = {
   type: WorkflowNodeType.Wait,
   info: {
     icon: iconWait,
-    description: "等待特定条件满足，例如 MCP 回传数据、超时或变量变化。",
+    description: "等待超时、CubeCat 调用 MCP 工具，或 HTTP 回传后再继续。",
   },
   meta: {
     nodePanelLabel: "等待",
     nodePanelGroup: "app",
     nodePanelGroupLabel: "智能交互",
-    size: { width: 360, height: 380 },
+    size: { width: 360, height: 420 },
     defaultPorts: [
-      { type: "output", label: "继续" },
-      { type: "output", label: "超时" },
+      { type: "input" },
+      { type: "output", portID: "continue", label: "继续" },
+      { type: "output", portID: "timeout", label: "超时" },
     ],
   },
   onAdd() {
@@ -34,36 +35,43 @@ export const WaitNodeRegistry: FlowNodeRegistry = {
       type: WorkflowNodeType.Wait,
       data: {
         title: `等待_${++index}`,
-        // 等待类型: mcp_call = 等待 MCP 调用, timeout = 超时等待, variable = 变量变化
-        waitType: "mcp_call",
-        // 关联的 MCP 节点 ID 或 webhook 配置 ID
+        waitType: "timeout",
         triggerId: "",
-        // 超时时间（毫秒），0 表示不超时
-        timeoutMs: 0,
-        // 期望的数据路径，例如 data.result
+        timeoutMs: 5000,
         expectedDataPath: "",
-        // 期望的值（可选），用于条件判断
         expectedValue: "",
-        // 输入定义
         inputs: {
           type: "object",
           properties: {
             context: {
               type: "string",
-              title: "上下文信息",
-              description: "来自前置节点的上下文信息",
+              title: "上下文",
+              description: "可选。会原样带到输出，方便下游使用。",
+            },
+            triggerId: {
+              type: "string",
+              title: "触发标识",
+              description: "覆盖节点上填写的工具名或 Webhook 标识。",
+            },
+            timeoutMs: {
+              type: "number",
+              title: "超时毫秒",
+              description: "覆盖节点上的超时时间。0 表示一直等到事件。",
             },
           },
         },
-        inputsValues: {},
-        // 输出定义
+        inputsValues: {
+          context: { type: "constant", content: "" },
+          triggerId: { type: "constant", content: "" },
+          timeoutMs: { type: "constant", content: "" },
+        },
         outputs: {
           type: "object",
           properties: {
             triggered: {
               type: "boolean",
               title: "是否触发",
-              description: "是否满足条件继续执行",
+              description: "是否因等到事件而继续",
             },
             isTimeout: {
               type: "boolean",
@@ -73,12 +81,17 @@ export const WaitNodeRegistry: FlowNodeRegistry = {
             data: {
               type: "object",
               title: "回传数据",
-              description: "MCP 回传的数据内容",
+              description: "MCP 或 Webhook 带回的数据",
             },
             elapsedMs: {
               type: "number",
               title: "耗时(毫秒)",
-              description: "从等待到继续的耗时",
+              description: "从开始等到继续的时间",
+            },
+            context: {
+              type: "string",
+              title: "上下文",
+              description: "从输入带过来的上下文",
             },
           },
         },

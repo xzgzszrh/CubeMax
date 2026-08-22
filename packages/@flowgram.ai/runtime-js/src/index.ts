@@ -12,3 +12,9 @@ export { registerLuaExecutor } from "./nodes/lua/index.ts";
 export type { LuaExecutorHandler, LuaExecutorInput } from "./nodes/lua/index.ts";
 export { registerAgentExecutor } from "./nodes/agent/index.ts";
 export type { AgentExecutorHandler, AgentExecutorInput } from "./nodes/agent/index.ts";
+export { registerWaitExecutor } from "./nodes/wait/index.ts";
+export type {
+    WaitExecutorHandler,
+    WaitExecutorInput,
+    WaitExecutorResult,
+} from "./nodes/wait/index.ts";
