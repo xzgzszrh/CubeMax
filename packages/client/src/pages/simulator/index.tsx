@@ -49,7 +49,7 @@ const EMPTY_CUBECAT = {
   volume: 70,
   lastVibrateMs: 0,
   lastNotify: "",
-  lastSpeech: "",
+  lastAlert: "",
   lastCameraQuestion: "",
   lastCameraAnswer: "",
   lastAudio: "",
@@ -84,9 +84,9 @@ function CubeCatStatus({ session }: { session: SimulatorSession }) {
     },
     {
       icon: MessageSquareText,
-      label: "语音提示",
-      value: cubecat.lastSpeech || "无",
-      active: Boolean(cubecat.lastSpeech),
+      label: "屏幕播报",
+      value: cubecat.lastAlert || "无",
+      active: Boolean(cubecat.lastAlert),
     },
     {
       icon: Camera,

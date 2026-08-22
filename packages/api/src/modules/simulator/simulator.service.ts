@@ -394,10 +394,10 @@ export class SimulatorService {
                 this.appendSerial(session, "system", `通知 ${text}`);
                 return { text };
             }
-            case "speech_say": {
+            case "alert_show": {
                 const text = typeof args.text === "string" ? args.text : "";
-                session.cubecat.lastSpeech = text;
-                this.appendSerial(session, "system", `语音 ${text}`);
+                session.cubecat.lastAlert = text;
+                this.appendSerial(session, "system", `播报 ${text}`);
                 return { text };
             }
             case "camera_explain": {

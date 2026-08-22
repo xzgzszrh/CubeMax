@@ -78,10 +78,10 @@ register("device", function()
     }
 end)
 
-register("speech", function()
+register("alert", function()
     return {
-        say = function(text)
-            append_device_operation("speech_say", { text = tostring(text or "") })
+        show = function(text)
+            append_device_operation("alert_show", { text = tostring(text or "") })
         end,
     }
 end)

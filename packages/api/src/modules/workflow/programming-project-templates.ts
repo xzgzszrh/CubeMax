@@ -40,7 +40,7 @@ export const DECRYPT_TEMPLATE_LUA = {
     draftCode: `-- 解密馆：三款小游戏都在这里出题和判定，不负责听人说话
 local runtime = require("runtime")
 local device = require("device")
-local speech = require("speech")
+local alert = require("alert")
 local ui = require("ui")
 
 local function field_text(value, key)
@@ -53,8 +53,8 @@ local function field_text(value, key)
   return tostring(value or "")
 end
 
-local function speak(text)
-  speech.say(text)
+local function announce(text)
+  alert.show(text)
   local ms = 400 + #text * 80
   if ms > 8000 then ms = 8000 end
   runtime.sleep(ms)
@@ -87,7 +87,7 @@ local function present(title, body)
   })
   ui.load(screen)
   device.notify(title)
-  speak(title .. "。" .. body)
+  announce(title .. "。" .. body)
 end
 
 local function pick(list)
@@ -237,7 +237,7 @@ local function judge(game, secret, answer)
     message = "这道暗号还没解开。正确答案稍后由馆长带着你看下一关。"
   end
   device.notify(message)
-  speak(message)
+  announce(message)
   local nextGame = suggest_next(game, ok)
   local briefing = "上一关是" .. title .. "，玩家" .. (ok and "解开了" or "没有解开")
     .. "。请选一款不同的小游戏，建议下一关选 " .. nextGame .. "。"

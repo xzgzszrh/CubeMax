@@ -66,9 +66,9 @@ describe("LuaRuntimeService", () => {
         await service.execute(
             `function main()
                 local device = require("device")
-                local speech = require("speech")
+                local alert = require("alert")
                 device.set_brightness(40)
-                speech.say("你好")
+                alert.show("你好")
                 return { ok = true }
             end`,
             {},
@@ -76,7 +76,7 @@ describe("LuaRuntimeService", () => {
         );
         expect(simulator.get(session.id).cubecat).toMatchObject({
             brightness: 40,
-            lastSpeech: "你好",
+            lastAlert: "你好",
         });
     });
 

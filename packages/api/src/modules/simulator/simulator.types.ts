@@ -34,7 +34,7 @@ export type CubeCatDeviceState = {
     volume: number;
     lastVibrateMs: number;
     lastNotify: string;
-    lastSpeech: string;
+    lastAlert: string;
     lastCameraQuestion: string;
     lastCameraAnswer: string;
     lastAudio: string;
@@ -50,7 +50,7 @@ export function createDefaultCubeCatState(): CubeCatDeviceState {
         volume: 70,
         lastVibrateMs: 0,
         lastNotify: "",
-        lastSpeech: "",
+        lastAlert: "",
         lastCameraQuestion: "",
         lastCameraAnswer: "",
         lastAudio: "",

@@ -91,7 +91,7 @@ describe("SimulatorService", () => {
             { action: "set_volume", args: { value: 20 } },
             { action: "vibrate", args: { durationMs: 250 } },
             { action: "notify", args: { text: "完成" } },
-            { action: "speech_say", args: { text: "你好" } },
+            { action: "alert_show", args: { text: "你好" } },
         ]);
 
         expect(result.cubecat).toMatchObject({
@@ -99,7 +99,7 @@ describe("SimulatorService", () => {
             volume: 20,
             lastVibrateMs: 250,
             lastNotify: "完成",
-            lastSpeech: "你好",
+            lastAlert: "你好",
         });
     });
 });

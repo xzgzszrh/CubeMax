@@ -1,5 +1,6 @@
 /**
- * 语音播报节点 - 通过 CubeCat Lua speech.say 提示文字
+ * 语音播报节点：通义千问 TTS 合成后经设备 WebSocket speak 播放。
+ * 不是 Lua require("alert").show（那只是屏幕提示）。
  */
 
 import { nanoid } from "nanoid";

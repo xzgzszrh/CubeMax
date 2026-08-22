@@ -38,7 +38,7 @@ Metalio Claw4 固件不再实现下文的 `run.prepare` / `run.chunk` 分片协�
 
 - `runtime` / `ui` / `audio` / `http`
 - `camera.explain(question)`（需要 `camera` capability）
-- `speech.say(text)`
+- `alert.show(text)`（屏幕播报提示，不是 TTS）
 - `device.set_brightness` / `set_volume` / `vibrate` / `notify`
 
 「编程 / 应用 / 智能交互」节点分工：

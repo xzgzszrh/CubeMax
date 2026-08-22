@@ -62,14 +62,14 @@ CubeCat 打开「远程脚本」后连上 CubeMax。老师或工作流点运行�
       return { ok = false, reason = "cancelled" }
     end
 
-需要等语音说完、或做短动画时用 sleep。长等待优先 poll_event，并检查 cancelled()。
+需要把提示留在屏幕上一会儿、或做短动画时用 sleep。长等待优先 poll_event，并检查 cancelled()。
 
-## 3.2 speech / audio：让 CubeCat 说话
+## 3.2 alert：屏幕播报提示（不是朗读）
 
-    local speech = require("speech")
-    speech.say("欢迎回来")  -- 屏幕提示，不是 TTS
+    local alert = require("alert")
+    alert.show("欢迎回来")  -- 状态栏「播报」+ 提示音，不会把文字读出来
 
-工作流语音播报会先用通义千问合成 WAV，再让设备下载播放：
+需要 CubeCat 读出这句话时，用工作流「语音播报」节点。也可以自己下载 WAV 再播：
 
     local http = require("http")
     local audio = require("audio")
@@ -84,7 +84,7 @@ CubeCat 打开「远程脚本」后连上 CubeMax。老师或工作流点运行�
     end
     return { ok = true }
 
-audio.play_bytes 只接受 WAV PCM。speech.say 只做屏幕提示。
+audio.play_bytes 只接受 WAV PCM。alert.show 只做屏幕提示，不是 TTS。
 
 ## 3.3 device：亮度、音量、震动、通知
 
@@ -167,7 +167,7 @@ audio.play_bytes 只接受 WAV PCM。speech.say 只做屏幕提示。
     -- audio.stop(handle)
     -- audio.stop_all()
 
-没有明确的设备内音频路径时，不要编造文件名；短提示用 speech.say，朗读用 audio.play_bytes。
+没有明确的设备内音频路径时，不要编造文件名；短提示用 alert.show，朗读用工作流语音播报节点或 audio.play_bytes。
 
 ## 3.7 http：访问网络
 
@@ -186,7 +186,8 @@ http.request({ method = "GET", url = "...", headers = {}, body = "", timeout_ms 
 
 | 学生想做的事 | 应使用的模块 | 不要用 |
 | 打招呼、计算、拼接文字 | 纯 Lua，不 require | 屏幕/GPIO |
-| 让 CubeCat 说话 | speech | lvgl |
+| 屏幕弹出播报提示 | alert | 工作流语音播报 |
+| 让 CubeCat 朗读文字 | 工作流语音播报节点 | alert.show |
 | 改亮度/音量/震动/通知 | device | gpio_* |
 | 看眼前的东西 | camera | 仿真摄像头 API |
 | 在设备屏幕上显示内容 | ui | lvgl / xiaozhi.ui / board_manager |

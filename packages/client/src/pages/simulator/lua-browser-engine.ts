@@ -150,9 +150,9 @@ __cubemax_modules.device = {
   end,
 }
 
-__cubemax_modules.speech = {
-  say = function(text)
-    __sim_emit("speech_say", json_encode({ text = tostring(text or "") }))
+__cubemax_modules.alert = {
+  show = function(text)
+    __sim_emit("alert_show", json_encode({ text = tostring(text or "") }))
   end,
 }
 

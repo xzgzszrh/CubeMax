@@ -39,7 +39,7 @@ export interface CubeCatDeviceState {
     volume: number;
     lastVibrateMs: number;
     lastNotify: string;
-    lastSpeech: string;
+    lastAlert: string;
     lastCameraQuestion: string;
     lastCameraAnswer: string;
     lastAudio: string;
