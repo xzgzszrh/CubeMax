@@ -53,7 +53,7 @@ const NAV_ITEMS = [
 ] as const;
 
 const RUNTIME_LABELS: Record<ProgrammingRuntimeTarget, string> = {
-  local: "本地运行",
+  local: "服务端试跑",
   simulator: "硬件仿真",
   device: "CubeCat 设备",
 };

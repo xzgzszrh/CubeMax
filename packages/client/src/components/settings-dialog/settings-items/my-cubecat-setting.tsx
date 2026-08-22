@@ -304,8 +304,8 @@ function DeviceDetailDialog({
                 </p>
               ) : null}
               <div className="text-muted-foreground mt-3 grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
-                <span className="truncate">模型：{device.model || "由小智默认配置"}</span>
-                <span className="truncate">音色：{device.voice || "由小智默认配置"}</span>
+                <span className="truncate">模型：{device.model || "由 CubeCat 默认配置"}</span>
+                <span className="truncate">音色：{device.voice || "由 CubeCat 默认配置"}</span>
               </div>
             </section>
 
@@ -436,7 +436,7 @@ function DeviceDetailDialog({
               <div className="grid gap-2 sm:grid-cols-2">
                 <span>设备板型：{device.boardName || "未上报"}</span>
                 <span>最后连接：{lastSeenLabel(device.lastConnectedAt)}</span>
-                <span>小智设备 ID：{device.id}</span>
+                <span>CubeCat 设备 ID：{device.id}</span>
                 <span>智能体组：{device.agentName}</span>
               </div>
             </section>

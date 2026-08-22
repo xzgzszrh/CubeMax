@@ -120,6 +120,7 @@ export type XiaozhiDevice = {
     id: number;
     agentId: string;
     macAddress: string;
+    clientId?: string;
     alias: string;
     boardName: string;
     appVersion: string;

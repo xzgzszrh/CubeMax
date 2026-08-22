@@ -2,6 +2,7 @@ import type { MutationOptionsUtil, QueryOptionsUtil } from "@buildingai/web-type
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { apiHttpClient } from "../base";
+import type { LuaDeviceRunItem } from "./lua-device";
 import type { LuaModuleItem, LuaModuleListResult } from "./lua-module";
 import type { SimulatorBoardType, SimulatorSession } from "./simulator";
 import type { WorkflowItem } from "./workflow";
@@ -207,6 +208,32 @@ export function useUnassignedProjectLuaModulesQuery(
         enabled: !!projectId,
         ...options,
     });
+}
+
+export function useCreateProjectLuaRunMutation(
+    options?: MutationOptionsUtil<
+        LuaDeviceRunItem,
+        {
+            projectId: string;
+            dto: {
+                name: string;
+                moduleId?: string;
+                source: string;
+                params: Record<string, unknown>;
+                requiredCapabilities?: string[];
+                timeoutMs?: number;
+            };
+        }
+    >,
+) {
+    return useProjectMutation(
+        ({ projectId, dto }) =>
+            apiHttpClient.post<LuaDeviceRunItem>(
+                `${PROGRAMMING_PROJECTS_PATH}/${projectId}/lua-runs`,
+                dto,
+            ),
+        options,
+    );
 }
 
 export function useImportProjectLuaModuleMutation(

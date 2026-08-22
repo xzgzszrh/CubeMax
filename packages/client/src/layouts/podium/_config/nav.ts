@@ -65,7 +65,7 @@ export const PODIUM_NAV: PodiumNavGroup[] = [
       {
         path: "devices",
         name: "设备管理",
-        description: "绑定组织的小智账号、分配方糖猫设备与接入 MCP",
+        description: "绑定组织的 CubeCat 账号、分配设备与接入 MCP",
         icon: "bot",
         requiredPermission: OrganizationPermission.ASSET_MANAGE,
       },

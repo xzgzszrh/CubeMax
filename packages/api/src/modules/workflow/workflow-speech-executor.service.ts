@@ -3,6 +3,7 @@ import type { SpeechExecutorInput } from "@flowgram.ai/runtime-js";
 import { Injectable } from "@nestjs/common";
 
 import { LuaDeviceGatewayService } from "../lua-device/lua-device-gateway.service";
+import { WorkflowRuntimeDeviceService } from "./workflow-runtime-device.service";
 
 const SPEECH_SCRIPT = `function main(args)
   local speech = require("speech")
@@ -26,7 +27,10 @@ function asText(value: unknown): string {
 
 @Injectable()
 export class WorkflowSpeechExecutorService {
-    constructor(private readonly luaDeviceGatewayService: LuaDeviceGatewayService) {}
+    constructor(
+        private readonly luaDeviceGatewayService: LuaDeviceGatewayService,
+        private readonly runtimeDeviceService: WorkflowRuntimeDeviceService,
+    ) {}
 
     async execute(input: SpeechExecutorInput): Promise<Record<string, unknown>> {
         if (!input.userId) throw HttpErrorFactory.unauthorized("语音播报节点需要登录后执行");
@@ -34,10 +38,12 @@ export class WorkflowSpeechExecutorService {
             input.runtimeContext?.runtimeTarget &&
             input.runtimeContext.runtimeTarget !== "device"
         ) {
-            throw HttpErrorFactory.badRequest("语音播报节点需要在工程设置中把运行目标设为物理设备");
+            throw HttpErrorFactory.badRequest("语音播报节点需要在工程设置中把运行目标设为 CubeCat 设备");
         }
-        const deviceId = input.runtimeContext?.deviceId;
-        if (!deviceId) throw HttpErrorFactory.badRequest("请先在工程设置中选择 CubeCat 设备");
+        const deviceId = await this.runtimeDeviceService.resolveLuaDeviceId(
+            input.userId,
+            input.runtimeContext,
+        );
 
         const text =
             asText(input.inputs.content).trim() ||

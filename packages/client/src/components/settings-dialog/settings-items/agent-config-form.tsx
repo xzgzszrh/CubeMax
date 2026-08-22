@@ -375,7 +375,7 @@ export function AgentConfigFields({
         <div className="mb-2 flex items-center justify-between gap-3">
           <div>
             <p className="flex items-center gap-1.5 font-medium">自定义角色设定 {lockBadge("character")}</p>
-            <p className="text-muted-foreground text-xs">关闭时沿用小智模板自带的人物设定。</p>
+            <p className="text-muted-foreground text-xs">关闭时沿用 CubeCat 模板自带的人物设定。</p>
           </div>
           <Switch
             checked={form.customCharacter}

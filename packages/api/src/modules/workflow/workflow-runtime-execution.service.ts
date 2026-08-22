@@ -1,4 +1,5 @@
 import type { UserPlayground } from "@buildingai/db";
+import type { ProgrammingProjectPublishedSnapshot } from "@buildingai/db/entities";
 import type {
     TaskCancelOutput,
     TaskReportOutput,
@@ -27,6 +28,7 @@ import { WorkflowVisionExecutorService } from "./workflow-vision-executor.servic
 import { WorkflowWaitExecutorService } from "./workflow-wait-executor.service";
 import { WorkflowWaitRegistry } from "./workflow-wait-registry.service";
 import { WorkflowWebhookExecutorService } from "./workflow-webhook-executor.service";
+import { WorkflowRuntimeDeviceService } from "./workflow-runtime-device.service";
 
 type WorkflowRuntimeJsModule = typeof import("@flowgram.ai/runtime-js");
 
@@ -56,6 +58,7 @@ export class WorkflowRuntimeExecutionService {
         private readonly waitRegistry: WorkflowWaitRegistry,
         private readonly workflowService: WorkflowService,
         private readonly programmingProjectService: ProgrammingProjectService,
+        private readonly runtimeDeviceService: WorkflowRuntimeDeviceService,
     ) {}
 
     private async loadConfiguredRuntime(): Promise<WorkflowRuntimeJsModule> {
@@ -68,8 +71,12 @@ export class WorkflowRuntimeExecutionService {
         runtime.registerWebhookExecutor((input) =>
             this.workflowWebhookExecutorService.execute(input),
         );
-        runtime.registerVisionExecutor((input) => this.workflowVisionExecutorService.execute(input));
-        runtime.registerSpeechExecutor((input) => this.workflowSpeechExecutorService.execute(input));
+        runtime.registerVisionExecutor((input) =>
+            this.workflowVisionExecutorService.execute(input),
+        );
+        runtime.registerSpeechExecutor((input) =>
+            this.workflowSpeechExecutorService.execute(input),
+        );
         runtime.registerDeviceControlExecutor((input) =>
             this.workflowDeviceControlExecutorService.execute(input),
         );
@@ -112,15 +119,11 @@ export class WorkflowRuntimeExecutionService {
         const publishedWorkflow = projectPublished
             ? {
                   schema: projectPublished.snapshot.workflow.schema,
-                  context: {
-                      userId: user.id,
-                      projectId: projectPublished.project.id,
-                      runtimeTarget: projectPublished.snapshot.runtime.target,
-                      simulatorSessionId: projectPublished.snapshot.runtime.simulatorSessionId,
-                      deviceId: projectPublished.snapshot.runtime.deviceId,
-                      xiaozhiAgentId: projectPublished.snapshot.runtime.xiaozhiAgentId,
-                      publishedSnapshot: projectPublished.snapshot,
-                  },
+                  context: await this.resolvePublishedRuntimeContext(
+                      user.id,
+                      projectPublished.project.id,
+                      projectPublished.snapshot,
+                  ),
               }
             : {
                   ...(await this.workflowService.findPublished(dto.workflowId, user.id)),
@@ -146,15 +149,12 @@ export class WorkflowRuntimeExecutionService {
             projectId,
             user.id,
         );
-        return this.runSchema(runtime, snapshot.workflow.schema, inputs, {
-            userId: user.id,
-            projectId: project.id,
-            runtimeTarget: snapshot.runtime.target,
-            simulatorSessionId: snapshot.runtime.simulatorSessionId,
-            deviceId: snapshot.runtime.deviceId,
-            xiaozhiAgentId: snapshot.runtime.xiaozhiAgentId,
-            publishedSnapshot: snapshot,
-        });
+        return this.runSchema(
+            runtime,
+            snapshot.workflow.schema,
+            inputs,
+            await this.resolvePublishedRuntimeContext(user.id, project.id, snapshot),
+        );
     }
 
     async report(query: WorkflowRuntimeTaskIdDto): Promise<TaskReportOutput> {
@@ -202,6 +202,29 @@ export class WorkflowRuntimeExecutionService {
             throw new Error(validation.errors?.join("；") || "工作流输入校验失败");
         }
         return runtime.TaskRunAPI({ ...taskDto, context });
+    }
+
+    private async resolvePublishedRuntimeContext(
+        userId: string,
+        projectId: string,
+        snapshot: ProgrammingProjectPublishedSnapshot,
+    ) {
+        const context = {
+            userId,
+            projectId,
+            runtimeTarget: snapshot.runtime.target,
+            simulatorSessionId: snapshot.runtime.simulatorSessionId,
+            deviceId: snapshot.runtime.deviceId,
+            xiaozhiAgentId: snapshot.runtime.xiaozhiAgentId,
+            publishedSnapshot: snapshot,
+        };
+        if (snapshot.runtime.target === "device") {
+            context.deviceId = await this.runtimeDeviceService.resolveLuaDeviceId(userId, {
+                ...context,
+                deviceId: undefined,
+            });
+        }
+        return context;
     }
 
     private async resolveDraftContext(dto: WorkflowRuntimeTaskDto, userId: string) {

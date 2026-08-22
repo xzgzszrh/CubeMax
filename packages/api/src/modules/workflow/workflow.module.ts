@@ -40,6 +40,7 @@ import { WorkflowDeviceControlExecutorService } from "./workflow-device-control-
 import { WorkflowSpeechExecutorService } from "./workflow-speech-executor.service";
 import { WorkflowVisionExecutorService } from "./workflow-vision-executor.service";
 import { WorkflowWebhookExecutorService } from "./workflow-webhook-executor.service";
+import { WorkflowRuntimeDeviceService } from "./workflow-runtime-device.service";
 
 @Module({
     imports: [
@@ -85,6 +86,7 @@ import { WorkflowWebhookExecutorService } from "./workflow-webhook-executor.serv
         WorkflowSpeechExecutorService,
         WorkflowDeviceControlExecutorService,
         WorkflowRuntimeExecutionService,
+        WorkflowRuntimeDeviceService,
         SecretService,
     ],
 })

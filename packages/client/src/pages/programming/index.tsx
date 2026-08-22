@@ -49,7 +49,7 @@ import { ProjectNameDialog } from "./project-name-dialog";
 const PAGE_SIZE = 50;
 
 const RUNTIME_LABELS = {
-  local: "本地运行",
+  local: "服务端试跑",
   simulator: "硬件仿真",
   device: "CubeCat 设备",
 } as const;

@@ -212,7 +212,7 @@ export function XiaozhiAgentDialog({
     if (!agent) return;
     if (
       !window.confirm(
-        `确定删除智能体「${agent.name}」吗？会同时在小智控制台删除该智能体，此操作无法撤销。`,
+        `确定删除智能体「${agent.name}」吗？会同时在 CubeCat 控制台删除该智能体，此操作无法撤销。`,
       )
     ) {
       return;

@@ -7,6 +7,7 @@ import { LuaDeviceGatewayService } from "../lua-device/lua-device-gateway.servic
 import { LuaModuleService } from "../lua/lua-module.service";
 import { LuaRuntimeService } from "../lua/lua-runtime.service";
 import { SimulatorService } from "../simulator/simulator.service";
+import { WorkflowRuntimeDeviceService } from "./workflow-runtime-device.service";
 
 type RuntimeContext = NonNullable<LuaExecutorInput["runtimeContext"]>;
 
@@ -26,6 +27,7 @@ export class WorkflowLuaExecutorService {
         private readonly luaRuntimeService: LuaRuntimeService,
         private readonly simulatorService: SimulatorService,
         private readonly luaDeviceGatewayService: LuaDeviceGatewayService,
+        private readonly runtimeDeviceService: WorkflowRuntimeDeviceService,
     ) {}
 
     async execute(input: LuaExecutorInput): Promise<Record<string, unknown>> {
@@ -56,8 +58,9 @@ export class WorkflowLuaExecutorService {
             source = luaModule.draftCode;
             moduleName = luaModule.name;
         } else {
-            return (await this.luaModuleService.executePublished(moduleId, input.userId, input.inputs))
-                .output;
+            return (
+                await this.luaModuleService.executePublished(moduleId, input.userId, input.inputs)
+            ).output;
         }
 
         return this.executeForTarget(
@@ -96,34 +99,32 @@ export class WorkflowLuaExecutorService {
             } else {
                 this.simulatorService.getForUser(context.simulatorSessionId, userId);
             }
-            return (await this.luaRuntimeService.execute(source, inputs, context.simulatorSessionId)).output;
+            return (
+                await this.luaRuntimeService.execute(source, inputs, context.simulatorSessionId)
+            ).output;
         }
 
-        if (!context?.deviceId) {
-            throw HttpErrorFactory.badRequest("工程尚未选择 CubeCat 物理设备");
-        }
+        const deviceId = await this.runtimeDeviceService.resolveLuaDeviceId(userId, context);
         const usesUi = /\brequire\s*\(\s*["']ui["']\s*\)/.test(source);
         const usesCamera = /\brequire\s*\(\s*["']camera["']\s*\)/.test(source);
         const requiredCapabilities = ["lua"];
         if (usesCamera) requiredCapabilities.push("camera");
-        const run = await this.luaDeviceGatewayService.createRun(userId, context.deviceId, {
+        const run = await this.luaDeviceGatewayService.createRun(userId, deviceId, {
             name: moduleName.slice(0, 100),
             moduleId,
-            projectId: context.projectId,
+            projectId: context?.projectId,
             source,
             params: inputs,
             requiredCapabilities,
             timeoutMs: usesUi || usesCamera ? 60_000 : 15_000,
         });
-        const completed = await this.luaDeviceGatewayService.waitForRun(
-            userId,
-            context.deviceId,
-            run.id,
-        );
+        const completed = await this.luaDeviceGatewayService.waitForRun(userId, deviceId, run.id);
         if (completed.status !== "succeeded") {
             throw HttpErrorFactory.badRequest(completed.error?.message ?? "CubeCat 执行失败");
         }
-        return completed.result && typeof completed.result === "object" && !Array.isArray(completed.result)
+        return completed.result &&
+            typeof completed.result === "object" &&
+            !Array.isArray(completed.result)
             ? (completed.result as Record<string, unknown>)
             : { result: completed.result };
     }

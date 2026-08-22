@@ -8,6 +8,7 @@ import {
   useAiProvidersQuery,
   useCreateLuaDeviceRunMutation,
   useCreateLuaModuleMutation,
+  useCreateProjectLuaRunMutation,
   useDeleteLuaModuleMutation,
   useLuaDeviceRunLogsQuery,
   useLuaDeviceRunQuery,
@@ -468,12 +469,18 @@ export default function LuaModulesPage({ projectId: projectIdProp }: { projectId
 
     deleteMutation.mutate(selectedId);
   };
+  const handleDeviceRunCreated = (run: { id: string; deviceId: string }) => {
+    setPhysicalDeviceId(run.deviceId);
+    setPhysicalRunId(run.id);
+    setDetailsOpen(true);
+    toast.success("任务已提交到 CubeCat");
+  };
   const createDeviceRunMutation = useCreateLuaDeviceRunMutation({
-    onSuccess: (run) => {
-      setPhysicalRunId(run.id);
-      setDetailsOpen(true);
-      toast.success("任务已提交到物理设备");
-    },
+    onSuccess: handleDeviceRunCreated,
+    onError: (error) => toast.error(error.message),
+  });
+  const createProjectLuaRunMutation = useCreateProjectLuaRunMutation({
+    onSuccess: handleDeviceRunCreated,
     onError: (error) => toast.error(error.message),
   });
   const stopDeviceRunMutation = useStopLuaDeviceRunMutation({
@@ -544,7 +551,7 @@ export default function LuaModulesPage({ projectId: projectIdProp }: { projectId
 
   const runOnPhysicalDevice = () => {
     if (physicalDeviceId === "none") {
-      toast.error("请选择物理设备");
+      toast.error("请选择 CubeCat 设备");
       return;
     }
     try {
@@ -582,7 +589,25 @@ export default function LuaModulesPage({ projectId: projectIdProp }: { projectId
       void run(project.simulatorSessionId);
       return;
     }
-    runOnPhysicalDevice();
+    try {
+      const usesUi = /\brequire\s*\(\s*["']ui["']\s*\)/.test(editor.draftCode);
+      const usesCamera = /\brequire\s*\(\s*["']camera["']\s*\)/.test(editor.draftCode);
+      const requiredCapabilities = ["lua"];
+      if (usesCamera) requiredCapabilities.push("camera");
+      createProjectLuaRunMutation.mutate({
+        projectId: project.id,
+        dto: {
+          name: editor.name.trim() || "未命名 Lua 模块",
+          moduleId: selectedId,
+          source: editor.draftCode,
+          params: parseObject(editor.testParams, "测试参数"),
+          requiredCapabilities,
+          timeoutMs: usesUi || usesCamera ? 60_000 : 15_000,
+        },
+      });
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "测试参数格式错误");
+    }
   };
 
   const publish = async () => {
@@ -722,7 +747,7 @@ export default function LuaModulesPage({ projectId: projectIdProp }: { projectId
           disabled={
             running ||
             !selectedId ||
-            (project?.runtimeTarget === "device" && createDeviceRunMutation.isPending)
+            (project?.runtimeTarget === "device" && createProjectLuaRunMutation.isPending)
           }
         >
           <Play /> {running ? "运行中" : "运行"}
@@ -737,10 +762,10 @@ export default function LuaModulesPage({ projectId: projectIdProp }: { projectId
               }}
             >
               <SelectTrigger className="w-44">
-                <SelectValue placeholder="选择物理设备" />
+                <SelectValue placeholder="选择 CubeCat 设备" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="none">选择物理设备</SelectItem>
+                <SelectItem value="none">选择 CubeCat 设备</SelectItem>
                 {(physicalDevicesQuery.data ?? []).map((device) => (
                   <SelectItem key={device.deviceId} value={device.deviceId}>
                     {device.displayName} · {device.online ? "在线" : "离线"}
@@ -1109,7 +1134,7 @@ export default function LuaModulesPage({ projectId: projectIdProp }: { projectId
                 </div>
                 <div className="space-y-3 border-t pt-4">
                   <div className="flex items-center justify-between gap-2">
-                    <Label>物理设备</Label>
+                    <Label>CubeCat 设备</Label>
                     {physicalDeviceId !== "none" && (
                       <Badge
                         variant={

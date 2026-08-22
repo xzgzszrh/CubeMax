@@ -52,6 +52,7 @@ export function mapUpstreamDevice(device: UpstreamDevicePayload, agentId: string
         id: device.id,
         agentId,
         macAddress: device.mac_address || "",
+        clientId: device.client_id || "",
         alias: device.alias || device.device_name || "",
         boardName: device.board_name || "",
         appVersion: device.app_version || "",

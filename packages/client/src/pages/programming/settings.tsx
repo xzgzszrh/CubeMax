@@ -1,6 +1,5 @@
 import {
   type ProgrammingRuntimeTarget,
-  useLuaDevicesQuery,
   useProjectSimulatorSessionsQuery,
   useUpdateProgrammingProjectMutation,
   useXiaozhiAgentsQuery,
@@ -23,12 +22,11 @@ import { toast } from "sonner";
 
 import { useProgrammingProject } from "./context";
 
-const RUNTIME_ITEMS: Array<{
+const APPLICATION_RUNTIME_ITEMS: Array<{
   value: ProgrammingRuntimeTarget;
   label: string;
   icon: typeof MonitorPlay;
 }> = [
-  { value: "local", label: "本地运行", icon: SettingsIcon },
   { value: "simulator", label: "硬件仿真", icon: MonitorPlay },
   { value: "device", label: "CubeCat 设备", icon: Cpu },
 ];
@@ -36,12 +34,12 @@ const RUNTIME_ITEMS: Array<{
 export default function ProjectSettingsPage() {
   const project = useProgrammingProject();
   const navigate = useNavigate();
+  const isApplication = project.projectType === "application";
   const sessionsQuery = useProjectSimulatorSessionsQuery(project.id, {
-    enabled: project.projectType === "application",
+    enabled: isApplication,
   });
-  const devicesQuery = useLuaDevicesQuery();
   const agentsQuery = useXiaozhiAgentsQuery({
-    enabled: project.projectType === "application",
+    enabled: isApplication,
   });
 
   const updateMutation = useUpdateProgrammingProjectMutation({
@@ -49,21 +47,23 @@ export default function ProjectSettingsPage() {
     onError: (error) => toast.error(error.message || "设置保存失败"),
   });
 
-  const runtimeItems = RUNTIME_ITEMS.filter(
-    (item) =>
-      project.projectType === "application" ||
-      item.value !== "simulator" ||
-      project.runtimeTarget === "simulator",
-  );
+  const runtimeItems = [
+    ...(project.runtimeTarget === "local"
+      ? [{ value: "local" as const, label: "仅服务端试跑", icon: SettingsIcon }]
+      : []),
+    ...APPLICATION_RUNTIME_ITEMS,
+  ];
+
+  const pickCubeCatId = () =>
+    project.xiaozhiAgentId ??
+    agentsQuery.data?.find((agent) => agent.onlineDeviceCount > 0)?.id ??
+    agentsQuery.data?.[0]?.id ??
+    null;
 
   const handleRuntimeChange = (target: ProgrammingRuntimeTarget) => {
     if (target === project.runtimeTarget) return;
 
     if (target === "simulator") {
-      if (project.projectType !== "application") {
-        toast.error("对话流工程不支持硬件仿真");
-        return;
-      }
       const sessionId = project.simulatorSessionId ?? sessionsQuery.data?.find(Boolean)?.id ?? null;
       if (!sessionId) {
         toast.error("请先创建一个工程仿真会话");
@@ -78,12 +78,15 @@ export default function ProjectSettingsPage() {
     }
 
     if (target === "device") {
-      const deviceId = project.deviceId ?? devicesQuery.data?.find((d) => d.online)?.deviceId;
-      if (!deviceId) {
-        toast.error("没有可用的 CubeCat 设备");
+      const xiaozhiAgentId = pickCubeCatId();
+      if (!xiaozhiAgentId) {
+        toast.error("当前工作空间没有可用的 CubeCat 设备");
         return;
       }
-      updateMutation.mutate({ id: project.id, dto: { runtimeTarget: "device", deviceId } });
+      updateMutation.mutate({
+        id: project.id,
+        dto: { runtimeTarget: "device", xiaozhiAgentId, deviceId: null },
+      });
       return;
     }
 
@@ -99,35 +102,44 @@ export default function ProjectSettingsPage() {
 
       <Separator />
 
-      {/* 运行目标 */}
-      <section className="space-y-4">
-        <div className="space-y-1">
-          <h2 className="text-sm font-medium">运行目标</h2>
-          <p className="text-muted-foreground text-xs">
-            选择工程发布后的运行环境。本地运行仅用于开发调试。
-          </p>
-        </div>
+      {isApplication ? (
+        <section className="space-y-4">
+          <div className="space-y-1">
+            <h2 className="text-sm font-medium">运行目标</h2>
+            <p className="text-muted-foreground text-xs">
+              Lua 模块、语音、视觉和设备控制会发到所选运行目标。CubeCat
+              设备是真实硬件；硬件仿真只用于没有真机时试跑。
+            </p>
+          </div>
 
-        <ToggleGroup
-          type="single"
-          value={project.runtimeTarget}
-          onValueChange={(value) => value && handleRuntimeChange(value as ProgrammingRuntimeTarget)}
-          variant="outline"
-          size="sm"
-          className="w-full justify-start"
-          disabled={updateMutation.isPending}
-        >
-          {runtimeItems.map(({ value, label, icon: Icon }) => (
-            <ToggleGroupItem key={value} value={value} aria-label={label} className="flex-1">
-              <Icon className="mr-1.5 size-4" />
-              {label}
-            </ToggleGroupItem>
-          ))}
-        </ToggleGroup>
-      </section>
+          <ToggleGroup
+            type="single"
+            value={project.runtimeTarget}
+            onValueChange={(value) =>
+              value && handleRuntimeChange(value as ProgrammingRuntimeTarget)
+            }
+            variant="outline"
+            size="sm"
+            className="w-full justify-start"
+            disabled={updateMutation.isPending}
+          >
+            {runtimeItems.map(({ value, label, icon: Icon }) => (
+              <ToggleGroupItem key={value} value={value} aria-label={label} className="flex-1">
+                <Icon className="mr-1.5 size-4" />
+                {label}
+              </ToggleGroupItem>
+            ))}
+          </ToggleGroup>
+        </section>
+      ) : (
+        <section className="space-y-1">
+          <h2 className="text-sm font-medium">运行目标</h2>
+          <p className="text-muted-foreground text-sm">对话流在服务端运行，不需要绑定 CubeCat。</p>
+        </section>
+      )}
 
       {/* 仿真会话选择 */}
-      {project.projectType === "application" && project.runtimeTarget === "simulator" && (
+      {isApplication && project.runtimeTarget === "simulator" && (
         <section className="space-y-4">
           <Separator />
           <div className="space-y-1">
@@ -176,66 +188,14 @@ export default function ProjectSettingsPage() {
         </section>
       )}
 
-      {/* 设备选择 */}
-      {project.runtimeTarget === "device" && (
+      {isApplication && (
         <section className="space-y-4">
           <Separator />
           <div className="space-y-1">
-            <h2 className="text-sm font-medium">目标设备</h2>
+            <h2 className="text-sm font-medium">CubeCat 设备</h2>
             <p className="text-muted-foreground text-xs">
-              选择运行工程的目标 CubeCat 设备。设备需要在线才能接收任务。
-            </p>
-          </div>
-
-          {devicesQuery.isLoading ? (
-            <Skeleton className="h-10 w-full" />
-          ) : devicesQuery.data && devicesQuery.data.length > 0 ? (
-            <Select
-              value={project.deviceId ?? ""}
-              onValueChange={(deviceId) =>
-                updateMutation.mutate({
-                  id: project.id,
-                  dto: { runtimeTarget: "device", deviceId },
-                })
-              }
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="选择目标设备" />
-              </SelectTrigger>
-              <SelectContent>
-                {devicesQuery.data.map((device) => (
-                  <SelectItem key={device.deviceId} value={device.deviceId}>
-                    <span className="flex items-center gap-2">
-                      <Badge
-                        variant="outline"
-                        className={
-                          device.online
-                            ? "border-emerald-200 bg-emerald-50 text-emerald-700"
-                            : "text-muted-foreground"
-                        }
-                      >
-                        {device.online ? "在线" : "离线"}
-                      </Badge>
-                      {device.displayName}
-                      <span className="text-muted-foreground text-xs">· {device.deviceType}</span>
-                    </span>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          ) : (
-            <p className="text-muted-foreground text-sm">没有可用的 CubeCat 设备</p>
-          )}
-        </section>
-      )}
-
-      {project.projectType === "application" && (
-        <section className="space-y-4">
-          <Separator />
-          <div className="space-y-1">
-            <h2 className="text-sm font-medium">CubeCat 智能体</h2>
-            <p className="text-muted-foreground text-xs">
-              智能体节点会改这台方糖猫的角色提示词。请选择当前工程要控制的智能体。
+              选择这台应用要控制的 CubeCat。运行目标为 CubeCat 设备时，Lua
+              模块会发到这台真实设备上执行。
             </p>
           </div>
           {agentsQuery.isLoading ? (
@@ -246,12 +206,17 @@ export default function ProjectSettingsPage() {
               onValueChange={(xiaozhiAgentId) =>
                 updateMutation.mutate({
                   id: project.id,
-                  dto: { xiaozhiAgentId: xiaozhiAgentId || null },
+                  dto: {
+                    xiaozhiAgentId: xiaozhiAgentId || null,
+                    ...(xiaozhiAgentId && project.runtimeTarget !== "simulator"
+                      ? { runtimeTarget: "device" as const, deviceId: null }
+                      : {}),
+                  },
                 })
               }
             >
               <SelectTrigger>
-                <SelectValue placeholder="选择 CubeCat 智能体" />
+                <SelectValue placeholder="选择 CubeCat 设备" />
               </SelectTrigger>
               <SelectContent>
                 {agentsQuery.data.map((agent) => (
@@ -265,7 +230,7 @@ export default function ProjectSettingsPage() {
               </SelectContent>
             </Select>
           ) : (
-            <p className="text-muted-foreground text-sm">当前工作空间没有可用的 CubeCat 智能体</p>
+            <p className="text-muted-foreground text-sm">当前工作空间没有可用的 CubeCat 设备</p>
           )}
         </section>
       )}

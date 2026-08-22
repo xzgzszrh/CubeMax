@@ -49,7 +49,7 @@ export class WorkflowAgentExecutorService {
 
         const agentId = this.resolveAgentId(input);
         if (!agentId) {
-            throw HttpErrorFactory.badRequest("请先在工程设置中绑定 CubeCat 智能体");
+            throw HttpErrorFactory.badRequest("请先在工程设置中选择 CubeCat 设备");
         }
 
         const prompt = asText(input.inputs.prompt) || asText(input.node.data?.prompt);

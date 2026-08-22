@@ -565,6 +565,19 @@ export class XiaozhiService {
         return { access, agent, account };
     }
 
+    async listDevicesForUser(userId: string, agentId: string) {
+        const agent = await this.agentRepository.findOne({ where: { id: agentId } });
+        if (!agent) throw HttpErrorFactory.notFound("CubeCat 不存在");
+        return this.listDevices(userId, agent.organizationId, agentId);
+    }
+
+    async requireAccessibleAgent(userId: string, agentId: string) {
+        const agent = await this.agentRepository.findOne({ where: { id: agentId } });
+        if (!agent) throw HttpErrorFactory.notFound("CubeCat 不存在");
+        await this.resolveAgent(userId, agent.organizationId, agentId);
+        return agent;
+    }
+
     async listDevices(userId: string, organizationId: string | null | undefined, agentId: string) {
         const { agent, account } = await this.resolveAgent(userId, organizationId, agentId);
         const result = await this.request<UpstreamDevicePayload[]>(

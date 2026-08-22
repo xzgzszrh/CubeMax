@@ -617,7 +617,7 @@ export function XiaozhiMcpSetting({ canManage }: { canManage: boolean }) {
             {connectionsLoading ? "正在加载 MCP 连接" : "暂无可配置智能体"}
           </p>
           <p className="text-muted-foreground max-w-sm text-xs">
-            在“设备管理”中绑定组织的小智账号并同步智能体后，可以在这里批量配置 MCP 接入点。
+            在“设备管理”中绑定组织的 CubeCat 账号并同步智能体后，可以在这里批量配置 MCP 接入点。
           </p>
         </div>
       )}

@@ -12,6 +12,7 @@ export type LuaExecutorInput = {
         runtimeTarget?: "local" | "simulator" | "device";
         simulatorSessionId?: string;
         deviceId?: string;
+        xiaozhiAgentId?: string;
         publishedSnapshot?: unknown;
     };
     node: { id: string; type: string; data?: Record<string, unknown> };
@@ -66,6 +67,9 @@ function getWorkflowRuntimeContext(context: ExecutionContext): LuaExecutorInput[
             ? { simulatorSessionId: metadata.simulatorSessionId }
             : {}),
         ...(typeof metadata.deviceId === "string" ? { deviceId: metadata.deviceId } : {}),
+        ...(typeof metadata.xiaozhiAgentId === "string"
+            ? { xiaozhiAgentId: metadata.xiaozhiAgentId }
+            : {}),
         ...(metadata.publishedSnapshot ? { publishedSnapshot: metadata.publishedSnapshot } : {}),
     };
 }

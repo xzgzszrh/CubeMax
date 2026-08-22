@@ -15,8 +15,11 @@ import { LuaDeviceGatewayService } from "@modules/lua-device/lua-device-gateway.
 import { Injectable } from "@nestjs/common";
 
 import type { CreateLuaModuleDto, QueryLuaModuleDto } from "../lua/lua-module.dto";
+import { CreateLuaDeviceRunDto } from "../lua-device/lua-device.dto";
 import { LuaModuleService } from "../lua/lua-module.service";
+import { XiaozhiService } from "../organization/services/xiaozhi.service";
 import { SimulatorService } from "../simulator/simulator.service";
+import { WorkflowRuntimeDeviceService } from "./workflow-runtime-device.service";
 import type { SimulatorBoardType } from "../simulator/simulator.types";
 import {
     CreateProgrammingProjectDto,
@@ -59,9 +62,7 @@ function uniqueTools(tools: ProgrammingProjectToolSnapshot[]): ProgrammingProjec
     });
 }
 
-function isPopulatedSchema(
-    schema?: Record<string, unknown>,
-): schema is Record<string, unknown> {
+function isPopulatedSchema(schema?: Record<string, unknown>): schema is Record<string, unknown> {
     return Boolean(schema && Array.isArray(schema.nodes) && schema.nodes.length > 0);
 }
 
@@ -105,6 +106,8 @@ export class ProgrammingProjectService {
         private readonly luaModuleService: LuaModuleService,
         private readonly simulatorService: SimulatorService,
         private readonly luaDeviceGatewayService: LuaDeviceGatewayService,
+        private readonly xiaozhiService: XiaozhiService,
+        private readonly runtimeDeviceService: WorkflowRuntimeDeviceService,
     ) {}
 
     async findAll(
@@ -194,6 +197,8 @@ export class ProgrammingProjectService {
                 ? dto.simulatorSessionId
                 : project.simulatorSessionId;
         let deviceId = dto.deviceId !== undefined ? dto.deviceId : project.deviceId;
+        let xiaozhiAgentId =
+            dto.xiaozhiAgentId !== undefined ? dto.xiaozhiAgentId || null : project.xiaozhiAgentId;
 
         if (target === "local") {
             simulatorSessionId = null;
@@ -205,18 +210,24 @@ export class ProgrammingProjectService {
             }
             this.simulatorService.getForProjectUser(simulatorSessionId, userId, project.id);
             deviceId = null;
-        } else {
-            if (!deviceId) throw HttpErrorFactory.badRequest("请选择 CubeCat 物理设备");
-            await this.assertDeviceExists(deviceId);
+        } else if (xiaozhiAgentId) {
+            await this.xiaozhiService.requireAccessibleAgent(userId, xiaozhiAgentId);
+            deviceId = null;
             simulatorSessionId = null;
+        } else if (deviceId) {
+            const devices = await this.luaDeviceGatewayService.listAllDevices();
+            if (!devices.some((device) => device.deviceId === deviceId.toLowerCase())) {
+                throw HttpErrorFactory.notFound("CubeCat 设备不存在");
+            }
+            simulatorSessionId = null;
+        } else {
+            throw HttpErrorFactory.badRequest("请选择 CubeCat 设备");
         }
 
         project.runtimeTarget = target;
         project.simulatorSessionId = simulatorSessionId;
         project.deviceId = deviceId;
-        if (dto.xiaozhiAgentId !== undefined) {
-            project.xiaozhiAgentId = dto.xiaozhiAgentId || null;
-        }
+        project.xiaozhiAgentId = xiaozhiAgentId;
         const saved = await this.projectRepository.save(project);
 
         if (dto.name !== undefined || dto.description !== undefined) {
@@ -423,13 +434,38 @@ export class ProgrammingProjectService {
     async getRuntimeSelection(projectId: string, userId: string) {
         const project = await this.findOne(projectId, userId);
         await this.assertRuntimeTarget(project, userId);
+        let deviceId = project.deviceId ?? undefined;
+        if (project.runtimeTarget === "device") {
+            deviceId = await this.runtimeDeviceService.resolveLuaDeviceId(userId, {
+                runtimeTarget: "device",
+                xiaozhiAgentId: project.xiaozhiAgentId ?? undefined,
+                deviceId: project.xiaozhiAgentId ? undefined : deviceId,
+            });
+        }
         return {
             projectId: project.id,
             runtimeTarget: project.runtimeTarget,
             simulatorSessionId: project.simulatorSessionId ?? undefined,
-            deviceId: project.deviceId ?? undefined,
+            deviceId,
             xiaozhiAgentId: project.xiaozhiAgentId ?? undefined,
         };
+    }
+
+    async createLuaRun(userId: string, projectId: string, dto: CreateLuaDeviceRunDto) {
+        const project = await this.findOne(projectId, userId);
+        this.assertApplicationOnly(project, "Lua 模块");
+        if (project.runtimeTarget !== "device") {
+            throw HttpErrorFactory.badRequest("请先把运行目标设为 CubeCat 设备");
+        }
+        const deviceId = await this.runtimeDeviceService.resolveLuaDeviceId(userId, {
+            runtimeTarget: "device",
+            xiaozhiAgentId: project.xiaozhiAgentId ?? undefined,
+            deviceId: project.xiaozhiAgentId ? undefined : (project.deviceId ?? undefined),
+        });
+        return this.luaDeviceGatewayService.createRun(userId, deviceId, {
+            ...dto,
+            projectId: project.id,
+        });
     }
 
     private async toDetail(project: ProgrammingProject): Promise<ProgrammingProjectDetail> {
@@ -512,14 +548,14 @@ export class ProgrammingProjectService {
             this.simulatorService.getForProjectUser(project.simulatorSessionId, userId, project.id);
             return;
         }
-        if (!project.deviceId) throw HttpErrorFactory.badRequest("工程尚未选择 CubeCat 设备");
-        await this.assertDeviceExists(project.deviceId);
-    }
-
-    private async assertDeviceExists(deviceId: string): Promise<void> {
+        if (project.xiaozhiAgentId) {
+            await this.xiaozhiService.requireAccessibleAgent(userId, project.xiaozhiAgentId);
+            return;
+        }
+        if (!project.deviceId) throw HttpErrorFactory.badRequest("请选择 CubeCat 设备");
         const devices = await this.luaDeviceGatewayService.listAllDevices();
-        if (!devices.some((device) => device.deviceId === deviceId.toLowerCase())) {
-            throw HttpErrorFactory.notFound("CubeCat 物理设备不存在");
+        if (!devices.some((device) => device.deviceId === project.deviceId!.toLowerCase())) {
+            throw HttpErrorFactory.notFound("CubeCat 设备不存在");
         }
     }
 }

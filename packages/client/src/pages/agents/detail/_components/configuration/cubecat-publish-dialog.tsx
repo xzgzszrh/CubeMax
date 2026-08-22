@@ -288,7 +288,7 @@ export function CubeCatPublishDialog({
             <div className="rounded-lg border border-dashed p-4 text-sm">
               <p className="font-medium">还没有可发布的方糖猫设备组</p>
               <p className="text-muted-foreground mt-1">
-                请让老师或组织管理员在“讲台 &gt; 设备管理”中绑定小智账号并分配设备。
+                请让老师或组织管理员在“讲台 &gt; 设备管理”中绑定 CubeCat 账号并分配设备。
               </p>
             </div>
           ) : null}

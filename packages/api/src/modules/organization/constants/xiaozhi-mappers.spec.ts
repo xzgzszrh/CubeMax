@@ -28,6 +28,14 @@ describe("mapUpstreamDevice", () => {
         expect(device.agentId).toBe(AGENT_ID);
         expect(device.id).toBe(7);
     });
+
+    it("lifts the claw4 client id used by the Lua script channel", () => {
+        expect(
+            mapUpstreamDevice({ id: 1, client_id: "3f2c1b0a-1111-4c2d-9e8f-abcdef123456" }, AGENT_ID)
+                .clientId,
+        ).toBe("3f2c1b0a-1111-4c2d-9e8f-abcdef123456");
+        expect(mapUpstreamDevice({ id: 1 }, AGENT_ID).clientId).toBe("");
+    });
 });
 
 describe("summarizeDevices", () => {

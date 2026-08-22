@@ -64,7 +64,7 @@ const TeachingDevicePage = () => {
       <Tabs defaultValue="agents">
         <TabsList variant="line">
           <TabsTrigger value="agents">智能体（{data?.agents.length ?? 0}）</TabsTrigger>
-          <TabsTrigger value="accounts">小智账号（{data?.accounts.length ?? 0}）</TabsTrigger>
+          <TabsTrigger value="accounts">CubeCat 账号（{data?.accounts.length ?? 0}）</TabsTrigger>
         </TabsList>
 
         <TabsContent value="agents" className="pt-2">

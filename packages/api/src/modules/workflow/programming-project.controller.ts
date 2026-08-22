@@ -4,6 +4,7 @@ import { WebController } from "@common/decorators/controller.decorator";
 import { Body, Delete, Get, Param, Patch, Post, Put, Query } from "@nestjs/common";
 
 import { CreateLuaModuleDto, QueryLuaModuleDto } from "../lua/lua-module.dto";
+import { CreateLuaDeviceRunDto } from "../lua-device/lua-device.dto";
 import { CreateSimulatorSessionDto } from "../simulator/simulator.dto";
 import {
     CreateProgrammingProjectDto,
@@ -58,6 +59,15 @@ export class ProgrammingProjectController {
         @Body() dto: ImportProgrammingProjectLuaDto,
     ) {
         return this.programmingProjectService.importLuaModule(user.id, id, dto.moduleId);
+    }
+
+    @Post(":id/lua-runs")
+    createLuaRun(
+        @Playground() user: UserPlayground,
+        @Param("id") id: string,
+        @Body() dto: CreateLuaDeviceRunDto,
+    ) {
+        return this.programmingProjectService.createLuaRun(user.id, id, dto);
     }
 
     @Get(":id/simulator-sessions")

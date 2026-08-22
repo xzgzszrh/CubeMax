@@ -11,7 +11,7 @@ import { PodiumPage } from "../_components/podium-page";
 
 export const meta = definePageMeta({
   title: "设备管理",
-  description: "绑定组织的小智账号、分配方糖猫设备与接入 MCP",
+  description: "绑定组织的 CubeCat 账号、分配设备与接入 MCP",
   icon: "bot",
 });
 
@@ -24,7 +24,7 @@ const PodiumDevicesPage = () => {
   return (
     <PodiumPage
       title="设备管理"
-      description="由老师或组织管理员绑定小智账号、把方糖猫分配给成员，并接入 MCP 工具。"
+      description="由老师或组织管理员绑定 CubeCat 账号、把设备分配给成员，并接入 MCP 工具。"
     >
       <Tabs defaultValue="devices">
         <TabsList variant="line">

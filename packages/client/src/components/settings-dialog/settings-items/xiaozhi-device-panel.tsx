@@ -121,7 +121,7 @@ export function XiaozhiDevicePanel({
 
   const bindXiaozhi = useBindXiaozhiAccountMutation({
     onSuccess: () => {
-      toast.success("小智账号已绑定并完成同步");
+      toast.success("CubeCat 账号已绑定并完成同步");
       setXiaozhiOpen(false);
       setCaptcha(null);
       setXiaozhiForm({ label: "", username: "", password: "", captchaCode: "" });
@@ -135,7 +135,7 @@ export function XiaozhiDevicePanel({
   });
   const reconnectXiaozhi = useReconnectXiaozhiAccountMutation({
     onSuccess: () => {
-      toast.success("小智账号已重新连接");
+      toast.success("CubeCat 账号已重新连接");
       setReconnectTarget(null);
       setReconnectForm({ username: "", password: "", captchaCode: "" });
       setCaptcha(null);
@@ -148,7 +148,7 @@ export function XiaozhiDevicePanel({
     },
   });
   const removeXiaozhiAccount = useRemoveXiaozhiAccountMutation({
-    onSuccess: () => toast.success("已移除小智账号"),
+    onSuccess: () => toast.success("已移除CubeCat 账号"),
   });
 
   async function refreshCaptcha() {
@@ -174,7 +174,7 @@ export function XiaozhiDevicePanel({
   function removeAccount(account: XiaozhiAccount) {
     if (
       !window.confirm(
-        `确定移除小智账号「${account.label}」吗？只解除本系统的绑定，小智控制台里的智能体和设备不受影响。`,
+        `确定移除CubeCat 账号「${account.label}」吗？只解除本系统的绑定，CubeCat 控制台里的智能体和设备不受影响。`,
       )
     ) {
       return;
@@ -186,14 +186,14 @@ export function XiaozhiDevicePanel({
     <div>
       <div className="mb-3 flex items-center justify-between gap-3">
         <div>
-          <p className="font-medium">方糖猫智能体</p>
+          <p className="font-medium">CubeCat 设备</p>
           <p className="text-muted-foreground text-xs">
-            组织绑定的小智账号会同步智能体；每个智能体下可以包含多台设备并分配给一名成员。
+            组织绑定的CubeCat 账号会同步智能体；每个智能体下可以包含多台设备并分配给一名成员。
           </p>
         </div>
         {canManage && (
           <Button onClick={openXiaozhiDialog}>
-            <Link2 /> 绑定小智账号
+            <Link2 /> 绑定CubeCat 账号
           </Button>
         )}
       </div>
@@ -350,12 +350,12 @@ export function XiaozhiDevicePanel({
       ) : (
         <EmptyState
           icon={Bot}
-          title="暂无方糖猫"
+          title="暂无 CubeCat"
           detail={
             canManage
-              ? "绑定小智控制台账号后，系统会按智能体同步设备。"
+              ? "绑定CubeCat 控制台账号后，系统会按智能体同步设备。"
               : organizationId
-                ? "当前组织身份没有管理方糖猫资产的权限。"
+                ? "当前组织身份没有管理 CubeCat 设备的权限。"
                 : "请先切换到需要管理设备的组织工作空间。"
           }
         />
@@ -379,7 +379,7 @@ export function XiaozhiDevicePanel({
         <DialogContent>
           <DialogHeader>
             <DialogTitle>编辑账号备注</DialogTitle>
-            <DialogDescription>备注只用于在本系统里区分多个小智账号。</DialogDescription>
+            <DialogDescription>备注只用于在本系统里区分多个CubeCat 账号。</DialogDescription>
           </DialogHeader>
           <Input
             value={accountRename?.label || ""}
@@ -417,11 +417,11 @@ export function XiaozhiDevicePanel({
       >
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>重新登录小智账号</DialogTitle>
+            <DialogTitle>重新登录CubeCat 账号</DialogTitle>
             <DialogDescription>
               {reconnectTarget
                 ? reconnectTarget.credentialStatus === "recovery_required"
-                  ? `「${reconnectTarget.label}」的旧凭据无法解密，请重新填写小智用户名和密码。成功后会原地恢复，不影响已有设备分配。`
+                  ? `「${reconnectTarget.label}」的旧凭据无法解密，请重新填写CubeCat 用户名和密码。成功后会原地恢复，不影响已有设备分配。`
                   : `为「${reconnectTarget.label}」（${reconnectTarget.usernameMasked}）重新获取登录会话。用户名和密码留空则使用已保存的凭据。`
                 : ""}
             </DialogDescription>
@@ -434,8 +434,8 @@ export function XiaozhiDevicePanel({
               }
               placeholder={
                 reconnectTarget?.credentialStatus === "recovery_required"
-                  ? "小智用户名"
-                  : "小智用户名（可选）"
+                  ? "CubeCat 用户名"
+                  : "CubeCat 用户名（可选）"
               }
             />
             <Input
@@ -446,8 +446,8 @@ export function XiaozhiDevicePanel({
               }
               placeholder={
                 reconnectTarget?.credentialStatus === "recovery_required"
-                  ? "小智密码"
-                  : "小智密码（可选）"
+                  ? "CubeCat 密码"
+                  : "CubeCat 密码（可选）"
               }
             />
             <div className="flex items-stretch gap-2">
@@ -506,7 +506,7 @@ export function XiaozhiDevicePanel({
       <Dialog open={xiaozhiOpen} onOpenChange={setXiaozhiOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>绑定小智账号</DialogTitle>
+            <DialogTitle>绑定CubeCat 账号</DialogTitle>
             <DialogDescription>
               仅老师和组织管理员可操作。凭据加密保存在当前组织，并用于同步智能体与设备。
             </DialogDescription>
@@ -520,13 +520,13 @@ export function XiaozhiDevicePanel({
             <Input
               value={xiaozhiForm.username}
               onChange={(event) => setXiaozhiForm({ ...xiaozhiForm, username: event.target.value })}
-              placeholder="小智用户名"
+              placeholder="CubeCat 用户名"
             />
             <Input
               type="password"
               value={xiaozhiForm.password}
               onChange={(event) => setXiaozhiForm({ ...xiaozhiForm, password: event.target.value })}
-              placeholder="小智密码"
+              placeholder="CubeCat 密码"
             />
             <div className="flex items-stretch gap-2">
               <div className="bg-muted flex h-10 min-w-32 items-center justify-center overflow-hidden border">
