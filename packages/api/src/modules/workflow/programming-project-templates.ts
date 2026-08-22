@@ -18,7 +18,7 @@ const AGENT_PROMPT_CHOOSE = `你是 CubeCat 解密馆馆长。说话简短、神
 现在请邀请小朋友开始探险，然后立刻调用工具 choose_puzzle。
 参数 game 只能填 caesar、lock 或 trail。第一关默认选 caesar，除非小朋友点名要更难的。`;
 
-const AGENT_PROMPT_LISTEN = `你是 CubeCat 解密馆馆长。题目已经由程序在设备和语音里公布。
+const AGENT_PROMPT_LISTEN = `你是 CubeCat 解密馆馆长。题目已经由程序在设备屏幕上公布。
 
 不要公布或编造答案。听小朋友说出答案后，立刻调用工具 submit_answer。
 - 移位密码：answer 填三个大写英文字母，例如 CAT
@@ -130,6 +130,9 @@ end
 
 local function normalize_action(value)
   local text = string.lower(field_text(value, "action"))
+  if string.find(text, "announce") or string.find(text, "播报") or string.find(text, "提示") then
+    return "announce"
+  end
   if string.find(text, "judge") or string.find(text, "判") then
     return "judge"
   end
@@ -258,6 +261,24 @@ function main(params)
   math.randomseed(runtime.now_ms())
   params = params or {}
   local action = normalize_action(params.action)
+  if action == "announce" then
+    local text = field_text(params.message, "message")
+    if text ~= "" then
+      device.notify(text)
+      announce(text)
+    end
+    return {
+      action = "announce",
+      game = "",
+      title = "",
+      puzzleText = "",
+      secret = "",
+      correct = false,
+      message = text,
+      briefing = "",
+      stars = 0,
+    }
+  end
   local game = normalize_game(params.game)
   if action == "judge" then
     return judge(game, field_text(params.secret, "secret"), field_text(params.answer, "answer"))
@@ -271,7 +292,7 @@ end
             action: {
                 type: "string",
                 title: "动作",
-                description: "deal 出题，judge 判定。",
+                description: "deal 出题，judge 判定，announce 屏幕播报提示。",
             },
             game: {
                 type: "string",
@@ -287,6 +308,11 @@ end
                 type: "string",
                 title: "玩家答案",
                 description: "判定时使用。也可以是带 answer 字段的回传对象。",
+            },
+            message: {
+                type: "string",
+                title: "播报文字",
+                description: "announce 时显示在 CubeCat 上的提示。",
             },
         },
     },
@@ -314,20 +340,6 @@ const AGENT_OUTPUTS = {
         previousPrompt: { type: "string", title: "上一个提示词" },
         currentPrompt: { type: "string", title: "当前提示词" },
         agentName: { type: "string", title: "智能体名称" },
-    },
-};
-
-const SPEECH_IO = {
-    inputs: {
-        type: "object",
-        properties: { content: { type: "string", title: "播报内容" } },
-    },
-    outputs: {
-        type: "object",
-        properties: {
-            success: { type: "boolean", title: "播放成功" },
-            durationMs: { type: "number", title: "播放时长(毫秒)" },
-        },
     },
 };
 
@@ -398,27 +410,6 @@ function agentNode(
     };
 }
 
-function speechNode(
-    id: string,
-    title: string,
-    text: string,
-    position: { x: number; y: number },
-    content?: { type: string; content: unknown },
-) {
-    return {
-        id,
-        type: "speech",
-        meta: { position },
-        data: {
-            title,
-            text,
-            waitForComplete: true,
-            ...SPEECH_IO,
-            inputsValues: content ? { content } : {},
-        },
-    };
-}
-
 function webhookNode(
     id: string,
     title: string,
@@ -479,12 +470,32 @@ function luaNode(
                     game: { type: "string", title: "游戏" },
                     secret: { type: "string", title: "标准答案" },
                     answer: { type: "string", title: "玩家答案" },
+                    message: { type: "string", title: "播报文字" },
                 },
             },
             inputsValues,
             outputs: LUA_OUTPUTS,
         },
     };
+}
+
+function announceNode(
+    id: string,
+    title: string,
+    luaModuleId: string,
+    text: string,
+    position: { x: number; y: number },
+) {
+    return luaNode(
+        id,
+        title,
+        luaModuleId,
+        {
+            action: constant("announce"),
+            message: constant(text),
+        },
+        position,
+    );
 }
 
 export function buildDecryptGameSchema(luaModuleId: string): Record<string, unknown> {
@@ -514,9 +525,10 @@ export function buildDecryptGameSchema(luaModuleId: string): Record<string, unkn
                 x: 380,
                 y: 160,
             }),
-            speechNode(
-                "speech_intro",
+            announceNode(
+                "lua_intro",
                 "欢迎进馆",
+                luaModuleId,
                 "欢迎来到解密馆。请对着我说：想玩移位密码、密码锁，还是两步暗号。",
                 { x: 720, y: 160 },
             ),
@@ -624,19 +636,24 @@ export function buildDecryptGameSchema(luaModuleId: string): Record<string, unkn
                 },
                 { x: 4260, y: 440 },
             ),
-            speechNode(
-                "speech_bye",
+            announceNode(
+                "lua_bye",
                 "今天关门",
+                luaModuleId,
                 "解密馆今天先到这里。你已经完成探险，下次再来挑战新的暗号。",
                 { x: 4620, y: 560 },
             ),
-            speechNode("speech_idle", "没有开始", "馆长等了一会儿，没等到选关。今天先不开门啦。", {
-                x: 1060,
-                y: 900,
-            }),
-            speechNode(
-                "speech_no_answer",
+            announceNode(
+                "lua_idle",
+                "没有开始",
+                luaModuleId,
+                "馆长等了一会儿，没等到选关。今天先不开门啦。",
+                { x: 1060, y: 900 },
+            ),
+            announceNode(
+                "lua_no_answer",
                 "没有听到答案",
+                luaModuleId,
                 "我等了好久都没听到答案，这一关先记作未解开。",
                 { x: 2100, y: 900 },
             ),
@@ -662,8 +679,8 @@ export function buildDecryptGameSchema(luaModuleId: string): Record<string, unkn
         ],
         edges: [
             { sourceNodeID: "start_0", targetNodeID: "agent_host" },
-            { sourceNodeID: "agent_host", targetNodeID: "speech_intro" },
-            { sourceNodeID: "speech_intro", targetNodeID: "webhook_choose_1" },
+            { sourceNodeID: "agent_host", targetNodeID: "lua_intro" },
+            { sourceNodeID: "lua_intro", targetNodeID: "webhook_choose_1" },
             {
                 sourceNodeID: "webhook_choose_1",
                 targetNodeID: "lua_deal_1",
@@ -690,28 +707,28 @@ export function buildDecryptGameSchema(luaModuleId: string): Record<string, unkn
                 targetNodeID: "lua_judge_2",
                 sourcePortID: "received",
             },
-            { sourceNodeID: "lua_judge_2", targetNodeID: "speech_bye" },
-            { sourceNodeID: "speech_bye", targetNodeID: "end_0" },
+            { sourceNodeID: "lua_judge_2", targetNodeID: "lua_bye" },
+            { sourceNodeID: "lua_bye", targetNodeID: "end_0" },
             {
                 sourceNodeID: "webhook_choose_1",
-                targetNodeID: "speech_idle",
+                targetNodeID: "lua_idle",
                 sourcePortID: "error",
             },
-            { sourceNodeID: "speech_idle", targetNodeID: "end_0" },
+            { sourceNodeID: "lua_idle", targetNodeID: "end_0" },
             {
                 sourceNodeID: "webhook_answer_1",
-                targetNodeID: "speech_no_answer",
+                targetNodeID: "lua_no_answer",
                 sourcePortID: "error",
             },
             {
                 sourceNodeID: "webhook_answer_2",
-                targetNodeID: "speech_no_answer",
+                targetNodeID: "lua_no_answer",
                 sourcePortID: "error",
             },
-            { sourceNodeID: "speech_no_answer", targetNodeID: "end_0" },
+            { sourceNodeID: "lua_no_answer", targetNodeID: "end_0" },
             {
                 sourceNodeID: "webhook_choose_2",
-                targetNodeID: "speech_bye",
+                targetNodeID: "lua_bye",
                 sourcePortID: "error",
             },
         ],
