@@ -41,6 +41,8 @@ import { WorkflowSpeechExecutorService } from "./workflow-speech-executor.servic
 import { WorkflowVisionExecutorService } from "./workflow-vision-executor.service";
 import { WorkflowWebhookExecutorService } from "./workflow-webhook-executor.service";
 import { WorkflowRuntimeDeviceService } from "./workflow-runtime-device.service";
+import { WorkflowTtsClipService } from "./workflow-tts-clip.service";
+import { WorkflowTtsController } from "./workflow-tts.controller";
 
 @Module({
     imports: [
@@ -69,6 +71,7 @@ import { WorkflowRuntimeDeviceService } from "./workflow-runtime-device.service"
         ProgrammingProjectController,
         ProgrammingTriggerController,
         WorkflowRuntimeController,
+        WorkflowTtsController,
     ],
     providers: [
         WorkflowService,
@@ -87,6 +90,7 @@ import { WorkflowRuntimeDeviceService } from "./workflow-runtime-device.service"
         WorkflowDeviceControlExecutorService,
         WorkflowRuntimeExecutionService,
         WorkflowRuntimeDeviceService,
+        WorkflowTtsClipService,
         SecretService,
     ],
 })

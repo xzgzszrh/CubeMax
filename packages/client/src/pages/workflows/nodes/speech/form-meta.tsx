@@ -2,7 +2,7 @@
  * 语音播报节点表单 - 配置语音播报参数
  */
 
-import { Divider, Switch } from "@douyinfe/semi-ui";
+import { Divider, Select, Slider, Switch } from "@douyinfe/semi-ui";
 import { DisplayOutputs } from "@flowgram.ai/form-materials";
 import type { FormMeta } from "@flowgram.ai/free-layout-editor";
 import { Field } from "@flowgram.ai/free-layout-editor";
@@ -54,6 +54,79 @@ function SpeechTextEditor() {
   );
 }
 
+const VOICE_OPTIONS = [
+  { value: "Cherry", label: "芊悦 Cherry" },
+  { value: "Serena", label: "苏瑶 Serena" },
+  { value: "Ethan", label: "晨煦 Ethan" },
+  { value: "Chelsie", label: "千雪 Chelsie" },
+  { value: "Bella", label: "萌宝 Bella" },
+  { value: "Neil", label: "阿闻 Neil" },
+];
+
+function VoiceSelect() {
+  const { readonly } = useNodeRenderContext();
+  const isSidebar = useIsSidebar();
+
+  return (
+    <Field<string> name="voice" defaultValue="Cherry">
+      {({ field }) =>
+        isSidebar ? (
+          <FormItem name="音色" type="string">
+            <Select
+              value={field.value || "Cherry"}
+              disabled={readonly}
+              onChange={(value) => field.onChange(value as string)}
+              size="small"
+              style={{ width: "100%" }}
+            >
+              {VOICE_OPTIONS.map((opt) => (
+                <Select.Option key={opt.value} value={opt.value}>
+                  {opt.label}
+                </Select.Option>
+              ))}
+            </Select>
+          </FormItem>
+        ) : (
+          <FormItem name="音色" type="string">
+            <ReadonlyValue
+              value={VOICE_OPTIONS.find((item) => item.value === field.value)?.label ?? "芊悦 Cherry"}
+            />
+          </FormItem>
+        )
+      }
+    </Field>
+  );
+}
+
+function VolumeControl() {
+  const { readonly } = useNodeRenderContext();
+  const isSidebar = useIsSidebar();
+
+  return (
+    <Field<number> name="volume" defaultValue={1}>
+      {({ field }) =>
+        isSidebar ? (
+          <FormItem name="音量" type="number">
+            <Slider
+              value={field.value ?? 1}
+              disabled={readonly}
+              onChange={(value) => field.onChange(value as number)}
+              min={0}
+              max={1}
+              step={0.1}
+              style={{ width: "100%" }}
+            />
+          </FormItem>
+        ) : (
+          <FormItem name="音量" type="number">
+            <ReadonlyValue value={`${Math.round((field.value ?? 1) * 100)}%`} />
+          </FormItem>
+        )
+      }
+    </Field>
+  );
+}
+
 function WaitForCompleteSwitch() {
   const { readonly } = useNodeRenderContext();
   const isSidebar = useIsSidebar();
@@ -89,6 +162,9 @@ export const renderForm = () => {
       <FormHeader />
       <FormContent>
         <SpeechTextEditor />
+        <Divider />
+        <VoiceSelect />
+        <VolumeControl />
         <Divider />
         <WaitForCompleteSwitch />
         <Divider />

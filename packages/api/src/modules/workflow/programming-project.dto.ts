@@ -53,6 +53,10 @@ export class CreateProgrammingProjectDto {
     @IsOptional()
     @IsObject()
     schema?: Record<string, unknown>;
+
+    @IsOptional()
+    @IsIn(["decrypt"])
+    template?: "decrypt";
 }
 
 export class UpdateProgrammingProjectDto {

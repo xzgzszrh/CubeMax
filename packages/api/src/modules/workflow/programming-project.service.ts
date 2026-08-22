@@ -27,6 +27,11 @@ import {
     QueryProgrammingProjectDto,
     UpdateProgrammingProjectDto,
 } from "./programming-project.dto";
+import {
+    buildDecryptGameSchema,
+    DECRYPT_TEMPLATE_ID,
+    DECRYPT_TEMPLATE_LUA,
+} from "./programming-project-templates";
 import { WorkflowService } from "./workflow.service";
 
 type WorkflowReferences = {
@@ -66,29 +71,90 @@ function isPopulatedSchema(schema?: Record<string, unknown>): schema is Record<s
     return Boolean(schema && Array.isArray(schema.nodes) && schema.nodes.length > 0);
 }
 
+function nodeId(node: unknown): string | undefined {
+    return isRecord(node) && typeof node.id === "string" ? node.id : undefined;
+}
+
+function nodeTypeOf(node: unknown): string | undefined {
+    return isRecord(node) && typeof node.type === "string" ? node.type : undefined;
+}
+
+function edgeSource(edge: unknown): string | undefined {
+    return isRecord(edge) && typeof edge.sourceNodeID === "string" ? edge.sourceNodeID : undefined;
+}
+
+function edgeTarget(edge: unknown): string | undefined {
+    return isRecord(edge) && typeof edge.targetNodeID === "string" ? edge.targetNodeID : undefined;
+}
+
+function defaultStartNode(): Record<string, unknown> {
+    return {
+        id: "start_0",
+        type: "start",
+        meta: { position: { x: 180, y: 300 } },
+        data: { title: "开始", outputs: { type: "object", properties: {} } },
+    };
+}
+
+function defaultEndNode(): Record<string, unknown> {
+    return {
+        id: "end_0",
+        type: "end",
+        meta: { position: { x: 640, y: 300 } },
+        data: {
+            title: "结束",
+            inputsValues: {},
+            inputs: { type: "object", properties: {} },
+        },
+    };
+}
+
 function defaultMainWorkflowSchema(): Record<string, unknown> {
     return {
-        nodes: [
-            {
-                id: "start_0",
-                type: "start",
-                meta: { position: { x: 180, y: 300 } },
-                data: { title: "开始", outputs: { type: "object", properties: {} } },
-            },
-            {
-                id: "end_0",
-                type: "end",
-                meta: { position: { x: 640, y: 300 } },
-                data: {
-                    title: "结束",
-                    inputsValues: {},
-                    inputs: { type: "object", properties: {} },
-                },
-            },
-        ],
+        nodes: [defaultStartNode(), defaultEndNode()],
         edges: [{ sourceNodeID: "start_0", targetNodeID: "end_0" }],
         globalVariable: { type: "object", required: [], properties: {} },
     };
+}
+
+function ensureStartAndEndNodes(schema: Record<string, unknown>): Record<string, unknown> {
+    const nodes = Array.isArray(schema.nodes) ? [...schema.nodes] : [];
+    const edges = Array.isArray(schema.edges) ? [...schema.edges] : [];
+
+    let start = nodes.find((node) => nodeTypeOf(node) === "start");
+    if (!start) {
+        start = defaultStartNode();
+        nodes.unshift(start);
+    }
+    let end = nodes.find((node) => nodeTypeOf(node) === "end");
+    if (!end) {
+        end = defaultEndNode();
+        nodes.push(end);
+    }
+
+    const startId = nodeId(start);
+    const endId = nodeId(end);
+    if (!startId || !endId) {
+        return { ...schema, nodes, edges };
+    }
+
+    const others = nodes.filter(
+        (node) => nodeTypeOf(node) !== "start" && nodeTypeOf(node) !== "end",
+    );
+    if (!edges.some((edge) => edgeSource(edge) === startId)) {
+        edges.push({
+            sourceNodeID: startId,
+            targetNodeID: nodeId(others[0]) ?? endId,
+        });
+    }
+    if (!edges.some((edge) => edgeTarget(edge) === endId)) {
+        edges.push({
+            sourceNodeID: nodeId(others[others.length - 1]) ?? startId,
+            targetNodeID: endId,
+        });
+    }
+
+    return { ...schema, nodes, edges };
 }
 
 @Injectable()
@@ -153,6 +219,7 @@ export class ProgrammingProjectService {
         const project = await this.projectRepository.manager.transaction(async (manager) => {
             const projectRepository = manager.getRepository(ProgrammingProject);
             const workflowRepository = manager.getRepository(AiWorkflow);
+            const luaModuleRepository = manager.getRepository(LuaModule);
             const createdProject = await projectRepository.save(
                 projectRepository.create({
                     name: dto.name,
@@ -163,13 +230,36 @@ export class ProgrammingProjectService {
                     isPublished: false,
                 }),
             );
+
+            let schema: Record<string, unknown>;
+            if (dto.template === DECRYPT_TEMPLATE_ID) {
+                if (createdProject.projectType !== "application") {
+                    throw HttpErrorFactory.badRequest("只有应用工程可以使用模板");
+                }
+                const luaModule = await luaModuleRepository.save(
+                    luaModuleRepository.create({
+                        name: DECRYPT_TEMPLATE_LUA.name,
+                        description: DECRYPT_TEMPLATE_LUA.description,
+                        draftCode: DECRYPT_TEMPLATE_LUA.draftCode,
+                        inputSchema: DECRYPT_TEMPLATE_LUA.inputSchema,
+                        outputSchema: DECRYPT_TEMPLATE_LUA.outputSchema,
+                        testParams: DECRYPT_TEMPLATE_LUA.testParams,
+                        assistantMessages: [],
+                        createBy: userId,
+                        projectId: createdProject.id,
+                    }),
+                );
+                schema = buildDecryptGameSchema(luaModule.id);
+            } else {
+                schema = isPopulatedSchema(dto.schema) ? dto.schema : defaultMainWorkflowSchema();
+            }
+            schema = ensureStartAndEndNodes(schema);
+
             const workflow = await workflowRepository.save(
                 workflowRepository.create({
                     name: dto.name,
                     description: dto.description ?? "",
-                    schema: isPopulatedSchema(dto.schema)
-                        ? dto.schema
-                        : defaultMainWorkflowSchema(),
+                    schema,
                     createBy: userId,
                     projectId: createdProject.id,
                     isMain: true,

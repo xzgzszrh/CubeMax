@@ -63,6 +63,7 @@ export interface CreateProgrammingProjectDto {
     description?: string;
     projectType?: ProgrammingProjectType;
     schema?: Record<string, unknown>;
+    template?: "decrypt";
 }
 
 export interface UpdateProgrammingProjectDto {

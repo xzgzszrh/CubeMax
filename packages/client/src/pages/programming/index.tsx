@@ -315,15 +315,19 @@ export default function ProgrammingProjectsPage() {
         open={createDialogOpen}
         isPending={createMutation.isPending}
         onOpenChange={setCreateDialogOpen}
-        onSubmit={({ name, description, projectType }) =>
+        onSubmit={({ name, description, projectType, template }) =>
           createMutation.mutate({
             name,
             description,
             projectType,
-            schema:
-              projectType === "application"
-                ? (applicationInitialData as unknown as Record<string, unknown>)
-                : (initialData as unknown as Record<string, unknown>),
+            ...(template
+              ? { template }
+              : {
+                  schema:
+                    projectType === "application"
+                      ? (applicationInitialData as unknown as Record<string, unknown>)
+                      : (initialData as unknown as Record<string, unknown>),
+                }),
           })
         }
       />

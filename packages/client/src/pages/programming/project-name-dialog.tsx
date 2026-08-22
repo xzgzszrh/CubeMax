@@ -11,10 +11,25 @@ import {
 import { Input } from "@buildingai/ui/components/ui/input";
 import { Label } from "@buildingai/ui/components/ui/label";
 import { Textarea } from "@buildingai/ui/components/ui/textarea";
-import { Check, CircuitBoard, MessageCircle } from "lucide-react";
+import { Check, CircuitBoard, MessageCircle, Puzzle, SquareDashed } from "lucide-react";
 import { type FormEvent, useEffect, useId, useState } from "react";
 
 const MAX_PROJECT_NAME_LENGTH = 100;
+const EXAMPLE_PROJECT_NAME = "CubeCat 智能巡线";
+
+const DECRYPT_TEMPLATE = {
+  id: "decrypt" as const,
+  name: "解密馆",
+  description: "小智按解密表现挑选下一关，题目由 Lua 在 CubeCat 上出题和判定。",
+};
+
+function typeCardClass(selected: boolean) {
+  return `group relative flex min-h-28 flex-col items-start gap-2 rounded-lg border p-4 text-left transition-colors ${
+    selected
+      ? "border-primary bg-primary/5 ring-primary/20 ring-2"
+      : "hover:border-foreground/30 bg-background"
+  }`;
+}
 
 interface ProjectNameDialogProps {
   mode: "create" | "edit";
@@ -28,6 +43,7 @@ interface ProjectNameDialogProps {
     name: string;
     description: string;
     projectType?: ProgrammingProjectType;
+    template?: "decrypt";
   }) => void;
 }
 
@@ -46,12 +62,14 @@ export function ProjectNameDialog({
   const [name, setName] = useState(initialName);
   const [description, setDescription] = useState(initialDescription);
   const [projectType, setProjectType] = useState<ProgrammingProjectType>(initialProjectType);
+  const [useTemplate, setUseTemplate] = useState(false);
 
   useEffect(() => {
     if (!open) return;
     setName(initialName);
     setDescription(initialDescription);
     setProjectType(initialProjectType);
+    setUseTemplate(false);
   }, [initialDescription, initialName, initialProjectType, open]);
 
   const normalizedName = name.trim();
@@ -68,7 +86,14 @@ export function ProjectNameDialog({
       onSubmit({
         name: normalizedName,
         description: normalizedDescription,
-        ...(mode === "create" ? { projectType } : {}),
+        ...(mode === "create"
+          ? {
+              projectType,
+              ...(projectType === "application" && useTemplate
+                ? { template: DECRYPT_TEMPLATE.id }
+                : {}),
+            }
+          : {}),
       });
     }
   };
@@ -91,12 +116,11 @@ export function ProjectNameDialog({
               <div className="grid gap-3 sm:grid-cols-2">
                 <button
                   type="button"
-                  className={`group relative flex min-h-28 flex-col items-start gap-2 rounded-lg border p-4 text-left transition-colors ${
-                    projectType === "conversation"
-                      ? "border-primary bg-primary/5 ring-primary/20 ring-2"
-                      : "hover:border-foreground/30 bg-background"
-                  }`}
-                  onClick={() => setProjectType("conversation")}
+                  className={typeCardClass(projectType === "conversation")}
+                  onClick={() => {
+                    setProjectType("conversation");
+                    setUseTemplate(false);
+                  }}
                   aria-pressed={projectType === "conversation"}
                 >
                   <span className="bg-muted text-foreground flex size-9 items-center justify-center rounded-lg">
@@ -112,11 +136,7 @@ export function ProjectNameDialog({
                 </button>
                 <button
                   type="button"
-                  className={`group relative flex min-h-28 flex-col items-start gap-2 rounded-lg border p-4 text-left transition-colors ${
-                    projectType === "application"
-                      ? "border-primary bg-primary/5 ring-primary/20 ring-2"
-                      : "hover:border-foreground/30 bg-background"
-                  }`}
+                  className={typeCardClass(projectType === "application")}
                   onClick={() => setProjectType("application")}
                   aria-pressed={projectType === "application"}
                 >
@@ -134,13 +154,60 @@ export function ProjectNameDialog({
               </div>
             </div>
           )}
+          {mode === "create" && projectType === "application" && (
+            <div className="grid gap-2">
+              <Label>从模板进行创建</Label>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <button
+                  type="button"
+                  className={typeCardClass(!useTemplate)}
+                  onClick={() => {
+                    setUseTemplate(false);
+                    if (name.trim() === DECRYPT_TEMPLATE.name) setName("");
+                    if (description.trim() === DECRYPT_TEMPLATE.description) setDescription("");
+                  }}
+                  aria-pressed={!useTemplate}
+                >
+                  <span className="bg-muted text-foreground flex size-9 items-center justify-center rounded-lg">
+                    <SquareDashed className="size-4" />
+                  </span>
+                  <span className="text-sm font-semibold">空白应用</span>
+                  <span className="text-muted-foreground text-xs leading-4">
+                    从开始节点自己编排设备、Lua 和智能动作
+                  </span>
+                  {!useTemplate && <Check className="text-primary absolute top-3 right-3 size-4" />}
+                </button>
+                <button
+                  type="button"
+                  className={typeCardClass(useTemplate)}
+                  onClick={() => {
+                    setUseTemplate(true);
+                    if (!name.trim() || name.trim() === EXAMPLE_PROJECT_NAME) {
+                      setName(DECRYPT_TEMPLATE.name);
+                    }
+                    if (!description.trim()) setDescription(DECRYPT_TEMPLATE.description);
+                  }}
+                  aria-pressed={useTemplate}
+                >
+                  <span className="bg-muted text-foreground flex size-9 items-center justify-center rounded-lg">
+                    <Puzzle className="size-4" />
+                  </span>
+                  <span className="text-sm font-semibold">{DECRYPT_TEMPLATE.name}</span>
+                  <span className="text-muted-foreground text-xs leading-4">
+                    {DECRYPT_TEMPLATE.description}
+                  </span>
+                  {useTemplate && <Check className="text-primary absolute top-3 right-3 size-4" />}
+                </button>
+              </div>
+            </div>
+          )}
           <div className="grid gap-2">
             <Label htmlFor={nameId}>工程名称</Label>
             <Input
               id={nameId}
               value={name}
               onChange={(event) => setName(event.target.value)}
-              placeholder="例如：CubeCat 智能巡线"
+              placeholder={`例如：${EXAMPLE_PROJECT_NAME}`}
               maxLength={MAX_PROJECT_NAME_LENGTH}
               autoFocus
               disabled={isPending}

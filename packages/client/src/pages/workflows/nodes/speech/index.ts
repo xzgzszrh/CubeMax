@@ -15,7 +15,7 @@ export const SpeechNodeRegistry: FlowNodeRegistry = {
   type: WorkflowNodeType.Speech,
   info: {
     icon: iconSpeech,
-    description: "在 CubeCat 上显示并提示一段文字，用于反馈和提醒。",
+    description: "用通义千问 TTS 合成语音，并在 CubeCat 上播放。",
   },
   meta: {
     nodePanelLabel: "语音播报",
@@ -34,6 +34,7 @@ export const SpeechNodeRegistry: FlowNodeRegistry = {
         agentId: "",
         // 播报内容（可引用前置节点变量）
         text: "",
+        voice: "Cherry",
         // 播报模式: speak = 立即播报, queue = 排队播报
         mode: "speak",
         // TTS 模型

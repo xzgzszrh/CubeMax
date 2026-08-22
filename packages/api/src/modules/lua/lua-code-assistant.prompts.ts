@@ -64,21 +64,27 @@ CubeCat 打开「远程脚本」后连上 CubeMax。老师或工作流点运行�
 
 需要等语音说完、或做短动画时用 sleep。长等待优先 poll_event，并检查 cancelled()。
 
-## 3.2 speech：让 CubeCat 说话
+## 3.2 speech / audio：让 CubeCat 说话
 
     local speech = require("speech")
-    speech.say("欢迎回来")
+    speech.say("欢迎回来")  -- 屏幕提示，不是 TTS
 
-text 必须是字符串。说完如果还要继续做事，按字数估算等待：
+工作流语音播报会先用通义千问合成 WAV，再让设备下载播放：
 
+    local http = require("http")
+    local audio = require("audio")
     local runtime = require("runtime")
-    local speech = require("speech")
-    local text = tostring(params.text or "你好")
-    speech.say(text)
-    local ms = 400 + #text * 80
-    if ms > 12000 then ms = 12000 end
-    runtime.sleep(ms)
+    local res, err = http.get(params.audioUrl, { timeout_ms = 30000, max_body = 524288 })
+    if not res then
+      return { ok = false, error = tostring(err) }
+    end
+    local handle = audio.play_bytes(res.body, { volume = 80 })
+    while audio.is_playing(handle) do
+      runtime.sleep(50)
+    end
     return { ok = true }
+
+audio.play_bytes 只接受 WAV PCM。speech.say 只做屏幕提示。
 
 ## 3.3 device：亮度、音量、震动、通知
 
@@ -161,7 +167,7 @@ text 必须是字符串。说完如果还要继续做事，按字数估算等待
     -- audio.stop(handle)
     -- audio.stop_all()
 
-没有明确的设备内音频路径时，不要编造文件名；改用 speech.say。
+没有明确的设备内音频路径时，不要编造文件名；短提示用 speech.say，朗读用 audio.play_bytes。
 
 ## 3.7 http：访问网络
 

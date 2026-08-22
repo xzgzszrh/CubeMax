@@ -2,13 +2,11 @@
  * 智能体节点表单 - 配置智能体提示词切换
  */
 
-import { useXiaozhiAgentsQuery } from "@buildingai/services/web";
 import { Divider, Select } from "@douyinfe/semi-ui";
 import { DisplayOutputs, validateFlowValue } from "@flowgram.ai/form-materials";
 import type { FormMeta } from "@flowgram.ai/free-layout-editor";
 import { Field } from "@flowgram.ai/free-layout-editor";
 
-import { useOptionalProgrammingProject } from "../../../programming/context";
 import {
   FormContent,
   FormHeader,
@@ -61,25 +59,6 @@ function AgentActionSelect() {
   );
 }
 
-function ProjectAgentHint() {
-  const project = useOptionalProgrammingProject();
-  const { data: agents = [], isLoading } = useXiaozhiAgentsQuery({
-    enabled: Boolean(project),
-  });
-  const bound = agents.find((item) => item.id === project?.xiaozhiAgentId);
-
-  let value = "未绑定，请到工程设置中选择 CubeCat 智能体";
-  if (isLoading && project?.xiaozhiAgentId) value = "智能体加载中...";
-  else if (bound) value = bound.name;
-  else if (project?.xiaozhiAgentId) value = "已绑定，但当前工作空间看不到这台智能体";
-
-  return (
-    <FormItem name="目标智能体" type="string">
-      <ReadonlyValue value={value} />
-    </FormItem>
-  );
-}
-
 function PromptNameInput() {
   const { readonly } = useNodeRenderContext();
   const isSidebar = useIsSidebar();
@@ -119,7 +98,6 @@ export const renderForm = () => {
     <>
       <FormHeader />
       <FormContent>
-        <ProjectAgentHint />
         <AgentActionSelect />
         <PromptNameInput />
         <Divider />

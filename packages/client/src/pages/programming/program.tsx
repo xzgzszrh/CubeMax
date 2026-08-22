@@ -5,6 +5,7 @@ import { Editor } from "../workflows/editor";
 import { applicationInitialData, initialData } from "../workflows/initial-data";
 import type { FlowDocumentJSON } from "../workflows/typings";
 import { normalizeWorkflowSchema } from "../workflows/utils/llm-schema";
+import { ensureTerminalNodes } from "../workflows/utils/terminal-nodes";
 import { useProgrammingProject } from "./context";
 
 unstableSetCreateRoot(createRoot);
@@ -16,7 +17,7 @@ function resolveWorkflowSchema(schema: unknown, fallback: FlowDocumentJSON): Flo
     Array.isArray((schema as FlowDocumentJSON).nodes) &&
     Array.isArray((schema as FlowDocumentJSON).edges)
   ) {
-    return normalizeWorkflowSchema(schema as FlowDocumentJSON);
+    return normalizeWorkflowSchema(ensureTerminalNodes(schema as FlowDocumentJSON, fallback));
   }
   return fallback;
 }

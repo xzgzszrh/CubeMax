@@ -17,6 +17,7 @@ import { WebSocket, WebSocketServer, type RawData } from "ws";
 
 import type { CreateLuaDeviceRunDto } from "./lua-device.dto";
 import { calculateLuaChunkCrc32 } from "./lua-device-protocol";
+import { encodeWavToOpusFrames, type OpusSpeakPayload } from "./wav-to-opus";
 
 const MAX_MESSAGE_BYTES = 80 * 1024;
 const HELLO_TIMEOUT_MS = 10_000;
@@ -80,6 +81,7 @@ export class LuaDeviceGatewayService implements OnApplicationBootstrap, OnApplic
     });
     private readonly clients = new Map<string, OnlineClient>();
     private readonly states = new WeakMap<WebSocket, ClientState>();
+    private readonly speakPayloads = new Map<string, OpusSpeakPayload>();
     private heartbeatTimer?: NodeJS.Timeout;
     private httpServer?: { on: Function; off: Function };
 
@@ -208,6 +210,80 @@ export class LuaDeviceGatewayService implements OnApplicationBootstrap, OnApplic
             }),
         );
         if (canDispatch) await this.sendPrepare(run);
+        return this.serializeRun(run);
+    }
+
+    async speak(
+        userId: string,
+        deviceId: string,
+        opts: {
+            audio: Buffer;
+            volume?: number;
+            wait?: boolean;
+            durationMs?: number;
+            projectId?: string;
+            name?: string;
+        },
+    ) {
+        const device = await this.requireDevice(deviceId);
+        deviceId = device.deviceId;
+        if (opts.audio.length < 44) throw HttpErrorFactory.badRequest("音频数据无效");
+        if (opts.audio.length > 512 * 1024) throw HttpErrorFactory.badRequest("音频超过 512KiB");
+
+        let encoded: OpusSpeakPayload;
+        try {
+            encoded = encodeWavToOpusFrames(opts.audio, opts.volume ?? 80);
+        } catch (error) {
+            const message = error instanceof Error ? error.message : "WAV 转 Opus 失败";
+            throw HttpErrorFactory.badRequest(message);
+        }
+
+        const activeRun = await this.runRepository.findOne({
+            where: {
+                deviceId,
+                status: In([
+                    "preparing",
+                    "transferring",
+                    "running",
+                    "stopping",
+                    "waiting_for_device",
+                ]),
+            },
+        });
+        const canDispatch = this.clients.has(deviceId) && !activeRun;
+        const durationMs = encoded.durationMs || opts.durationMs || 0;
+        const params = {
+            kind: "speak",
+            format: "opus",
+            sampleRate: encoded.sampleRate,
+            frameDuration: encoded.frameDurationMs,
+            frameCount: encoded.frames.length,
+            volume: opts.volume ?? 80,
+            wait: opts.wait !== false,
+            durationMs,
+        };
+        const paramsJson = JSON.stringify(params);
+        const payloadHash = sha256(Buffer.concat(encoded.frames));
+        const run = await this.runRepository.save(
+            this.runRepository.create({
+                deviceId,
+                createBy: userId,
+                projectId: opts.projectId,
+                name: (opts.name ?? "speech").slice(0, 100),
+                source: "",
+                sourceSha256: payloadHash,
+                params,
+                paramsJson,
+                paramsSha256: sha256(paramsJson),
+                requiredCapabilities: [],
+                status: canDispatch ? "running" : "queued",
+                timeoutMs: Math.min(60_000, Math.max(15_000, durationMs + 10_000)),
+                chunkBytes: 0,
+                nextChunkIndex: 0,
+            }),
+        );
+        this.speakPayloads.set(run.id, encoded);
+        if (canDispatch) await this.sendSpeak(run);
         return this.serializeRun(run);
     }
 
@@ -625,7 +701,52 @@ export class LuaDeviceGatewayService implements OnApplicationBootstrap, OnApplic
         await this.runRepository.save(run);
     }
 
+    private isSpeakRun(run: LuaDeviceRun): boolean {
+        return isRecord(run.params) && run.params.kind === "speak";
+    }
+
+    private async sendSpeak(run: LuaDeviceRun) {
+        const client = this.clients.get(run.deviceId);
+        const audio = this.speakPayloads.get(run.id);
+        if (!client || !audio) return;
+        if (client.state.protocol !== "lap") {
+            run.status = "failed";
+            run.error = { code: "UNSUPPORTED", message: "当前设备协议不支持直接播报" };
+            run.finishedAt = new Date();
+            await this.runRepository.save(run);
+            this.speakPayloads.delete(run.id);
+            return;
+        }
+        const params = isRecord(run.params) ? run.params : {};
+        this.sendLap(client.socket, {
+            v: 1,
+            type: "speak",
+            id: run.id,
+            format: "opus",
+            sample_rate: audio.sampleRate,
+            frame_duration: audio.frameDurationMs,
+            frame_count: audio.frames.length,
+            volume: numberField(params, "volume") ?? 80,
+            wait: params.wait !== false,
+            duration_ms: numberField(params, "durationMs") ?? audio.durationMs,
+        });
+        for (const frame of audio.frames) {
+            if (client.socket.readyState !== WebSocket.OPEN) break;
+            client.socket.send(frame, { binary: true });
+        }
+        run.status = "running";
+        run.startedAt ??= new Date();
+        await this.runRepository.save(run);
+        this.logger.log(
+            `speak ${run.id} opus frames=${audio.frames.length} durationMs=${audio.durationMs}`,
+        );
+    }
+
     private async sendPrepare(run: LuaDeviceRun) {
+        if (this.isSpeakRun(run)) {
+            await this.sendSpeak(run);
+            return;
+        }
         const client = this.clients.get(run.deviceId);
         if (!client) return;
         if (client.state.protocol === "lap") {
@@ -896,6 +1017,7 @@ export class LuaDeviceGatewayService implements OnApplicationBootstrap, OnApplic
             run.finishedAt = new Date();
             await this.runRepository.save(run);
         }
+        this.speakPayloads.delete(run.id);
         await this.resumePendingRun(deviceId);
     }
 
@@ -906,7 +1028,13 @@ export class LuaDeviceGatewayService implements OnApplicationBootstrap, OnApplic
     private toLapCapabilities(required: string[] | null | undefined): string[] {
         const caps = new Set<string>(["log", "http"]);
         for (const cap of required ?? []) {
-            if (cap === "camera" || cap === "uart" || cap === "http" || cap === "log") {
+            if (
+                cap === "camera" ||
+                cap === "uart" ||
+                cap === "http" ||
+                cap === "log" ||
+                cap === "tts"
+            ) {
                 caps.add(cap);
             }
         }

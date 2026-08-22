@@ -3,7 +3,6 @@
  * 为 CubeCat 注册可调用的 MCP 工具，并生成可复制的提示词片段
  */
 
-import { useXiaozhiAgentsQuery } from "@buildingai/services/web";
 import { Button, Divider, Input, InputNumber } from "@douyinfe/semi-ui";
 import { DisplayOutputs } from "@flowgram.ai/form-materials";
 import type { FormMeta } from "@flowgram.ai/free-layout-editor";
@@ -11,7 +10,6 @@ import { Field } from "@flowgram.ai/free-layout-editor";
 import { Copy, Eye, EyeOff } from "lucide-react";
 import { useState } from "react";
 
-import { useOptionalProgrammingProject } from "../../../programming/context";
 import {
   FormContent,
   FormHeader,
@@ -24,25 +22,6 @@ import type { FlowNodeJSON, JsonSchema } from "../../typings";
 import { defaultFormMeta } from "../default-form-meta";
 
 const TOOL_NAME_PATTERN = /^[a-zA-Z][a-zA-Z0-9_]{0,63}$/;
-
-function ProjectAgentHint() {
-  const project = useOptionalProgrammingProject();
-  const { data: agents = [], isLoading } = useXiaozhiAgentsQuery({
-    enabled: Boolean(project),
-  });
-  const bound = agents.find((item) => item.id === project?.xiaozhiAgentId);
-
-  let value = "未绑定，请到工程设置中选择 CubeCat 智能体";
-  if (isLoading && project?.xiaozhiAgentId) value = "智能体加载中...";
-  else if (bound) value = bound.name;
-  else if (project?.xiaozhiAgentId) value = "已绑定，但当前工作空间看不到这台智能体";
-
-  return (
-    <FormItem name="目标智能体" type="string">
-      <ReadonlyValue value={value} />
-    </FormItem>
-  );
-}
 
 function ToolNameInput() {
   const { readonly } = useNodeRenderContext();
@@ -299,7 +278,6 @@ export const renderForm = () => {
     <>
       <FormHeader />
       <FormContent>
-        <ProjectAgentHint />
         <ToolNameInput />
         <ToolDescriptionInput />
         <TimeoutInput />

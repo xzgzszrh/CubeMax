@@ -24,6 +24,7 @@ export function FormHeader() {
   const ctx = useClientContext();
   const isSidebar = useIsSidebar();
   const registry = node.getNodeRegistry<FlowNodeRegistry>();
+  const headerLabel = registry.meta.nodePanelLabel;
   const handleExpand = (e: React.MouseEvent) => {
     toggleExpand();
     e.stopPropagation(); // Disable clicking prevents the sidebar from opening
@@ -46,7 +47,7 @@ export function FormHeader() {
     <Header>
       {getIcon(node)}
       <TitleInput readonly={readonly} updateTitleEdit={updateTitleEdit} titleEdit={titleEdit} />
-      <HeaderMeta>{registry.meta.nodePanelLabel ?? node.flowNodeType}</HeaderMeta>
+      {headerLabel ? <HeaderMeta>{headerLabel}</HeaderMeta> : null}
       {node.renderData.expandable && !isSidebar && (
         <Button
           type="primary"
