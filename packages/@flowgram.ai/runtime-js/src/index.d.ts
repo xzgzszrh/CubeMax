@@ -140,3 +140,56 @@ export type WebhookExecutorHandler = (
 ) => Promise<WebhookExecutorResult> | WebhookExecutorResult;
 
 export declare const registerWebhookExecutor: (executor: WebhookExecutorHandler) => void;
+
+export type VisionExecutorInput = {
+    userId?: string;
+    runtimeContext?: WorkflowRuntimeExecutorContext;
+    node: {
+        id: string;
+        type: string;
+        data?: Record<string, unknown>;
+    };
+    inputs: Record<string, unknown>;
+};
+
+export type VisionExecutorHandler = (
+    input: VisionExecutorInput,
+) => Promise<Record<string, unknown>> | Record<string, unknown>;
+
+export declare const registerVisionExecutor: (executor: VisionExecutorHandler) => void;
+
+export type SpeechExecutorInput = {
+    userId?: string;
+    runtimeContext?: WorkflowRuntimeExecutorContext;
+    node: {
+        id: string;
+        type: string;
+        data?: Record<string, unknown>;
+    };
+    inputs: Record<string, unknown>;
+};
+
+export type SpeechExecutorHandler = (
+    input: SpeechExecutorInput,
+) => Promise<Record<string, unknown>> | Record<string, unknown>;
+
+export declare const registerSpeechExecutor: (executor: SpeechExecutorHandler) => void;
+
+export type DeviceControlExecutorInput = {
+    userId?: string;
+    runtimeContext?: WorkflowRuntimeExecutorContext;
+    node: {
+        id: string;
+        type: string;
+        data?: Record<string, unknown>;
+    };
+    inputs: Record<string, unknown>;
+};
+
+export type DeviceControlExecutorHandler = (
+    input: DeviceControlExecutorInput,
+) => Promise<Record<string, unknown>> | Record<string, unknown>;
+
+export declare const registerDeviceControlExecutor: (
+    executor: DeviceControlExecutorHandler,
+) => void;

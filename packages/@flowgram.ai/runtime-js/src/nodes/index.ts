@@ -14,6 +14,9 @@ import { LuaExecutor } from "./lua/index.ts";
 import { AgentExecutor } from "./agent/index.ts";
 import { WaitExecutor } from "./wait/index.ts";
 import { WebhookExecutor } from "./webhook/index.ts";
+import { VisionExecutor } from "./vision/index.ts";
+import { SpeechExecutor } from "./speech/index.ts";
+import { DeviceControlExecutor } from "./device-control/index.ts";
 
 export const WorkflowRuntimeNodeExecutors: INodeExecutorFactory[] = [
     StartExecutor,
@@ -30,6 +33,9 @@ export const WorkflowRuntimeNodeExecutors: INodeExecutorFactory[] = [
     AgentExecutor,
     WaitExecutor,
     WebhookExecutor,
+    VisionExecutor,
+    SpeechExecutor,
+    DeviceControlExecutor,
     BreakExecutor,
     ContinueExecutor,
 ];

@@ -1,6 +1,5 @@
 /**
- * 语音播报节点 - 用于通过 xiaozhi.me 设备播放语音
- * 应用工作流中用于语音反馈、播报提醒等场景
+ * 语音播报节点 - 通过 CubeCat Lua speech.say 提示文字
  */
 
 import { nanoid } from "nanoid";
@@ -16,14 +15,14 @@ export const SpeechNodeRegistry: FlowNodeRegistry = {
   type: WorkflowNodeType.Speech,
   info: {
     icon: iconSpeech,
-    description: "通过 xiaozhi.me 设备播放语音，用于语音反馈和提醒。",
+    description: "在 CubeCat 上显示并提示一段文字，用于反馈和提醒。",
   },
   meta: {
     nodePanelLabel: "语音播报",
-    nodePanelGroup: "application",
+    nodePanelGroup: "app",
     nodePanelGroupLabel: "智能交互",
     size: { width: 360, height: 400 },
-    defaultPorts: [{ type: "output" }],
+    defaultPorts: [{ type: "input" }, { type: "output" }],
   },
   onAdd() {
     return {

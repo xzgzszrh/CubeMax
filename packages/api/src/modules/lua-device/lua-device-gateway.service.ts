@@ -18,7 +18,7 @@ import { WebSocket, WebSocketServer, type RawData } from "ws";
 import type { CreateLuaDeviceRunDto } from "./lua-device.dto";
 import { calculateLuaChunkCrc32 } from "./lua-device-protocol";
 
-const MAX_MESSAGE_BYTES = 24_576;
+const MAX_MESSAGE_BYTES = 80 * 1024;
 const HELLO_TIMEOUT_MS = 10_000;
 const CHUNK_ACK_TIMEOUT_MS = 5_000;
 const MAX_CHUNK_RETRIES = 3;
@@ -37,6 +37,7 @@ type ClientState = {
     ready: boolean;
     helloTimer: NodeJS.Timeout;
     alive: boolean;
+    protocol: "lap" | "legacy";
     deviceId?: string;
     bootId?: string;
     connectionId?: string;
@@ -157,11 +158,11 @@ export class LuaDeviceGatewayService implements OnApplicationBootstrap, OnApplic
         const params = Buffer.from(paramsJson, "utf8");
         const limits = device.limits;
         const maxSource = Math.min(65_536, limits?.maxScriptBytes ?? 65_536);
-        const maxParams = Math.min(4_096, limits?.maxParamsBytes ?? 4_096);
+        const maxParams = Math.min(16_384, limits?.maxParamsBytes ?? 16_384);
         if (source.length > maxSource) throw HttpErrorFactory.badRequest("Lua 源码超过设备限制");
         if (params.length > maxParams) throw HttpErrorFactory.badRequest("运行参数超过设备限制");
 
-        const requiredCapabilities = dto.requiredCapabilities ?? ["lua", "xiaozhi"];
+        const requiredCapabilities = dto.requiredCapabilities ?? ["lua"];
         if (device.capabilities.length > 0) {
             const unsupported = requiredCapabilities.filter(
                 (capability) => !device.capabilities.includes(capability),
@@ -227,6 +228,9 @@ export class LuaDeviceGatewayService implements OnApplicationBootstrap, OnApplic
         if (!client) {
             run.status = "stopping";
             run.error = { code: "STOP_PENDING", message: "设备离线，停止请求将在重连后发送" };
+        } else if (client.state.protocol === "lap") {
+            this.sendLap(client.socket, { v: 1, type: "cancel", id: run.id });
+            run.status = "stopping";
         } else {
             this.send(client, "run.stop", { run_id: run.id, reason: "user_request" }, run.id);
             run.status = "stopping";
@@ -272,6 +276,7 @@ export class LuaDeviceGatewayService implements OnApplicationBootstrap, OnApplic
         const state: ClientState = {
             ready: false,
             alive: true,
+            protocol: "legacy",
             pending: new Map(),
             helloTimer: setTimeout(
                 () => socket.close(4401, "hello timeout"),
@@ -300,13 +305,25 @@ export class LuaDeviceGatewayService implements OnApplicationBootstrap, OnApplic
                 !isRecord(parsed) ||
                 parsed.v !== 1 ||
                 typeof parsed.type !== "string" ||
-                typeof parsed.id !== "string" ||
-                typeof parsed.ts !== "string" ||
-                !isRecord(parsed.data)
+                typeof parsed.id !== "string"
             ) {
                 throw new Error("invalid envelope");
             }
-            envelope = parsed as Envelope;
+            const data = isRecord(parsed.data) ? { ...parsed.data } : parsed;
+            if (typeof parsed.protocol === "string" && typeof data.protocol !== "string") {
+                data.protocol = parsed.protocol;
+            }
+            envelope = {
+                v: 1,
+                type: parsed.type,
+                id: parsed.id,
+                ts:
+                    typeof parsed.ts === "string"
+                        ? parsed.ts
+                        : new Date().toISOString(),
+                data,
+                reply_to: typeof parsed.reply_to === "string" ? parsed.reply_to : undefined,
+            };
         } catch {
             return this.closeProtocol(socket, "invalid JSON envelope");
         }
@@ -337,21 +354,25 @@ export class LuaDeviceGatewayService implements OnApplicationBootstrap, OnApplic
 
     private async registerConnection(socket: WebSocket, state: ClientState, envelope: Envelope) {
         const data = envelope.data;
-        const deviceId = stringField(data, "device_id")?.toLowerCase();
-        const bootId = stringField(data, "boot_id");
-        const firmwareVersion = stringField(data, "firmware_version");
-        if (
-            !deviceId ||
-            !bootId ||
-            !firmwareVersion ||
-            !/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(
-                deviceId,
-            ) ||
-            !/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(bootId) ||
-            !/^[A-Za-z0-9.+-]{1,32}$/.test(firmwareVersion)
-        ) {
+        const deviceObj = isRecord(data.device) ? data.device : {};
+        const deviceId = (
+            stringField(data, "device_id") ||
+            stringField(deviceObj, "uuid") ||
+            stringField(deviceObj, "mac")
+        )?.toLowerCase();
+        const bootId = stringField(data, "boot_id") || randomUUID();
+        const firmwareVersion = (
+            stringField(data, "firmware_version") ||
+            stringField(deviceObj, "firmware") ||
+            "unknown"
+        ).replace(/[^A-Za-z0-9.+-]/g, "-").slice(0, 32);
+        const isLap =
+            stringField(data, "protocol") === "lua-agent" ||
+            stringField(deviceObj, "protocol") === "lua-agent";
+        if (!deviceId || deviceId.length < 8 || deviceId.length > 64) {
             return socket.close(4401, "invalid hello");
         }
+        state.protocol = isLap ? "lap" : "legacy";
         let device = await this.deviceRepository.findOne({ where: { deviceId } });
         if (!device) {
             device = this.deviceRepository.create({
@@ -373,18 +394,30 @@ export class LuaDeviceGatewayService implements OnApplicationBootstrap, OnApplic
         device.bootId = bootId;
         device.firmwareVersion = firmwareVersion;
         device.lastSeenAt = new Date();
-        device.capabilities = Array.isArray(data.capabilities)
-            ? data.capabilities.filter((item): item is string => typeof item === "string")
-            : [];
+        const luaInfo = isRecord(deviceObj.lua) ? deviceObj.lua : {};
+        const helloCaps = [
+            ...(Array.isArray(data.capabilities) ? data.capabilities : []),
+            ...(Array.isArray(luaInfo.capabilities) ? luaInfo.capabilities : []),
+            ...(Array.isArray(luaInfo.caps) ? luaInfo.caps : []),
+            "lua",
+        ].filter((item): item is string => typeof item === "string");
+        device.capabilities = [...new Set(helloCaps)];
         device.limits = this.parseLimits(data.limits);
         device.runtime = isRecord(data.runtime)
             ? {
                   executionModel: stringField(data.runtime, "execution_model") || "main_once",
-                  apiVersion: stringField(data.runtime, "api_version") || "xiaozhi.v1",
+                  apiVersion:
+                      stringField(data.runtime, "api_version") ||
+                      (state.protocol === "lap" ? "claw4.v1" : "xiaozhi.v1"),
                   transferStorage: stringField(data.runtime, "transfer_storage") || "ram",
                   maxRunTimeoutMs: numberField(data.runtime, "max_run_timeout_ms") || 60_000,
               }
-            : null;
+            : {
+                  executionModel: "main_once",
+                  apiVersion: state.protocol === "lap" ? "claw4.v1" : "xiaozhi.v1",
+                  transferStorage: "ram",
+                  maxRunTimeoutMs: 60_000,
+              };
         await this.deviceRepository.save(device);
         await this.connectionRepository.save(
             this.connectionRepository.create({
@@ -395,22 +428,31 @@ export class LuaDeviceGatewayService implements OnApplicationBootstrap, OnApplic
                 connectedAt: new Date(),
             }),
         );
-        this.send(
-            socket,
-            "hello.welcome",
-            {
-                connection_id: state.connectionId,
-                heartbeat_interval_ms: 20_000,
-                server_limits: {
-                    max_script_bytes: 65_536,
-                    max_params_bytes: 4_096,
-                    max_chunk_bytes: 1_024,
-                    max_message_bytes: MAX_MESSAGE_BYTES,
+        if (state.protocol === "lap") {
+            this.sendLap(socket, {
+                v: 1,
+                type: "hello_ok",
+                id: envelope.id,
+                session: state.connectionId,
+            });
+        } else {
+            this.send(
+                socket,
+                "hello.welcome",
+                {
+                    connection_id: state.connectionId,
+                    heartbeat_interval_ms: 20_000,
+                    server_limits: {
+                        max_script_bytes: 65_536,
+                        max_params_bytes: 16_384,
+                        max_chunk_bytes: 1_024,
+                        max_message_bytes: MAX_MESSAGE_BYTES,
+                    },
                 },
-            },
-            undefined,
-            envelope.id,
-        );
+                undefined,
+                envelope.id,
+            );
+        }
         await this.resumePendingRun(deviceId);
     }
 
@@ -420,7 +462,22 @@ export class LuaDeviceGatewayService implements OnApplicationBootstrap, OnApplic
         envelope: Envelope,
     ) {
         if (!state.deviceId) return;
+        state.alive = true;
         switch (envelope.type) {
+            case "ping":
+                this.sendLap(socket, {
+                    v: 1,
+                    type: "pong",
+                    id: envelope.id,
+                    ts_ms: Date.now(),
+                });
+                return;
+            case "pong":
+            case "hello_ok":
+                return;
+            case "result":
+                await this.handleLapResult(state.deviceId, envelope);
+                return;
             case "device.status":
                 await this.deviceRepository.update(
                     { deviceId: state.deviceId },
@@ -571,6 +628,22 @@ export class LuaDeviceGatewayService implements OnApplicationBootstrap, OnApplic
     private async sendPrepare(run: LuaDeviceRun) {
         const client = this.clients.get(run.deviceId);
         if (!client) return;
+        if (client.state.protocol === "lap") {
+            this.sendLap(client.socket, {
+                v: 1,
+                type: "run",
+                id: run.id,
+                script: run.source,
+                entry: "main",
+                args: run.params,
+                timeout_ms: run.timeoutMs,
+                capabilities: this.toLapCapabilities(run.requiredCapabilities),
+            });
+            run.status = "running";
+            run.startedAt ??= new Date();
+            await this.runRepository.save(run);
+            return;
+        }
         const sourceLength = Buffer.byteLength(run.source, "utf8");
         const totalChunks = Math.ceil(sourceLength / run.chunkBytes);
         this.send(
@@ -647,8 +720,11 @@ export class LuaDeviceGatewayService implements OnApplicationBootstrap, OnApplic
         if (!run) return;
         if (run.status === "stopping") {
             const client = this.clients.get(deviceId);
-            if (client)
+            if (client?.state.protocol === "lap") {
+                this.sendLap(client.socket, { v: 1, type: "cancel", id: run.id });
+            } else if (client) {
                 this.send(client, "run.stop", { run_id: run.id, reason: "user_request" }, run.id);
+            }
             return;
         }
         await this.sendPrepare(run);
@@ -789,6 +865,52 @@ export class LuaDeviceGatewayService implements OnApplicationBootstrap, OnApplic
         });
         if (!run) throw HttpErrorFactory.notFound("Lua 运行任务不存在");
         return run;
+    }
+
+    private async handleLapResult(deviceId: string, envelope: Envelope) {
+        const run = await this.findDeviceRun(deviceId, envelope.id);
+        if (!run) return;
+        const payload = envelope.data;
+        const statusName = stringField(payload, "status");
+        const ok = payload.ok === true || statusName === "done";
+        let status: LuaDeviceRun["status"] = "failed";
+        if (ok) status = "succeeded";
+        else if (statusName === "timeout") status = "timed_out";
+        else if (statusName === "cancelled") status = "stopped";
+        if (!TERMINAL_STATUSES.includes(run.status as never)) {
+            run.status = status;
+            run.result = payload.value ?? null;
+            const errorObj = isRecord(payload.error) ? payload.error : null;
+            run.error =
+                !ok && errorObj
+                    ? {
+                          code: stringField(errorObj, "code") || "LUA_RUNTIME_ERROR",
+                          message: stringField(errorObj, "message") || "Lua 运行失败",
+                      }
+                    : !ok
+                      ? {
+                            code: statusName || "LUA_RUNTIME_ERROR",
+                            message: stringField(payload, "output") || "Lua 运行失败",
+                        }
+                      : null;
+            run.finishedAt = new Date();
+            await this.runRepository.save(run);
+        }
+        await this.resumePendingRun(deviceId);
+    }
+
+    private sendLap(socket: WebSocket, payload: Record<string, unknown>) {
+        if (socket.readyState === WebSocket.OPEN) socket.send(JSON.stringify(payload));
+    }
+
+    private toLapCapabilities(required: string[] | null | undefined): string[] {
+        const caps = new Set<string>(["log", "http"]);
+        for (const cap of required ?? []) {
+            if (cap === "camera" || cap === "uart" || cap === "http" || cap === "log") {
+                caps.add(cap);
+            }
+        }
+        return [...caps];
     }
 
     private serializeDevice(device: LuaPhysicalDevice) {

@@ -18,13 +18,9 @@ import type { FlowNodeJSON } from "../../typings";
 import { defaultFormMeta } from "../default-form-meta";
 
 const ACTION_OPTIONS = [
-  { value: "led_toggle", label: "LED 开关" },
-  { value: "led_rgb", label: "RGB LED" },
-  { value: "buzzer", label: "蜂鸣器" },
-  { value: "motor", label: "电机" },
-  { value: "servo", label: "舵机" },
-  { value: "gpio_write", label: "GPIO 写入" },
-  { value: "pwm", label: "PWM 输出" },
+  { value: "led_toggle", label: "背光开关" },
+  { value: "buzzer", label: "屏幕通知" },
+  { value: "motor", label: "震动马达" },
 ];
 
 function ActionSelect() {
@@ -65,50 +61,26 @@ function LedParams() {
   const isSidebar = useIsSidebar();
 
   return (
-    <>
-      <Field<number> name="ledIndex" defaultValue={0}>
-        {({ field }) =>
-          isSidebar ? (
-            <FormItem name="LED 编号" type="number">
-              <InputNumber
-                value={field.value ?? 0}
-                disabled={readonly}
-                onChange={(value) => field.onChange(value ?? 0)}
-                min={0}
-                max={10}
-                size="small"
-                style={{ width: "100%" }}
-              />
-            </FormItem>
-          ) : (
-            <FormItem name="LED 编号" type="number">
-              <ReadonlyValue value={field.value ?? 0} />
-            </FormItem>
-          )
-        }
-      </Field>
-
-      <Field<boolean> name="ledState" defaultValue={true}>
-        {({ field }) =>
-          isSidebar ? (
-            <FormItem name="LED 状态" type="boolean">
-              <Switch
-                checked={field.value ?? true}
-                disabled={readonly}
-                onChange={(checked) => field.onChange(checked)}
-                size="small"
-                checkedText="亮"
-                uncheckedText="灭"
-              />
-            </FormItem>
-          ) : (
-            <FormItem name="LED 状态" type="boolean">
-              <ReadonlyValue value={field.value ? "亮" : "灭"} />
-            </FormItem>
-          )
-        }
-      </Field>
-    </>
+    <Field<boolean> name="ledState" defaultValue={true}>
+      {({ field }) =>
+        isSidebar ? (
+          <FormItem name="背光状态" type="boolean">
+            <Switch
+              checked={field.value ?? true}
+              disabled={readonly}
+              onChange={(checked) => field.onChange(checked)}
+              size="small"
+              checkedText="亮"
+              uncheckedText="灭"
+            />
+          </FormItem>
+        ) : (
+          <FormItem name="背光状态" type="boolean">
+            <ReadonlyValue value={field.value ? "亮" : "灭"} />
+          </FormItem>
+        )
+      }
+    </Field>
   );
 }
 
@@ -117,53 +89,32 @@ function BuzzerParams() {
   const isSidebar = useIsSidebar();
 
   return (
-    <>
-      <Field<number> name="buzzerFrequency" defaultValue={1000}>
-        {({ field }) =>
-          isSidebar ? (
-            <FormItem name="频率(Hz)" type="number">
-              <InputNumber
-                value={field.value ?? 1000}
-                disabled={readonly}
-                onChange={(value) => field.onChange(value ?? 1000)}
-                min={20}
-                max={20000}
-                step={100}
-                size="small"
-                style={{ width: "100%" }}
-              />
-            </FormItem>
-          ) : (
-            <FormItem name="频率(Hz)" type="number">
-              <ReadonlyValue value={`${field.value ?? 1000} Hz`} />
-            </FormItem>
-          )
-        }
-      </Field>
-
-      <Field<number> name="buzzerDurationMs" defaultValue={500}>
-        {({ field }) =>
-          isSidebar ? (
-            <FormItem name="持续时间(ms)" type="number">
-              <InputNumber
-                value={field.value ?? 500}
-                disabled={readonly}
-                onChange={(value) => field.onChange(value ?? 500)}
-                min={50}
-                max={10000}
-                step={50}
-                size="small"
-                style={{ width: "100%" }}
-              />
-            </FormItem>
-          ) : (
-            <FormItem name="持续时间(ms)" type="number">
-              <ReadonlyValue value={`${field.value ?? 500} ms`} />
-            </FormItem>
-          )
-        }
-      </Field>
-    </>
+    <Field<string> name="notifyText">
+      {({ field }) =>
+        isSidebar ? (
+          <FormItem name="通知内容" type="string">
+            <input
+              className="workflow-form-input"
+              value={field.value ?? ""}
+              onChange={(e) => field.onChange(e.target.value)}
+              disabled={readonly}
+              placeholder="显示在 CubeCat 上的短通知"
+              style={{
+                width: "100%",
+                padding: "6px 10px",
+                borderRadius: "6px",
+                border: "1px solid var(--border-color, #e2e8f0)",
+                fontSize: "13px",
+              }}
+            />
+          </FormItem>
+        ) : (
+          <FormItem name="通知内容" type="string">
+            <ReadonlyValue value={field.value || "beep"} />
+          </FormItem>
+        )
+      }
+    </Field>
   );
 }
 
@@ -173,45 +124,24 @@ function MotorParams() {
 
   return (
     <>
-      <Field<number> name="motorIndex" defaultValue={0}>
+      <Field<number> name="buzzerDurationMs" defaultValue={400}>
         {({ field }) =>
           isSidebar ? (
-            <FormItem name="电机编号" type="number">
+            <FormItem name="震动时长(ms)" type="number">
               <InputNumber
-                value={field.value ?? 0}
+                value={field.value ?? 400}
                 disabled={readonly}
-                onChange={(value) => field.onChange(value ?? 0)}
-                min={0}
-                max={4}
+                onChange={(value) => field.onChange(value ?? 400)}
+                min={50}
+                max={5000}
+                step={50}
                 size="small"
                 style={{ width: "100%" }}
               />
             </FormItem>
           ) : (
-            <FormItem name="电机编号" type="number">
-              <ReadonlyValue value={field.value ?? 0} />
-            </FormItem>
-          )
-        }
-      </Field>
-
-      <Field<number> name="motorSpeed" defaultValue={100}>
-        {({ field }) =>
-          isSidebar ? (
-            <FormItem name="速度 (%)" type="number">
-              <InputNumber
-                value={field.value ?? 100}
-                disabled={readonly}
-                onChange={(value) => field.onChange(value ?? 100)}
-                min={0}
-                max={100}
-                size="small"
-                style={{ width: "100%" }}
-              />
-            </FormItem>
-          ) : (
-            <FormItem name="速度 (%)" type="number">
-              <ReadonlyValue value={`${field.value ?? 100}%`} />
+            <FormItem name="震动时长(ms)" type="number">
+              <ReadonlyValue value={`${field.value ?? 400} ms`} />
             </FormItem>
           )
         }

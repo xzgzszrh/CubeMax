@@ -21,6 +21,9 @@ import type {
     WorkflowRuntimeTaskIdDto,
     WorkflowWaitEventDto,
 } from "./workflow-runtime.dto";
+import { WorkflowDeviceControlExecutorService } from "./workflow-device-control-executor.service";
+import { WorkflowSpeechExecutorService } from "./workflow-speech-executor.service";
+import { WorkflowVisionExecutorService } from "./workflow-vision-executor.service";
 import { WorkflowWaitExecutorService } from "./workflow-wait-executor.service";
 import { WorkflowWaitRegistry } from "./workflow-wait-registry.service";
 import { WorkflowWebhookExecutorService } from "./workflow-webhook-executor.service";
@@ -47,6 +50,9 @@ export class WorkflowRuntimeExecutionService {
         private readonly workflowAgentExecutorService: WorkflowAgentExecutorService,
         private readonly workflowWaitExecutorService: WorkflowWaitExecutorService,
         private readonly workflowWebhookExecutorService: WorkflowWebhookExecutorService,
+        private readonly workflowVisionExecutorService: WorkflowVisionExecutorService,
+        private readonly workflowSpeechExecutorService: WorkflowSpeechExecutorService,
+        private readonly workflowDeviceControlExecutorService: WorkflowDeviceControlExecutorService,
         private readonly waitRegistry: WorkflowWaitRegistry,
         private readonly workflowService: WorkflowService,
         private readonly programmingProjectService: ProgrammingProjectService,
@@ -61,6 +67,11 @@ export class WorkflowRuntimeExecutionService {
         runtime.registerWaitExecutor((input) => this.workflowWaitExecutorService.execute(input));
         runtime.registerWebhookExecutor((input) =>
             this.workflowWebhookExecutorService.execute(input),
+        );
+        runtime.registerVisionExecutor((input) => this.workflowVisionExecutorService.execute(input));
+        runtime.registerSpeechExecutor((input) => this.workflowSpeechExecutorService.execute(input));
+        runtime.registerDeviceControlExecutor((input) =>
+            this.workflowDeviceControlExecutorService.execute(input),
         );
         return runtime;
     }

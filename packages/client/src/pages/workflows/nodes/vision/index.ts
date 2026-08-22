@@ -1,6 +1,5 @@
 /**
- * 视觉节点 - 获取摄像头图片并交给 AI 分析
- * 用于拍摄照片、图像识别、视觉反馈等场景
+ * 视觉节点 - CubeCat 拍照并用 camera.explain 分析
  */
 
 import { nanoid } from "nanoid";
@@ -16,14 +15,14 @@ export const VisionNodeRegistry: FlowNodeRegistry = {
   type: WorkflowNodeType.Vision,
   info: {
     icon: iconVision,
-    description: "拍摄照片并交给 AI 分析，获取视觉反馈用于决策。",
+    description: "让 CubeCat 拍照并用 camera.explain 分析画面。",
   },
   meta: {
     nodePanelLabel: "视觉识别",
     nodePanelGroup: "app",
     nodePanelGroupLabel: "智能交互",
     size: { width: 380, height: 480 },
-    defaultPorts: [{ type: "output" }],
+    defaultPorts: [{ type: "input" }, { type: "output" }],
   },
   onAdd() {
     return {

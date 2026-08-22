@@ -36,6 +36,9 @@ import { WorkflowRuntimeController } from "./workflow-runtime.controller";
 import { WorkflowRuntimeExecutionService } from "./workflow-runtime-execution.service";
 import { WorkflowWaitExecutorService } from "./workflow-wait-executor.service";
 import { WorkflowWaitRegistry } from "./workflow-wait-registry.service";
+import { WorkflowDeviceControlExecutorService } from "./workflow-device-control-executor.service";
+import { WorkflowSpeechExecutorService } from "./workflow-speech-executor.service";
+import { WorkflowVisionExecutorService } from "./workflow-vision-executor.service";
 import { WorkflowWebhookExecutorService } from "./workflow-webhook-executor.service";
 
 @Module({
@@ -78,6 +81,9 @@ import { WorkflowWebhookExecutorService } from "./workflow-webhook-executor.serv
         WorkflowWaitRegistry,
         WorkflowWaitExecutorService,
         WorkflowWebhookExecutorService,
+        WorkflowVisionExecutorService,
+        WorkflowSpeechExecutorService,
+        WorkflowDeviceControlExecutorService,
         WorkflowRuntimeExecutionService,
         SecretService,
     ],

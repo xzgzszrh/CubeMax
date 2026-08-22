@@ -1,5 +1,58 @@
 # CubeMax ESP32 Lua WebSocket 协议 v1
 
+## 0. Claw4 / CubeCat 现行协议（LAP）
+
+Metalio Claw4 固件不再实现下文的 `run.prepare` / `run.chunk` 分片协议，也不再提供 `xiaozhi.v1` Lua API。设备打开「远程脚本」后连接：
+
+```text
+/api/device-ws/v1
+```
+
+并立即发送 LAP `hello`（`protocol: "lua-agent"`）。CubeMax 网关据此走 **Lua Agent Protocol**：
+
+| 方向 | type | 作用 |
+| --- | --- | --- |
+| 设备 → 服务器 | `hello` | 登记 Board UUID、能力、限制 |
+| 服务器 → 设备 | `hello_ok` | 可选，登记成功 |
+| 服务器 → 设备 | `run` | 一次下发完整 Lua 源码，调用 `main(args)` |
+| 设备 → 服务器 | `result` | `ok` / `status` / `value` / `output` |
+| 服务器 → 设备 | `cancel` | 取消当前 `run`（`id` 相同） |
+| 双向 | `ping` / `pong` | 存活 |
+
+`run` 示例：
+
+```json
+{
+  "v": 1,
+  "type": "run",
+  "id": "<run uuid>",
+  "script": "function main(args)\n  return { ok = true }\nend\n",
+  "entry": "main",
+  "args": { "text": "hello" },
+  "timeout_ms": 15000,
+  "capabilities": ["http", "log", "camera"]
+}
+```
+
+设备 Lua API 以 Claw4 `lua_runtime` 为准，必须 `require`：
+
+- `runtime` / `ui` / `audio` / `http`
+- `camera.explain(question)`（需要 `camera` capability）
+- `speech.say(text)`
+- `device.set_brightness` / `set_volume` / `vibrate` / `notify`
+
+「编程 / 应用 / 智能交互」节点分工：
+
+| 节点 | 通道 |
+| --- | --- |
+| 设置智能体 / 等待 / 回传端点 | 小智 MCP / 角色提示词，不走 Lua |
+| 视觉识别 / 语音播报 / 设备控制 | 工程选中的 CubeCat，经本网关下发 Lua |
+| Lua 模块节点 | 物理设备目标时同样走 LAP `run` |
+
+小智账号凭据按明文存储，不再使用 `XIAOZHI_ENCRYPTION_KEY`。旧库里 `x1.` 开头的密文需要老师重新登录一次。
+
+下文第 1 节起的分片协议仅用于尚未升级的旧固件。网关对 `protocol !== "lua-agent"` 的 hello 仍走 `run.prepare` / `run.chunk`。
+
 ## 1. 目标与边界
 
 本协议用于让 ESP32 主动连接 CubeMax 服务器。用户在 Web 端点击“发送并运行”后，服务器将当前 Lua 源码快照和参数可靠地下发到指定 ESP32，由设备执行并回传状态、日志和结果。

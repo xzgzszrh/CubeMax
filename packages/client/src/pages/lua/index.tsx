@@ -548,7 +548,10 @@ export default function LuaModulesPage({ projectId: projectIdProp }: { projectId
       return;
     }
     try {
-      const usesDisplay = /\bxiaozhi\s*\.\s*ui\b/.test(editor.draftCode);
+      const usesUi = /\brequire\s*\(\s*["']ui["']\s*\)/.test(editor.draftCode);
+      const usesCamera = /\brequire\s*\(\s*["']camera["']\s*\)/.test(editor.draftCode);
+      const requiredCapabilities = ["lua"];
+      if (usesCamera) requiredCapabilities.push("camera");
       createDeviceRunMutation.mutate({
         deviceId: physicalDeviceId,
         dto: {
@@ -557,8 +560,8 @@ export default function LuaModulesPage({ projectId: projectIdProp }: { projectId
           projectId,
           source: editor.draftCode,
           params: parseObject(editor.testParams, "测试参数"),
-          requiredCapabilities: usesDisplay ? ["lua", "xiaozhi", "display"] : ["lua", "xiaozhi"],
-          timeoutMs: usesDisplay ? 60_000 : 10_000,
+          requiredCapabilities,
+          timeoutMs: usesUi || usesCamera ? 60_000 : 15_000,
         },
       });
     } catch (error) {

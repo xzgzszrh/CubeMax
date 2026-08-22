@@ -24,3 +24,12 @@ export type {
     WebhookExecutorInput,
     WebhookExecutorResult,
 } from "./nodes/webhook/index.ts";
+export { registerVisionExecutor } from "./nodes/vision/index.ts";
+export type { VisionExecutorHandler, VisionExecutorInput } from "./nodes/vision/index.ts";
+export { registerSpeechExecutor } from "./nodes/speech/index.ts";
+export type { SpeechExecutorHandler, SpeechExecutorInput } from "./nodes/speech/index.ts";
+export { registerDeviceControlExecutor } from "./nodes/device-control/index.ts";
+export type {
+    DeviceControlExecutorHandler,
+    DeviceControlExecutorInput,
+} from "./nodes/device-control/index.ts";

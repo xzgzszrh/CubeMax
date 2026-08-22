@@ -155,31 +155,15 @@ export class WorkflowApplicationExecutorService {
   /**
    * 验证 Vision 节点数据
    */
-  validateVisionNode(data: VisionNodeData): { valid: boolean; errors: string[] } {
-    const errors: string[] = [];
-    
-    if (!data.deviceId) {
-      errors.push("Vision 节点缺少 deviceId");
-    }
-    
-    return { valid: errors.length === 0, errors };
+  validateVisionNode(_data: VisionNodeData): { valid: boolean; errors: string[] } {
+    return { valid: true, errors: [] };
   }
 
   /**
    * 验证 Speech 节点数据
    */
-  validateSpeechNode(data: SpeechNodeData): { valid: boolean; errors: string[] } {
-    const errors: string[] = [];
-    
-    if (!data.agentId) {
-      errors.push("Speech 节点缺少 agentId");
-    }
-    
-    if (!data.text?.trim()) {
-      errors.push("Speech 节点缺少 text");
-    }
-    
-    return { valid: errors.length === 0, errors };
+  validateSpeechNode(_data: SpeechNodeData): { valid: boolean; errors: string[] } {
+    return { valid: true, errors: [] };
   }
 
   /**
@@ -187,15 +171,9 @@ export class WorkflowApplicationExecutorService {
    */
   validateDeviceControlNode(data: DeviceControlNodeData): { valid: boolean; errors: string[] } {
     const errors: string[] = [];
-    
-    if (!data.deviceId) {
-      errors.push("DeviceControl 节点缺少 deviceId");
-    }
-    
     if (!data.action) {
       errors.push("DeviceControl 节点缺少 action");
     }
-    
     return { valid: errors.length === 0, errors };
   }
 

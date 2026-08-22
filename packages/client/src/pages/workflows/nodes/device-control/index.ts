@@ -1,6 +1,5 @@
 /**
- * 设备控制节点 - 直接控制 CubeCat 设备的硬件输出
- * 应用工作流中用于控制 LED、蜂鸣器、电机等外设
+ * 设备控制节点 - 控制 CubeCat 背光、通知和震动
  */
 
 import { nanoid } from "nanoid";
@@ -16,14 +15,14 @@ export const DeviceControlNodeRegistry: FlowNodeRegistry = {
   type: WorkflowNodeType.DeviceControl,
   info: {
     icon: iconDevice,
-    description: "直接控制 CubeCat 设备的硬件输出，如 LED、蜂鸣器、电机等。",
+    description: "控制 CubeCat 背光、通知和震动马达。",
   },
   meta: {
     nodePanelLabel: "设备控制",
     nodePanelGroup: "app",
     nodePanelGroupLabel: "智能交互",
     size: { width: 360, height: 420 },
-    defaultPorts: [{ type: "output" }],
+    defaultPorts: [{ type: "input" }, { type: "output" }],
   },
   onAdd() {
     return {
@@ -34,12 +33,11 @@ export const DeviceControlNodeRegistry: FlowNodeRegistry = {
         // 设备 ID（由工程设置中配置）
         // 控制动作类型
         action: "led_toggle",
-        // LED 控制参数
         ledIndex: 0,
         ledState: true,
-        // 蜂鸣器参数
+        notifyText: "",
         buzzerFrequency: 1000,
-        buzzerDurationMs: 500,
+        buzzerDurationMs: 400,
         // 电机参数
         motorIndex: 0,
         motorSpeed: 100,

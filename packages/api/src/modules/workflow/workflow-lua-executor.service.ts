@@ -102,15 +102,18 @@ export class WorkflowLuaExecutorService {
         if (!context?.deviceId) {
             throw HttpErrorFactory.badRequest("工程尚未选择 CubeCat 物理设备");
         }
-        const usesDisplay = /\bxiaozhi\s*\.\s*ui\b/.test(source);
+        const usesUi = /\brequire\s*\(\s*["']ui["']\s*\)/.test(source);
+        const usesCamera = /\brequire\s*\(\s*["']camera["']\s*\)/.test(source);
+        const requiredCapabilities = ["lua"];
+        if (usesCamera) requiredCapabilities.push("camera");
         const run = await this.luaDeviceGatewayService.createRun(userId, context.deviceId, {
             name: moduleName.slice(0, 100),
             moduleId,
             projectId: context.projectId,
             source,
             params: inputs,
-            requiredCapabilities: usesDisplay ? ["lua", "xiaozhi", "display"] : ["lua", "xiaozhi"],
-            timeoutMs: usesDisplay ? 60_000 : 10_000,
+            requiredCapabilities,
+            timeoutMs: usesUi || usesCamera ? 60_000 : 15_000,
         });
         const completed = await this.luaDeviceGatewayService.waitForRun(
             userId,

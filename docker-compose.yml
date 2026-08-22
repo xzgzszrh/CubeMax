@@ -104,7 +104,6 @@ services:
         environment:
             TZ: Asia/Shanghai
             SERVER_PORT: ${SERVER_PORT:-4090}
-            XIAOZHI_ENCRYPTION_KEY: ${XIAOZHI_ENCRYPTION_KEY:?XIAOZHI_ENCRYPTION_KEY is required}
             XIAOZHI_API_BASE: ${XIAOZHI_API_BASE:-https://xiaozhi.me/api}
             QUICK_START_MODE: ${QUICK_START_MODE:-false}
             NPM_REGISTRY_URL: ${NPM_REGISTRY_URL:-}
