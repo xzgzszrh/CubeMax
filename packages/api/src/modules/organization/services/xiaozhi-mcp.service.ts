@@ -29,6 +29,7 @@ import type {
     UpdateXiaozhiMcpSettingsDto,
 } from "../dto/xiaozhi-mcp.dto";
 import { OrganizationService } from "./organization.service";
+import { WorkflowWebhookToolRegistry } from "./workflow-webhook-tool-registry.service";
 import { XiaozhiCredentialCryptoService } from "./xiaozhi-credential-crypto.service";
 
 /**
@@ -179,8 +180,8 @@ type ExposedTool = {
         communicationType: string;
         headers: Record<string, string> | null;
     };
-    /** 已安装应用注册的工具：在进程内直接调用，并带上设备身份。 */
-    internal?: { sessionId: string };
+    /** 已安装应用或工作流回传端点注册的进程内工具。 */
+    internal?: { sessionId: string; kind?: "classroom" | "workflow" };
     definition: {
         name: string;
         title?: string;
@@ -223,6 +224,7 @@ export class XiaozhiMcpGatewayService implements OnModuleInit, OnModuleDestroy {
     private readonly connectors = new Map<string, ConnectorState>();
     private readonly reconnectDelays = DEFAULT_RECONNECT_DELAYS;
     private unsubscribeToolRegistry: (() => void) | null = null;
+    private unsubscribeWebhookRegistry: (() => void) | null = null;
 
     constructor(
         @InjectRepository(XiaozhiMcpConnection)
@@ -239,6 +241,7 @@ export class XiaozhiMcpGatewayService implements OnModuleInit, OnModuleDestroy {
         private readonly mcpToolRepository: Repository<AiMcpTool>,
         private readonly builtinMcpRegistry: BuiltinMcpRegistryService,
         private readonly classroomToolRegistry: ClassroomToolRegistryService,
+        private readonly workflowWebhookTools: WorkflowWebhookToolRegistry,
         private readonly eventEmitter: EventEmitter2,
         private readonly credentialCrypto: XiaozhiCredentialCryptoService,
     ) {}
@@ -246,6 +249,11 @@ export class XiaozhiMcpGatewayService implements OnModuleInit, OnModuleDestroy {
     async onModuleInit() {
         // 应用注册/注销工具时只刷新受影响的连接，不断开 WebSocket。
         this.unsubscribeToolRegistry = this.classroomToolRegistry.onChange((agentBindingIds) => {
+            for (const agentBindingId of agentBindingIds) {
+                void this.reloadAgentTools(agentBindingId);
+            }
+        });
+        this.unsubscribeWebhookRegistry = this.workflowWebhookTools.onChange((agentBindingIds) => {
             for (const agentBindingId of agentBindingIds) {
                 void this.reloadAgentTools(agentBindingId);
             }
@@ -270,6 +278,8 @@ export class XiaozhiMcpGatewayService implements OnModuleInit, OnModuleDestroy {
     async onModuleDestroy() {
         this.unsubscribeToolRegistry?.();
         this.unsubscribeToolRegistry = null;
+        this.unsubscribeWebhookRegistry?.();
+        this.unsubscribeWebhookRegistry = null;
         await Promise.all([...this.connectors.keys()].map((id) => this.removeConnection(id)));
     }
 
@@ -593,11 +603,26 @@ export class XiaozhiMcpGatewayService implements OnModuleInit, OnModuleDestroy {
             exposed.set(exposedName, {
                 exposedName,
                 toolName: tool.name,
-                internal: { sessionId: tool.sessionId },
+                internal: { sessionId: tool.sessionId, kind: "classroom" },
                 definition: {
                     name: exposedName,
                     title: tool.title || tool.name,
                     description: tool.description || `课堂应用提供的工具`,
+                    inputSchema: tool.inputSchema ?? { type: "object", properties: {} },
+                },
+            });
+        }
+
+        for (const tool of this.workflowWebhookTools.listToolsFor(agentBindingId)) {
+            const exposedName = reserveName(tool.name);
+            exposed.set(exposedName, {
+                exposedName,
+                toolName: tool.name,
+                internal: { sessionId: tool.sessionId, kind: "workflow" },
+                definition: {
+                    name: exposedName,
+                    title: tool.title || tool.name,
+                    description: tool.description || "工作流回传端点",
                     inputSchema: tool.inputSchema ?? { type: "object", properties: {} },
                 },
             });
@@ -689,6 +714,42 @@ export class XiaozhiMcpGatewayService implements OnModuleInit, OnModuleDestroy {
             this.logger.warn(`Failed to load BuildingAI MCP tools: ${safeErrorMessage(error)}`);
         }
         return exposed;
+    }
+
+    private async handleWorkflowWebhookToolCall(
+        state: ConnectorState,
+        socket: GatewaySocket,
+        id: JsonRpcId,
+        exposed: ExposedTool,
+        params: Record<string, unknown>,
+    ) {
+        const snapshot = state.snapshot;
+        const sessionId = exposed.internal?.sessionId;
+        if (!snapshot || !sessionId) {
+            this.sendError(socket, id, -32603, "MCP 连接尚未就绪");
+            return;
+        }
+        const args = (params.arguments || {}) as Record<string, unknown>;
+        try {
+            const result = await this.workflowWebhookTools.call(
+                snapshot.agentBindingId,
+                sessionId,
+                exposed.toolName,
+                args,
+            );
+            const text =
+                typeof result === "string" ? result : JSON.stringify(result ?? { received: true });
+            this.sendResult(socket, id, {
+                content: [{ type: "text", text }],
+                ...(typeof result === "object" && result !== null
+                    ? { structuredContent: result }
+                    : {}),
+                isError: false,
+            });
+            this.notifyToolCalled(state, String(params.name || exposed.toolName), args);
+        } catch (error) {
+            this.sendError(socket, id, -32603, safeErrorMessage(error));
+        }
     }
 
     /**
@@ -943,6 +1004,10 @@ export class XiaozhiMcpGatewayService implements OnModuleInit, OnModuleDestroy {
         if (params.name !== state.settings.toolName) {
             const exposed = state.exposedTools.get(String(params.name || ""));
             if (exposed?.internal) {
+                if (exposed.internal.kind === "workflow") {
+                    await this.handleWorkflowWebhookToolCall(state, socket, id, exposed, params);
+                    return;
+                }
                 await this.handleClassroomAppToolCall(state, socket, id, exposed, params);
                 return;
             }

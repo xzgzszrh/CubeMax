@@ -121,3 +121,22 @@ export type WaitExecutorHandler = (
 ) => Promise<WaitExecutorResult> | WaitExecutorResult;
 
 export declare const registerWaitExecutor: (executor: WaitExecutorHandler) => void;
+
+export type WebhookExecutorInput = {
+    userId?: string;
+    runtimeContext?: WorkflowRuntimeExecutorContext;
+    node: { id: string; type: string; data?: Record<string, unknown> };
+    inputs: Record<string, unknown>;
+    signal?: AbortSignal;
+};
+
+export type WebhookExecutorResult = {
+    outputs: Record<string, unknown>;
+    branch: "received" | "error";
+};
+
+export type WebhookExecutorHandler = (
+    input: WebhookExecutorInput,
+) => Promise<WebhookExecutorResult> | WebhookExecutorResult;
+
+export declare const registerWebhookExecutor: (executor: WebhookExecutorHandler) => void;

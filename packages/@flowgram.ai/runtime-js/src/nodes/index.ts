@@ -13,6 +13,7 @@ import { BreakExecutor } from "./break/index.ts";
 import { LuaExecutor } from "./lua/index.ts";
 import { AgentExecutor } from "./agent/index.ts";
 import { WaitExecutor } from "./wait/index.ts";
+import { WebhookExecutor } from "./webhook/index.ts";
 
 export const WorkflowRuntimeNodeExecutors: INodeExecutorFactory[] = [
     StartExecutor,
@@ -28,6 +29,7 @@ export const WorkflowRuntimeNodeExecutors: INodeExecutorFactory[] = [
     LuaExecutor,
     AgentExecutor,
     WaitExecutor,
+    WebhookExecutor,
     BreakExecutor,
     ContinueExecutor,
 ];

@@ -36,6 +36,7 @@ import { WorkflowRuntimeController } from "./workflow-runtime.controller";
 import { WorkflowRuntimeExecutionService } from "./workflow-runtime-execution.service";
 import { WorkflowWaitExecutorService } from "./workflow-wait-executor.service";
 import { WorkflowWaitRegistry } from "./workflow-wait-registry.service";
+import { WorkflowWebhookExecutorService } from "./workflow-webhook-executor.service";
 
 @Module({
     imports: [
@@ -76,6 +77,7 @@ import { WorkflowWaitRegistry } from "./workflow-wait-registry.service";
         WorkflowAgentExecutorService,
         WorkflowWaitRegistry,
         WorkflowWaitExecutorService,
+        WorkflowWebhookExecutorService,
         WorkflowRuntimeExecutionService,
         SecretService,
     ],

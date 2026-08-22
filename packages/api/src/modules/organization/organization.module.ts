@@ -40,6 +40,7 @@ import { OrganizationService } from "./services/organization.service";
 import { OrganizationAppService } from "./services/organization-app.service";
 import { OrganizationConsoleService } from "./services/organization-console.service";
 import { OrganizationQuotaService } from "./services/organization-quota.service";
+import { WorkflowWebhookToolRegistry } from "./services/workflow-webhook-tool-registry.service";
 import { XiaozhiService } from "./services/xiaozhi.service";
 import { XiaozhiAutomationService } from "./services/xiaozhi-automation.service";
 import { XiaozhiCredentialCryptoService } from "./services/xiaozhi-credential-crypto.service";
@@ -88,6 +89,7 @@ import { XiaozhiMcpGatewayService, XiaozhiMcpService } from "./services/xiaozhi-
         XiaozhiAutomationService,
         XiaozhiMcpGatewayService,
         XiaozhiMcpService,
+        WorkflowWebhookToolRegistry,
         ClassroomService,
         ClassroomWorkspaceAdapter,
         ClassroomSessionSweeperService,
@@ -96,6 +98,6 @@ import { XiaozhiMcpGatewayService, XiaozhiMcpService } from "./services/xiaozhi-
         OrganizationQuotaService,
         OrganizationConsoleService,
     ],
-    exports: [OrganizationService, ClassroomService, XiaozhiService],
+    exports: [OrganizationService, ClassroomService, XiaozhiService, WorkflowWebhookToolRegistry],
 })
 export class OrganizationModule {}

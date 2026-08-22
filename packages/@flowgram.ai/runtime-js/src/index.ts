@@ -18,3 +18,9 @@ export type {
     WaitExecutorInput,
     WaitExecutorResult,
 } from "./nodes/wait/index.ts";
+export { registerWebhookExecutor } from "./nodes/webhook/index.ts";
+export type {
+    WebhookExecutorHandler,
+    WebhookExecutorInput,
+    WebhookExecutorResult,
+} from "./nodes/webhook/index.ts";

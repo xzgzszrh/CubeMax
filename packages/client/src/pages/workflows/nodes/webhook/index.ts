@@ -17,16 +17,17 @@ export const WebhookNodeRegistry: FlowNodeRegistry = {
   type: WorkflowNodeType.Webhook,
   info: {
     icon: iconWebhook,
-    description: "定义一个可被调用的 MCP 端点，xiaozhi.me 通过它回传数据。",
+    description: "向 CubeCat 注册一个回传工具，收到调用后带着数据继续往下走。",
   },
   meta: {
     nodePanelLabel: "回传端点",
     nodePanelGroup: "app",
     nodePanelGroupLabel: "智能交互",
-    size: { width: 380, height: 480 },
+    size: { width: 380, height: 500 },
     defaultPorts: [
-      { type: "output", label: "收到数据" },
-      { type: "output", label: "错误" },
+      { type: "input" },
+      { type: "output", portID: "received", label: "收到数据" },
+      { type: "output", portID: "error", label: "错误" },
     ],
   },
   onAdd() {
@@ -35,18 +36,16 @@ export const WebhookNodeRegistry: FlowNodeRegistry = {
       type: WorkflowNodeType.Webhook,
       data: {
         title: `回传端点_${++index}`,
-        // MCP 工具名称
         toolName: "",
-        // MCP 工具描述
         toolDescription: "",
-        // 输入参数 schema（JSON Schema 格式）
+        timeoutMs: 0,
         inputSchema: {
           type: "object",
           properties: {
             data: {
               type: "object",
               title: "回传数据",
-              description: "从 xiaozhi.me 回传的数据",
+              description: "从 CubeCat 回传的数据",
             },
             action: {
               type: "string",
@@ -54,21 +53,20 @@ export const WebhookNodeRegistry: FlowNodeRegistry = {
               description: "标识用户执行的动作",
             },
           },
-          required: ["data"],
         },
-        // 输入值
         inputs: {
           type: "object",
           properties: {
-            data: { type: "object", title: "回传数据" },
-            action: { type: "string", title: "动作类型" },
+            context: {
+              type: "string",
+              title: "上下文",
+              description: "可选。会原样带到输出。",
+            },
           },
         },
         inputsValues: {
-          data: { type: "ref", content: [] },
-          action: { type: "ref", content: [] },
+          context: { type: "constant", content: "" },
         },
-        // 输出定义
         outputs: {
           type: "object",
           properties: {
@@ -80,17 +78,22 @@ export const WebhookNodeRegistry: FlowNodeRegistry = {
             data: {
               type: "object",
               title: "回传数据",
-              description: "接收到的完整数据",
+              description: "接收到的完整参数",
             },
             action: {
               type: "string",
               title: "动作",
-              description: "用户执行的动作标识",
+              description: "回传参数里的 action 字段",
             },
             timestamp: {
               type: "number",
               title: "时间戳",
               description: "回传时间",
+            },
+            context: {
+              type: "string",
+              title: "上下文",
+              description: "从输入带过来的上下文",
             },
           },
         },

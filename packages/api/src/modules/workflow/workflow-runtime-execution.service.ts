@@ -23,6 +23,7 @@ import type {
 } from "./workflow-runtime.dto";
 import { WorkflowWaitExecutorService } from "./workflow-wait-executor.service";
 import { WorkflowWaitRegistry } from "./workflow-wait-registry.service";
+import { WorkflowWebhookExecutorService } from "./workflow-webhook-executor.service";
 
 type WorkflowRuntimeJsModule = typeof import("@flowgram.ai/runtime-js");
 
@@ -45,6 +46,7 @@ export class WorkflowRuntimeExecutionService {
         private readonly workflowLuaExecutorService: WorkflowLuaExecutorService,
         private readonly workflowAgentExecutorService: WorkflowAgentExecutorService,
         private readonly workflowWaitExecutorService: WorkflowWaitExecutorService,
+        private readonly workflowWebhookExecutorService: WorkflowWebhookExecutorService,
         private readonly waitRegistry: WorkflowWaitRegistry,
         private readonly workflowService: WorkflowService,
         private readonly programmingProjectService: ProgrammingProjectService,
@@ -57,6 +59,9 @@ export class WorkflowRuntimeExecutionService {
         runtime.registerLuaExecutor((input) => this.workflowLuaExecutorService.execute(input));
         runtime.registerAgentExecutor((input) => this.workflowAgentExecutorService.execute(input));
         runtime.registerWaitExecutor((input) => this.workflowWaitExecutorService.execute(input));
+        runtime.registerWebhookExecutor((input) =>
+            this.workflowWebhookExecutorService.execute(input),
+        );
         return runtime;
     }
 
