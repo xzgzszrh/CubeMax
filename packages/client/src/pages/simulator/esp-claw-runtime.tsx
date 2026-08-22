@@ -1,23 +1,18 @@
 import { Badge } from "@buildingai/ui/components/ui/badge";
 import { Button } from "@buildingai/ui/components/ui/button";
-import { Input } from "@buildingai/ui/components/ui/input";
 import { ScrollArea } from "@buildingai/ui/components/ui/scroll-area";
-import { Play, RotateCcw, Square, Terminal } from "lucide-react";
+import { Play, Square, Terminal } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 
-export type SimulatorDraft = {
-  name: string;
-  moduleId?: string;
-  code: string;
-  params: Record<string, unknown>;
-};
+import {
+  CLAW4_SCREEN_HEIGHT,
+  CLAW4_SCREEN_WIDTH,
+  DEVICE_LOG_PREFIX,
+  executableClaw4Lua,
+  type SimulatorDraft,
+} from "./claw4-compat";
 
-export type SimulatorDeviceSnapshot = {
-  digitalPins: Record<string, boolean>;
-  analogPins: Record<string, number>;
-  buttonPressed: boolean;
-  potentiometerValue: number;
-};
+export type { SimulatorDraft } from "./claw4-compat";
 
 export type SimulatorDeviceOperation = {
   action: string;
@@ -28,86 +23,14 @@ type RuntimeStatus = "loading" | "ready" | "running" | "stopping" | "exited" | "
 
 const RUNTIME_FONT_PATH = "/storage/fonts/NotoSansSC-Regular-sub.ttf";
 const RUNTIME_FONT_URL = "/esp-claw-runtime/fonts/NotoSansSC-Regular-sub.ttf";
-const DEVICE_LOG_PREFIX = "[CubeMax:device]";
-
-function luaLiteral(value: unknown): string {
-  if (value === null || value === undefined) return "nil";
-  if (typeof value === "boolean") return value ? "true" : "false";
-  if (typeof value === "number" && Number.isFinite(value)) return String(value);
-  if (typeof value === "string") {
-    const encoded = Array.from(value, (character) => {
-      if (character === "\\") return "\\\\";
-      if (character === '"') return '\\"';
-      const codePoint = character.codePointAt(0) ?? 0;
-      return codePoint < 32 ? `\\${codePoint.toString().padStart(3, "0")}` : character;
-    }).join("");
-    return `"${encoded}"`;
-  }
-  if (Array.isArray(value)) return `{${value.map(luaLiteral).join(",")}}`;
-  if (typeof value === "object") {
-    return `{${Object.entries(value as Record<string, unknown>)
-      .map(([key, item]) => `[${luaLiteral(key)}]=${luaLiteral(item)}`)
-      .join(",")}}`;
-  }
-  return "nil";
-}
-
-function executableLua(draft: SimulatorDraft, deviceSnapshot?: SimulatorDeviceSnapshot): string {
-  const snapshot = deviceSnapshot ?? {
-    digitalPins: {},
-    analogPins: {},
-    buttonPressed: false,
-    potentiometerValue: 0,
-  };
-  return [
-    `local __cubemax_params = ${luaLiteral(draft.params)}`,
-    `local __cubemax_device_snapshot = ${luaLiteral(snapshot)}`,
-    'local __cubemax_json = require("json")',
-    "local function __cubemax_device_operation(action, args)",
-    `  print("${DEVICE_LOG_PREFIX}" .. __cubemax_json.encode({ action = action, args = args }))`,
-    "end",
-    "device = {",
-    "  gpio_set_mode = function(pin, mode)",
-    '    __cubemax_device_operation("gpio_set_mode", { pin = tostring(pin), mode = mode })',
-    "  end,",
-    "  gpio_write = function(pin, value)",
-    '    __cubemax_device_operation("gpio_write", { pin = tostring(pin), value = value == true })',
-    "  end,",
-    "  gpio_read = function(pin)",
-    "    return __cubemax_device_snapshot.digitalPins[tostring(pin)] == true",
-    "  end,",
-    "  analog_read = function(pin)",
-    "    return __cubemax_device_snapshot.analogPins[tostring(pin)] or 0",
-    "  end,",
-    "  pwm_write = function(pin, duty_cycle, frequency_hz)",
-    '    __cubemax_device_operation("pwm_write", { pin = tostring(pin), dutyCycle = duty_cycle, frequencyHz = frequency_hz or 1000 })',
-    "  end,",
-    "  servo_write_angle = function(pin, angle)",
-    '    __cubemax_device_operation("servo_write_angle", { pin = tostring(pin), angle = angle })',
-    "  end,",
-    "  serial_write = function(text)",
-    '    __cubemax_device_operation("serial_write_text", { text = tostring(text) })',
-    "  end,",
-    "  button_pressed = function() return __cubemax_device_snapshot.buttonPressed == true end,",
-    "  potentiometer_value = function() return __cubemax_device_snapshot.potentiometerValue or 0 end,",
-    "}",
-    draft.code,
-    "",
-    'if type(main) == "function" then',
-    "  main(__cubemax_params)",
-    "end",
-  ].join("\n");
-}
 
 export function EspClawRuntime({
   draft,
   autoRun = false,
-  deviceSnapshot,
   onDeviceOperations,
 }: {
   draft?: SimulatorDraft;
   autoRun?: boolean;
-  deviceSnapshot?: SimulatorDeviceSnapshot;
   onDeviceOperations?: (operations: SimulatorDeviceOperation[]) => void;
 }) {
   const iframeRef = useRef<HTMLIFrameElement>(null);
@@ -119,8 +42,6 @@ export function EspClawRuntime({
   const operationTimerRef = useRef<number>();
   const [status, setStatus] = useState<RuntimeStatus>("loading");
   const [logs, setLogs] = useState<string[]>([]);
-  const [width, setWidth] = useState("800");
-  const [height, setHeight] = useState("480");
   const [activeDraft, setActiveDraft] = useState<SimulatorDraft | undefined>(draft);
 
   useEffect(() => setActiveDraft(draft), [draft]);
@@ -156,6 +77,14 @@ export function EspClawRuntime({
     iframeRef.current?.contentWindow?.postMessage(message, "*");
   }, []);
 
+  const applyNativeResolution = useCallback(() => {
+    send({
+      type: "esp-claw-sim:setResolution",
+      width: CLAW4_SCREEN_WIDTH,
+      height: CLAW4_SCREEN_HEIGHT,
+    });
+  }, [send]);
+
   useEffect(() => {
     const onMessage = (event: MessageEvent) => {
       if (event.source !== iframeRef.current?.contentWindow) return;
@@ -164,14 +93,11 @@ export function EspClawRuntime({
         message?: string;
         error?: string;
         code?: number;
-        width?: number;
-        height?: number;
       };
       switch (data.type) {
         case "esp-claw-sim:ready":
           setStatus("ready");
-          if (data.width) setWidth(String(data.width));
-          if (data.height) setHeight(String(data.height));
+          applyNativeResolution();
           if (autoRunRef.current) {
             autoRunRef.current = false;
             window.setTimeout(() => runRef.current(), 0);
@@ -205,7 +131,7 @@ export function EspClawRuntime({
                 queueDeviceOperation(operation);
               }
             } catch {
-              setLogs((current) => [...current, "[error] 无法解析虚拟外设操作"]);
+              setLogs((current) => [...current, "[error] 无法解析虚拟设备操作"]);
             }
           } else if (
             data.message &&
@@ -222,7 +148,7 @@ export function EspClawRuntime({
     };
     window.addEventListener("message", onMessage);
     return () => window.removeEventListener("message", onMessage);
-  }, [flushDeviceOperations, queueDeviceOperation, send]);
+  }, [applyNativeResolution, flushDeviceOperations, queueDeviceOperation, send]);
 
   const run = useCallback(async () => {
     if (!activeDraft?.code.trim()) return;
@@ -230,6 +156,7 @@ export function EspClawRuntime({
     const path = `/uploads/cubemax/${moduleId}/scripts/main.lua`;
     setLogs([]);
     pendingRunPathRef.current = path;
+    applyNativeResolution();
     try {
       const response = await fetch(RUNTIME_FONT_URL);
       if (!response.ok) throw new Error(`字体资源加载失败（HTTP ${response.status}）`);
@@ -241,7 +168,7 @@ export function EspClawRuntime({
           root: `/uploads/cubemax/${moduleId}`,
           entry: path,
           files: [
-            { path, text: executableLua(activeDraft, deviceSnapshot) },
+            { path, text: executableClaw4Lua(activeDraft) },
             { path: RUNTIME_FONT_PATH, bytes: fontBytes },
           ],
           peripherals: ["display", "touch"],
@@ -254,26 +181,21 @@ export function EspClawRuntime({
       setStatus("error");
       setLogs([`[error] ${error instanceof Error ? error.message : "无法加载虚拟屏幕字体"}`]);
     }
-  }, [activeDraft, deviceSnapshot, send]);
+  }, [activeDraft, applyNativeResolution, send]);
 
   useEffect(() => {
     runRef.current = run;
   }, [run]);
 
-  const applyResolution = () => {
-    const nextWidth = Math.max(64, Math.min(2048, Number.parseInt(width, 10) || 800));
-    const nextHeight = Math.max(64, Math.min(2048, Number.parseInt(height, 10) || 480));
-    setWidth(String(nextWidth));
-    setHeight(String(nextHeight));
-    send({ type: "esp-claw-sim:setResolution", width: nextWidth, height: nextHeight });
-  };
-
   return (
-    <section className="bg-background flex h-[min(620px,calc(100dvh-8.5rem))] min-h-[440px] min-w-0 flex-1 flex-col overflow-hidden rounded-md border shadow-sm">
+    <section className="bg-background flex h-[min(720px,calc(100dvh-8.5rem))] min-h-[520px] min-w-0 flex-1 flex-col overflow-hidden rounded-md border shadow-sm">
       <div className="flex min-h-14 flex-wrap items-center gap-2 border-b px-4 py-2">
         <div className="mr-auto flex min-w-0 items-center gap-2">
           <span className="size-2 rounded-full bg-emerald-400" />
-          <h2 className="truncate text-sm font-semibold">ESP-Claw 虚拟屏幕</h2>
+          <h2 className="truncate text-sm font-semibold">CubeCat 虚拟屏幕</h2>
+          <Badge variant="outline">
+            宽 {CLAW4_SCREEN_WIDTH} × 高 {CLAW4_SCREEN_HEIGHT}
+          </Badge>
           <Badge variant="outline">
             {status === "loading"
               ? "加载中"
@@ -281,26 +203,12 @@ export function EspClawRuntime({
                 ? "运行中"
                 : status === "error"
                   ? "错误"
-                  : "就绪"}
+                  : status === "exited"
+                    ? "已结束"
+                    : "就绪"}
           </Badge>
         </div>
         <div className="flex items-center gap-1.5">
-          <Input
-            value={width}
-            onChange={(event) => setWidth(event.target.value)}
-            className="h-8 w-16 text-xs"
-            aria-label="屏幕宽度"
-          />
-          <span className="text-muted-foreground">x</span>
-          <Input
-            value={height}
-            onChange={(event) => setHeight(event.target.value)}
-            className="h-8 w-16 text-xs"
-            aria-label="屏幕高度"
-          />
-          <Button variant="ghost" size="icon-sm" title="应用分辨率" onClick={applyResolution}>
-            <RotateCcw />
-          </Button>
           <Button
             size="sm"
             onClick={run}
@@ -324,14 +232,22 @@ export function EspClawRuntime({
           </Button>
         </div>
       </div>
-      <div className="grid min-h-0 flex-1 grid-rows-[minmax(260px,1fr)_140px]">
-        <div className="grid min-h-0 place-items-center bg-black p-3">
-          <iframe
-            ref={iframeRef}
-            title="ESP-Claw Lua 虚拟屏幕"
-            src="/esp-claw-runtime/esp_claw_sim.html?embedded=1"
-            className="size-full min-h-0 border-0"
-          />
+      <div className="grid min-h-0 flex-1 grid-rows-[minmax(320px,1fr)_140px]">
+        <div className="grid min-h-0 place-items-center bg-zinc-950 p-3">
+          <div
+            className="overflow-hidden rounded-[1.4rem] border border-zinc-700 bg-black shadow-lg"
+            style={{
+              width: "min(100%, 270px)",
+              aspectRatio: `${CLAW4_SCREEN_WIDTH} / ${CLAW4_SCREEN_HEIGHT}`,
+            }}
+          >
+            <iframe
+              ref={iframeRef}
+              title="CubeCat Lua 虚拟屏幕"
+              src="/esp-claw-runtime/esp_claw_sim.html?embedded=1"
+              className="size-full min-h-0 border-0"
+            />
+          </div>
         </div>
         <aside className="bg-muted/20 flex min-h-0 flex-col border-t">
           <div className="flex h-11 shrink-0 items-center gap-2 border-b px-3 text-xs font-semibold">

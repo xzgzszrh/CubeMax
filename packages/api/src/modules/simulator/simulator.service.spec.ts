@@ -19,7 +19,9 @@ describe("SimulatorService", () => {
         const second = service.create("student-b");
 
         expect(first.board.type).toBe("esp32-devkit-v1");
+        expect(first.name).toContain("CubeCat 仿真");
         expect(first.peripherals.led.pin).toBe("2");
+        expect(first.cubecat.brightness).toBe(80);
         expect(first.id).not.toBe(second.id);
         expect(service.list("student-a")).toHaveLength(1);
         expect(service.list("student-b")).toHaveLength(1);
@@ -80,5 +82,24 @@ describe("SimulatorService", () => {
 
         expect(result.peripherals.led.on).toBe(true);
         expect(service.get(session.id)).toBe(session);
+    });
+
+    it("applies CubeCat device operations", () => {
+        const session = service.create("student");
+        const result = service.applyOperations(session.id, [
+            { action: "set_brightness", args: { value: 40 } },
+            { action: "set_volume", args: { value: 20 } },
+            { action: "vibrate", args: { durationMs: 250 } },
+            { action: "notify", args: { text: "完成" } },
+            { action: "speech_say", args: { text: "你好" } },
+        ]);
+
+        expect(result.cubecat).toMatchObject({
+            brightness: 40,
+            volume: 20,
+            lastVibrateMs: 250,
+            lastNotify: "完成",
+            lastSpeech: "你好",
+        });
     });
 });

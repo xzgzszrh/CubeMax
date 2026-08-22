@@ -16,7 +16,7 @@ import {
 import { Separator } from "@buildingai/ui/components/ui/separator";
 import { Skeleton } from "@buildingai/ui/components/ui/skeleton";
 import { ToggleGroup, ToggleGroupItem } from "@buildingai/ui/components/ui/toggle-group";
-import { Cpu, MonitorPlay, Settings as SettingsIcon } from "lucide-react";
+import { Cpu, MonitorPlay } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 
@@ -47,13 +47,6 @@ export default function ProjectSettingsPage() {
     onError: (error) => toast.error(error.message || "设置保存失败"),
   });
 
-  const runtimeItems = [
-    ...(project.runtimeTarget === "local"
-      ? [{ value: "local" as const, label: "仅服务端试跑", icon: SettingsIcon }]
-      : []),
-    ...APPLICATION_RUNTIME_ITEMS,
-  ];
-
   const pickCubeCatId = () =>
     project.xiaozhiAgentId ??
     agentsQuery.data?.find((agent) => agent.onlineDeviceCount > 0)?.id ??
@@ -64,15 +57,9 @@ export default function ProjectSettingsPage() {
     if (target === project.runtimeTarget) return;
 
     if (target === "simulator") {
-      const sessionId = project.simulatorSessionId ?? sessionsQuery.data?.find(Boolean)?.id ?? null;
-      if (!sessionId) {
-        toast.error("请先创建一个工程仿真会话");
-        navigate(`/programming/${project.id}/simulator`);
-        return;
-      }
       updateMutation.mutate({
         id: project.id,
-        dto: { runtimeTarget: "simulator", simulatorSessionId: sessionId },
+        dto: { runtimeTarget: "simulator" },
       });
       return;
     }
@@ -87,10 +74,7 @@ export default function ProjectSettingsPage() {
         id: project.id,
         dto: { runtimeTarget: "device", xiaozhiAgentId, deviceId: null },
       });
-      return;
     }
-
-    updateMutation.mutate({ id: project.id, dto: { runtimeTarget: "local" } });
   };
 
   return (
@@ -114,7 +98,7 @@ export default function ProjectSettingsPage() {
 
           <ToggleGroup
             type="single"
-            value={project.runtimeTarget}
+            value={project.runtimeTarget === "device" ? "device" : "simulator"}
             onValueChange={(value) =>
               value && handleRuntimeChange(value as ProgrammingRuntimeTarget)
             }
@@ -123,7 +107,7 @@ export default function ProjectSettingsPage() {
             className="w-full justify-start"
             disabled={updateMutation.isPending}
           >
-            {runtimeItems.map(({ value, label, icon: Icon }) => (
+            {APPLICATION_RUNTIME_ITEMS.map(({ value, label, icon: Icon }) => (
               <ToggleGroupItem key={value} value={value} aria-label={label} className="flex-1">
                 <Icon className="mr-1.5 size-4" />
                 {label}

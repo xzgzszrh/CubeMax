@@ -209,7 +209,8 @@ export class ProgrammingProjectService {
     }
 
     async findDetail(id: string, userId: string): Promise<ProgrammingProjectDetail> {
-        return this.toDetail(await this.findOne(id, userId));
+        const project = await this.ensureApplicationSimulator(await this.findOne(id, userId), userId);
+        return this.toDetail(project);
     }
 
     async create(
@@ -220,13 +221,14 @@ export class ProgrammingProjectService {
             const projectRepository = manager.getRepository(ProgrammingProject);
             const workflowRepository = manager.getRepository(AiWorkflow);
             const luaModuleRepository = manager.getRepository(LuaModule);
+            const projectType = dto.projectType ?? "conversation";
             const createdProject = await projectRepository.save(
                 projectRepository.create({
                     name: dto.name,
                     description: dto.description ?? "",
-                    projectType: dto.projectType ?? "conversation",
+                    projectType,
                     createBy: userId,
-                    runtimeTarget: "local",
+                    runtimeTarget: projectType === "application" ? "simulator" : "local",
                     isPublished: false,
                 }),
             );
@@ -269,7 +271,7 @@ export class ProgrammingProjectService {
             createdProject.mainWorkflowId = workflow.id;
             return projectRepository.save(createdProject);
         });
-        return this.toDetail(project);
+        return this.toDetail(await this.ensureApplicationSimulator(project, userId));
     }
 
     async update(
@@ -281,7 +283,10 @@ export class ProgrammingProjectService {
         if (dto.name !== undefined) project.name = dto.name;
         if (dto.description !== undefined) project.description = dto.description;
 
-        const target = dto.runtimeTarget ?? project.runtimeTarget;
+        let target = dto.runtimeTarget ?? project.runtimeTarget;
+        if (project.projectType === "application" && target === "local") {
+            target = "simulator";
+        }
         let simulatorSessionId =
             dto.simulatorSessionId !== undefined
                 ? dto.simulatorSessionId
@@ -295,10 +300,11 @@ export class ProgrammingProjectService {
             deviceId = null;
         } else if (target === "simulator") {
             this.assertApplicationOnly(project, "硬件仿真");
-            if (!simulatorSessionId) {
-                throw HttpErrorFactory.badRequest("请选择工程的仿真会话");
-            }
-            this.simulatorService.getForProjectUser(simulatorSessionId, userId, project.id);
+            simulatorSessionId = this.resolveSimulatorSessionId(
+                project,
+                userId,
+                simulatorSessionId,
+            );
             deviceId = null;
         } else if (xiaozhiAgentId) {
             await this.xiaozhiService.requireAccessibleAgent(userId, xiaozhiAgentId);
@@ -628,14 +634,63 @@ export class ProgrammingProjectService {
         throw HttpErrorFactory.badRequest(`对话流工程不支持${feature}`);
     }
 
-    private async assertRuntimeTarget(project: ProgrammingProject, userId: string): Promise<void> {
-        if (project.runtimeTarget === "local") return;
-        if (project.runtimeTarget === "simulator") {
-            this.assertApplicationOnly(project, "硬件仿真");
-            if (!project.simulatorSessionId) {
-                throw HttpErrorFactory.badRequest("工程尚未选择仿真会话");
+    private async ensureApplicationSimulator(
+        project: ProgrammingProject,
+        userId: string,
+    ): Promise<ProgrammingProject> {
+        if (project.projectType !== "application") return project;
+        if (project.runtimeTarget === "device") return project;
+        const simulatorSessionId = this.resolveSimulatorSessionId(
+            project,
+            userId,
+            project.simulatorSessionId,
+        );
+        if (
+            project.runtimeTarget === "simulator" &&
+            project.simulatorSessionId === simulatorSessionId
+        ) {
+            return project;
+        }
+        project.runtimeTarget = "simulator";
+        project.simulatorSessionId = simulatorSessionId;
+        return this.projectRepository.save(project);
+    }
+
+    private resolveSimulatorSessionId(
+        project: ProgrammingProject,
+        userId: string,
+        preferredId?: string | null,
+    ): string {
+        if (preferredId) {
+            try {
+                this.simulatorService.getForProjectUser(preferredId, userId, project.id);
+                return preferredId;
+            } catch {
+                // Session expired after process restart; create or reuse below.
             }
-            this.simulatorService.getForProjectUser(project.simulatorSessionId, userId, project.id);
+        }
+        const existing = this.simulatorService.list(userId, project.id)[0];
+        if (existing) return existing.id;
+        return this.simulatorService.create(userId, "CubeCat 仿真", "cubecat-p4", project.id).id;
+    }
+
+    private async assertRuntimeTarget(project: ProgrammingProject, userId: string): Promise<void> {
+        if (project.projectType !== "application" && project.runtimeTarget === "local") return;
+        if (project.runtimeTarget === "local" || project.runtimeTarget === "simulator") {
+            this.assertApplicationOnly(project, "硬件仿真");
+            const simulatorSessionId = this.resolveSimulatorSessionId(
+                project,
+                userId,
+                project.simulatorSessionId,
+            );
+            if (
+                project.runtimeTarget !== "simulator" ||
+                project.simulatorSessionId !== simulatorSessionId
+            ) {
+                project.runtimeTarget = "simulator";
+                project.simulatorSessionId = simulatorSessionId;
+                await this.projectRepository.save(project);
+            }
             return;
         }
         if (project.xiaozhiAgentId) {

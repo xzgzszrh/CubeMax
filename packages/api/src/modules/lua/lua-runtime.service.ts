@@ -30,9 +30,18 @@ export class LuaRuntimeService {
     ): Promise<LuaExecutionResult> {
         this.assertPayloadSize(params, "输入参数");
         const startedAt = Date.now();
-        const deviceSnapshot = simulatorSessionId
-            ? { available: true, ...this.simulatorService.getLuaSnapshot(simulatorSessionId) }
-            : { available: false };
+        let sessionId = simulatorSessionId;
+        let deviceSnapshot: Record<string, unknown> = { available: false };
+        if (sessionId) {
+            try {
+                deviceSnapshot = {
+                    available: true,
+                    ...this.simulatorService.getLuaSnapshot(sessionId),
+                };
+            } catch {
+                sessionId = undefined;
+            }
+        }
         const result = await this.runWorker(code, params, false, deviceSnapshot);
 
         if (result.ok === false) {
@@ -41,8 +50,8 @@ export class LuaRuntimeService {
 
         const output = this.normalizeOutput(result.result);
         this.assertPayloadSize(output, "输出结果");
-        if (simulatorSessionId && result.deviceOperations.length > 0) {
-            this.simulatorService.applyOperations(simulatorSessionId, result.deviceOperations);
+        if (sessionId && result.deviceOperations.length > 0) {
+            this.simulatorService.applyOperations(sessionId, result.deviceOperations);
         }
         return { output, executionTime: Date.now() - startedAt };
     }

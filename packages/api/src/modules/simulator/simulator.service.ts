@@ -3,13 +3,16 @@ import { randomUUID } from "node:crypto";
 import { HttpErrorFactory } from "@buildingai/errors";
 import { Injectable } from "@nestjs/common";
 
-import type {
-    SimulatorBoardType,
-    SimulatorOperation,
-    SimulatorSerialEntry,
-    SimulatorSession,
-    VirtualPinMode,
-    VirtualPinState,
+import {
+    CUBECAT_SCREEN_HEIGHT,
+    CUBECAT_SCREEN_WIDTH,
+    createDefaultCubeCatState,
+    type SimulatorBoardType,
+    type SimulatorOperation,
+    type SimulatorSerialEntry,
+    type SimulatorSession,
+    type VirtualPinMode,
+    type VirtualPinState,
 } from "./simulator.types";
 
 const BOARD_DEFINITIONS: Record<SimulatorBoardType, SimulatorSession["board"]> = {
@@ -54,7 +57,7 @@ export class SimulatorService {
             id: randomUUID(),
             userId,
             projectId,
-            name: name?.trim() || `ESP32 仿真板 ${existing.length + 1}`,
+            name: name?.trim() || `CubeCat 仿真 ${existing.length + 1}`,
             board: { ...BOARD_DEFINITIONS[boardType] },
             revision: 1,
             pins: {},
@@ -65,12 +68,13 @@ export class SimulatorService {
                 buzzer: { pin: "25", active: false, frequencyHz: 0 },
                 servo: { pin: "26", angle: 90 },
             },
+            cubecat: createDefaultCubeCatState(),
             i2cDevices: [{ address: 0x3c, name: "OLED 128x64" }],
             serialLog: [],
             createdAt: now,
             updatedAt: now,
         };
-        this.appendSerial(session, "system", "虚拟 ESP32 已启动");
+        this.appendSerial(session, "system", "CubeCat 仿真已启动");
         this.sessions.set(session.id, session);
         return session;
     }
@@ -235,6 +239,9 @@ export class SimulatorService {
             analogPins,
             buttonPressed: session.peripherals.button.pressed,
             potentiometerValue: session.peripherals.potentiometer.value,
+            cubecat: session.cubecat,
+            screenWidth: CUBECAT_SCREEN_WIDTH,
+            screenHeight: CUBECAT_SCREEN_HEIGHT,
         };
     }
 
@@ -363,6 +370,58 @@ export class SimulatorService {
             }
             case "save_serial_log":
                 return { saved: false, simulated: true, entries: session.serialLog.length };
+            case "set_brightness": {
+                const value = this.clampNumber(this.numberArg(args, "value", 0), 0, 100);
+                session.cubecat.brightness = value;
+                this.appendSerial(session, "system", `亮度 ${value}`);
+                return { value };
+            }
+            case "set_volume": {
+                const value = this.clampNumber(this.numberArg(args, "value", 0), 0, 100);
+                session.cubecat.volume = value;
+                this.appendSerial(session, "system", `音量 ${value}`);
+                return { value };
+            }
+            case "vibrate": {
+                const durationMs = this.clampNumber(this.numberArg(args, "durationMs", 300), 0, 5000);
+                session.cubecat.lastVibrateMs = durationMs;
+                this.appendSerial(session, "system", `震动 ${durationMs}ms`);
+                return { durationMs };
+            }
+            case "notify": {
+                const text = typeof args.text === "string" ? args.text : "";
+                session.cubecat.lastNotify = text;
+                this.appendSerial(session, "system", `通知 ${text}`);
+                return { text };
+            }
+            case "speech_say": {
+                const text = typeof args.text === "string" ? args.text : "";
+                session.cubecat.lastSpeech = text;
+                this.appendSerial(session, "system", `语音 ${text}`);
+                return { text };
+            }
+            case "camera_explain": {
+                const question = typeof args.question === "string" ? args.question : "";
+                const answer =
+                    typeof args.answer === "string"
+                        ? args.answer
+                        : `仿真摄像头：没有真实画面。问题是：${question}`;
+                session.cubecat.lastCameraQuestion = question;
+                session.cubecat.lastCameraAnswer = answer;
+                this.appendSerial(session, "system", `摄像头 ${question}`);
+                return { question, answer };
+            }
+            case "audio_play":
+            case "audio_play_bytes": {
+                const source = typeof args.source === "string" ? args.source : "bytes";
+                session.cubecat.lastAudio = source;
+                this.appendSerial(session, "system", `音频 ${source}`);
+                return { source, simulated: true };
+            }
+            case "audio_stop":
+            case "audio_stop_all":
+            case "http_request":
+                return { simulated: true };
             default:
                 throw HttpErrorFactory.badRequest(`不支持的虚拟设备操作：${action}`);
         }
@@ -381,10 +440,11 @@ export class SimulatorService {
                 buzzer: { pin: "25", active: false, frequencyHz: 0 },
                 servo: { pin: "26", angle: 90 },
             },
+            cubecat: createDefaultCubeCatState(),
             serialLog: [],
             updatedAt: now,
         };
-        this.appendSerial(reset, "system", "虚拟 ESP32 已复位");
+        this.appendSerial(reset, "system", "CubeCat 仿真已复位");
         return reset;
     }
 

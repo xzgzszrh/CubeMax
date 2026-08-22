@@ -29,6 +29,34 @@ export type VirtualPeripheralState = {
     servo: { pin: string; angle: number };
 };
 
+export type CubeCatDeviceState = {
+    brightness: number;
+    volume: number;
+    lastVibrateMs: number;
+    lastNotify: string;
+    lastSpeech: string;
+    lastCameraQuestion: string;
+    lastCameraAnswer: string;
+    lastAudio: string;
+};
+
+/** CubeCat 屏幕像素：宽 480，高 800。竖屏，不要对调。 */
+export const CUBECAT_SCREEN_WIDTH = 480;
+export const CUBECAT_SCREEN_HEIGHT = 800;
+
+export function createDefaultCubeCatState(): CubeCatDeviceState {
+    return {
+        brightness: 80,
+        volume: 70,
+        lastVibrateMs: 0,
+        lastNotify: "",
+        lastSpeech: "",
+        lastCameraQuestion: "",
+        lastCameraAnswer: "",
+        lastAudio: "",
+    };
+}
+
 export const SIMULATOR_BOARD_TYPES = ["esp32-devkit-v1", "cubecat-s3", "cubecat-p4"] as const;
 
 export type SimulatorBoardType = (typeof SIMULATOR_BOARD_TYPES)[number];
@@ -46,6 +74,7 @@ export type SimulatorSession = {
     revision: number;
     pins: Record<string, VirtualPinState>;
     peripherals: VirtualPeripheralState;
+    cubecat: CubeCatDeviceState;
     i2cDevices: Array<{ address: number; name: string }>;
     serialLog: SimulatorSerialEntry[];
     createdAt: string;

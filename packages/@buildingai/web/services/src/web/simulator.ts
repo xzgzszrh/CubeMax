@@ -34,6 +34,17 @@ export interface SimulatorSerialEntry {
 
 export type SimulatorBoardType = "esp32-devkit-v1" | "cubecat-s3" | "cubecat-p4";
 
+export interface CubeCatDeviceState {
+    brightness: number;
+    volume: number;
+    lastVibrateMs: number;
+    lastNotify: string;
+    lastSpeech: string;
+    lastCameraQuestion: string;
+    lastCameraAnswer: string;
+    lastAudio: string;
+}
+
 export interface SimulatorSession {
     id: string;
     projectId?: string;
@@ -48,6 +59,7 @@ export interface SimulatorSession {
         buzzer: { pin: string; active: boolean; frequencyHz: number };
         servo: { pin: string; angle: number };
     };
+    cubecat: CubeCatDeviceState;
     i2cDevices: Array<{ address: number; name: string }>;
     serialLog: SimulatorSerialEntry[];
     createdAt: string;

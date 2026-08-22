@@ -92,8 +92,10 @@ export class WorkflowLuaExecutorService {
         context?: RuntimeContext,
     ): Promise<Record<string, unknown>> {
         const target = context?.runtimeTarget ?? "local";
-        if (target === "local") {
-            return (await this.luaRuntimeService.execute(source, inputs)).output;
+        if (target !== "device") {
+            return (
+                await this.luaRuntimeService.execute(source, inputs, context?.simulatorSessionId)
+            ).output;
         }
 
         const deviceId = await this.runtimeDeviceService.resolveLuaDeviceId(userId, context);

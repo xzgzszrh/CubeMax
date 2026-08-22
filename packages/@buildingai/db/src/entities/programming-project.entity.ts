@@ -61,7 +61,13 @@ export class ProgrammingProject extends BaseEntity {
     @Column({ name: "main_workflow_id", type: "uuid", nullable: true, comment: "主流程ID" })
     mainWorkflowId?: string | null;
 
-    @Column({ name: "runtime_target", type: "varchar", length: 16, default: "local" })
+    @Column({
+        name: "runtime_target",
+        type: "varchar",
+        length: 16,
+        default: "local",
+        comment: "对话流默认 local；应用工程创建时为 simulator",
+    })
     runtimeTarget: ProgrammingRuntimeTarget;
 
     @Column({ name: "simulator_session_id", type: "uuid", nullable: true })
