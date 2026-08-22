@@ -9,7 +9,8 @@ import { CommandService, useClientContext } from "@flowgram.ai/free-layout-edito
 import { useEffect, useState } from "react";
 
 import { NodeMenu } from "../../components/node-menu";
-import { useIsSidebar, useNodeRenderContext } from "../../hooks";
+import { useIsSidebar } from "../../hooks/use-is-sidebar";
+import { useNodeRenderContext } from "../../hooks/use-node-render-context";
 import { useNodeFormPanel } from "../../plugins/panel-manager-plugin/hooks";
 import { FlowCommandId } from "../../shortcuts";
 import type { FlowNodeRegistry } from "../../typings";

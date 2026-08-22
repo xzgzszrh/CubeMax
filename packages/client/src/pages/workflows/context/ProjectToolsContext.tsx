@@ -19,13 +19,11 @@ import {
 import { useOptionalProgrammingProject } from "../../programming/context";
 import iconDevice from "../assets/icon-device.svg";
 import iconMCP from "../assets/icon-mcp.svg";
-import { WorkflowNodeType } from "../nodes";
-import { formMeta as mcpFormMeta } from "../nodes/mcp/form-meta";
+import { WorkflowNodeType } from "../nodes/constants";
 import {
   defaultCommandForCategory,
   getCategoryLabel,
 } from "../nodes/smart-home/controls";
-import { formMeta as smartHomeFormMeta } from "../nodes/smart-home/form-meta";
 import type { FlowNodeRegistry } from "../typings";
 import {
   createMcpInputsValues,
@@ -114,7 +112,6 @@ function createMcpRegistry(tool: Extract<ProjectToolItem, { kind: "mcp" }>): Flo
         },
       };
     },
-    formMeta: mcpFormMeta,
   };
 }
 
@@ -159,7 +156,6 @@ function createDeviceRegistry(
         },
       };
     },
-    formMeta: smartHomeFormMeta,
   };
 }
 

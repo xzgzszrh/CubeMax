@@ -6,7 +6,7 @@
 import type { FlowNodeEntity } from "@flowgram.ai/free-layout-editor";
 import { ArrowDown, Lightbulb, Sparkles } from "lucide-react";
 
-import { WorkflowNodeType } from "../../nodes";
+import { WorkflowNodeType } from "../../nodes/constants";
 import type { FlowNodeRegistry } from "../../typings";
 import {
   GuideCard,

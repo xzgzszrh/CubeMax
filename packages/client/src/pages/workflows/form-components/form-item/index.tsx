@@ -10,7 +10,7 @@ import { DisplaySchemaTag } from "@flowgram.ai/form-materials";
 import React, { useCallback } from "react";
 
 import { useOptionalProgrammingProject } from "../../../programming/context";
-import { useIsSidebar } from "../../hooks";
+import { useIsSidebar } from "../../hooks/use-is-sidebar";
 
 const { Text } = Typography;
 

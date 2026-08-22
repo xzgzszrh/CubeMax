@@ -8,7 +8,7 @@ import { Select } from "@douyinfe/semi-ui";
 import type { IFlowConstantValue, IFlowValue } from "@flowgram.ai/form-materials";
 import { useMemo } from "react";
 
-import { useNodeRenderContext } from "../../hooks";
+import { useNodeRenderContext } from "../../hooks/use-node-render-context";
 import { ReadonlyValue } from "../readonly-value";
 
 interface LLMModelSelectProps {

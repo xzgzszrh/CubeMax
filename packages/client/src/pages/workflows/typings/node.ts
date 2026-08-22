@@ -13,7 +13,7 @@ import type {
   WorkflowNodeRegistry as FlowNodeRegistryDefault,
 } from "@flowgram.ai/free-layout-editor";
 
-import type { WorkflowNodeType } from "../nodes";
+import type { WorkflowNodeType } from "../nodes/constants";
 import type { JsonSchema } from "./json-schema";
 
 /**

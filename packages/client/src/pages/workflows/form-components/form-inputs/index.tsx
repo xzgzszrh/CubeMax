@@ -8,7 +8,8 @@ import { Field } from "@flowgram.ai/free-layout-editor";
 import type { ReactNode } from "react";
 
 import { SafePromptEditorWithVariables } from "../../components/safe-editor-with-variables";
-import { useIsSidebar, useNodeRenderContext } from "../../hooks";
+import { useIsSidebar } from "../../hooks/use-is-sidebar";
+import { useNodeRenderContext } from "../../hooks/use-node-render-context";
 import type { JsonSchema } from "../../typings";
 import { Feedback } from "../feedback";
 import { FormItem } from "../form-item";
