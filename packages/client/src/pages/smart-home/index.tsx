@@ -2,11 +2,16 @@ import {
   useAllXiaomiHomeDevicesQuery,
   useExecuteXiaomiHomeActionMutation,
   useRefreshXiaomiHomeDeviceMutation,
+  useRefreshYeelightProDeviceMutation,
   useSetXiaomiHomePropertyMutation,
+  useSetYeelightProPropertyMutation,
   useXiaomiHomeDeviceQuery,
+  useYeelightProDeviceQuery,
+  useYeelightProDevicesQuery,
   type XiaomiHomeCapability,
   type XiaomiHomeDevice,
   type XiaomiHomePropertyCommand,
+  type YeelightProDevice,
 } from "@buildingai/services/web";
 import { Badge } from "@buildingai/ui/components/ui/badge";
 import { Button } from "@buildingai/ui/components/ui/button";
@@ -66,7 +71,7 @@ import {
   Wind,
   X,
 } from "lucide-react";
-import { useDeferredValue, useEffect, useMemo, useState } from "react";
+import { useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
 import { useSettingsDialog } from "@/components/settings-dialog";
@@ -167,6 +172,7 @@ const LABELS: Record<string, string> = {
   power_consumption: "功耗",
   brightness: "亮度",
   color_temperature: "色温",
+  color: "颜色",
   temperature: "温度",
   relative_humidity: "湿度",
   humidity: "湿度",
@@ -269,6 +275,134 @@ function getState(device: XiaomiHomeDevice, capability: XiaomiHomeCapability): u
   return device.state[`${capability.siid}.${capability.piid}`];
 }
 
+function capabilityName(capability: XiaomiHomeCapability): string {
+  return String(capability.name || "")
+    .trim()
+    .toLowerCase()
+    .replace(/[-\s]/g, "_");
+}
+
+function isRgbColorCapability(capability: XiaomiHomeCapability): boolean {
+  const name = capabilityName(capability);
+  const unit = String(capability.unit || "").toLowerCase();
+  return capability.format === "rgb" || unit === "rgb" || name === "color" || name === "c";
+}
+
+function findLightCapability(device: XiaomiHomeDevice, names: string[]) {
+  const wanted = new Set(names);
+  return device.capabilities.find(
+    (capability) =>
+      capability.kind === "property" &&
+      capability.piid !== undefined &&
+      capability.access?.includes("write") &&
+      wanted.has(capabilityName(capability)),
+  );
+}
+
+function lightControlMap(device: XiaomiHomeDevice) {
+  return {
+    on: findLightCapability(device, ["on", "p", "power"]),
+    brightness: findLightCapability(device, ["brightness", "l"]),
+    colorTemp: findLightCapability(device, ["color_temperature", "ct"]),
+    color: device.capabilities.find(
+      (capability) =>
+        capability.kind === "property" &&
+        capability.piid !== undefined &&
+        capability.access?.includes("write") &&
+        isRgbColorCapability(capability),
+    ),
+    mode: findLightCapability(device, ["mode", "m"]),
+  };
+}
+
+function isPrimaryLightCapability(
+  capability: XiaomiHomeCapability,
+  lights: ReturnType<typeof lightControlMap>,
+): boolean {
+  return Object.values(lights).some(
+    (item) => item && item.siid === capability.siid && item.piid === capability.piid,
+  );
+}
+
+function InteractiveSlider({
+  value,
+  min,
+  max,
+  step,
+  disabled,
+  onCommit,
+  label,
+  display,
+  compact,
+  "aria-label": ariaLabel,
+}: {
+  value: number;
+  min: number;
+  max: number;
+  step: number;
+  disabled?: boolean;
+  onCommit: (value: number) => void;
+  label?: string;
+  display?: (value: number) => string;
+  compact?: boolean;
+  "aria-label"?: string;
+}) {
+  const [draft, setDraft] = useState(value);
+  const dragging = useRef(false);
+
+  useEffect(() => {
+    if (!dragging.current) setDraft(value);
+  }, [value]);
+
+  const slider = (
+    <Slider
+      value={[draft]}
+      min={min}
+      max={max}
+      step={step}
+      disabled={disabled}
+      onPointerDown={(event) => event.stopPropagation()}
+      onValueChange={(values) => {
+        dragging.current = true;
+        setDraft(values[0] ?? min);
+      }}
+      onValueCommit={(values) => {
+        dragging.current = false;
+        const next = values[0] ?? min;
+        setDraft(next);
+        if (next !== value) onCommit(next);
+      }}
+      aria-label={ariaLabel || label}
+    />
+  );
+  const readout = (
+    <span className={cn("text-xs tabular-nums", compact && "w-14 shrink-0 text-right")}>
+      {display ? display(draft) : formatState(draft)}
+    </span>
+  );
+
+  if (compact) {
+    return (
+      <div className="flex w-full min-w-32 items-center gap-3 sm:max-w-52">
+        {slider}
+        {readout}
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-2 rounded-md border px-3 py-3">
+      {label ? (
+        <div className="flex items-center justify-between text-sm">
+          <span>{label}</span>
+          {readout}
+        </div>
+      ) : null}
+      {slider}
+    </div>
+  );
+}
+
 function parseInputValue(format: string | undefined, value: string): unknown {
   if (format === "bool") return value === "true";
   if (NUMERIC_FORMATS.has(format || "")) {
@@ -295,6 +429,25 @@ function PropertyEditor({
   useEffect(() => {
     setDraft(value === undefined ? "" : String(value));
   }, [value]);
+
+  if (isRgbColorCapability(capability) || capability.format === "rgb") {
+    return (
+      <input
+        type="color"
+        value={packedRgbToHex(value)}
+        onChange={(event) =>
+          onChange({
+            siid: capability.siid,
+            piid: capability.piid!,
+            value: event.target.value,
+          })
+        }
+        disabled={disabled}
+        aria-label={formatCapabilityName(capability.name, capability.description || "颜色")}
+        className="h-8 w-16 cursor-pointer rounded border bg-transparent p-0.5"
+      />
+    );
+  }
 
   if (capability.format === "bool") {
     return (
@@ -338,22 +491,19 @@ function PropertyEditor({
       typeof value === "number" ? value : Number(value ?? capability.valueRange.min);
     const sliderValue = Number.isFinite(numericValue) ? numericValue : capability.valueRange.min;
     return (
-      <div className="flex w-full min-w-32 items-center gap-3 sm:max-w-52">
-        <Slider
-          value={[sliderValue]}
-          min={capability.valueRange.min}
-          max={capability.valueRange.max}
-          step={capability.valueRange.step || 1}
-          onValueCommit={(values) =>
-            onChange({ siid: capability.siid, piid: capability.piid!, value: values[0] })
-          }
-          disabled={disabled}
-          aria-label={formatCapabilityName(capability.name, capability.description || "数值")}
-        />
-        <span className="w-14 shrink-0 text-right text-xs tabular-nums">
-          {formatState(sliderValue)} {capability.unit || ""}
-        </span>
-      </div>
+      <InteractiveSlider
+        compact
+        value={sliderValue}
+        min={capability.valueRange.min}
+        max={capability.valueRange.max}
+        step={capability.valueRange.step || 1}
+        disabled={disabled}
+        display={(next) => `${formatState(next)}${capability.unit ? ` ${capability.unit}` : ""}`}
+        onCommit={(next) =>
+          onChange({ siid: capability.siid, piid: capability.piid!, value: next })
+        }
+        aria-label={formatCapabilityName(capability.name, capability.description || "数值")}
+      />
     );
   }
 
@@ -471,6 +621,139 @@ function ActionControl({
   );
 }
 
+function LightControlPanel({
+  device,
+  disabled,
+  onChange,
+}: {
+  device: XiaomiHomeDevice;
+  disabled: boolean;
+  onChange: (command: XiaomiHomePropertyCommand) => void;
+}) {
+  const lights = lightControlMap(device);
+  if (!lights.on && !lights.brightness && !lights.color && !lights.colorTemp) return null;
+
+  const onValue = lights.on ? getState(device, lights.on) : undefined;
+  const isOn = onValue === true || onValue === 1 || onValue === "true";
+  const brightnessCap = lights.brightness;
+  const brightnessRange = brightnessCap?.valueRange || { min: 1, max: 100, step: 1 };
+  const brightnessRaw = brightnessCap
+    ? Number(getState(device, brightnessCap))
+    : brightnessRange.min;
+  const brightness = Number.isFinite(brightnessRaw) ? brightnessRaw : brightnessRange.min;
+  const colorTempCap = lights.colorTemp;
+  const colorTempRange = colorTempCap?.valueRange || { min: 1700, max: 6500, step: 1 };
+  const colorTempRaw = colorTempCap ? Number(getState(device, colorTempCap)) : colorTempRange.min;
+  const colorTemp = Number.isFinite(colorTempRaw) ? colorTempRaw : colorTempRange.min;
+  const modeValue = lights.mode ? getState(device, lights.mode) : undefined;
+  const colorMode =
+    lights.mode?.valueList?.find((item) => /color|rgb|彩光/i.test(String(item.description)))
+      ?.value ?? 1;
+  const whiteMode =
+    lights.mode?.valueList?.find((item) =>
+      /day|ct|white|temp|日光|白光|色温/i.test(String(item.description)),
+    )?.value ?? 2;
+  const inColorMode =
+    modeValue === undefined ||
+    String(modeValue) === String(colorMode) ||
+    String(modeValue) === "rgb" ||
+    String(modeValue) === "color";
+
+  const setCap = (capability: XiaomiHomeCapability | undefined, value: unknown) => {
+    if (!capability?.piid) return;
+    onChange({ siid: capability.siid, piid: capability.piid, value });
+  };
+
+  return (
+    <section className="space-y-4">
+      <div className="flex items-center justify-between rounded-md border px-3 py-3">
+        <div>
+          <div className="text-sm font-medium">电源</div>
+          <div className="text-muted-foreground text-xs">{isOn ? "已开启" : "已关闭"}</div>
+        </div>
+        {lights.on ? (
+          <Switch
+            checked={isOn}
+            disabled={disabled}
+            onCheckedChange={(checked) => setCap(lights.on, checked)}
+            aria-label="开关"
+          />
+        ) : null}
+      </div>
+
+      {brightnessCap ? (
+        <InteractiveSlider
+          label="亮度"
+          value={brightness}
+          min={brightnessRange.min}
+          max={brightnessRange.max}
+          step={brightnessRange.step || 1}
+          disabled={disabled}
+          display={(next) =>
+            `${Math.round(next)}${brightnessCap.unit === "percentage" || !brightnessCap.unit ? "%" : ` ${brightnessCap.unit}`}`
+          }
+          onCommit={(next) => setCap(brightnessCap, next)}
+          aria-label="亮度"
+        />
+      ) : null}
+
+      {lights.mode && lights.color && lights.colorTemp ? (
+        <div className="grid grid-cols-2 gap-2">
+          <Button
+            type="button"
+            size="sm"
+            variant={inColorMode ? "default" : "outline"}
+            disabled={disabled}
+            onClick={() => setCap(lights.mode, colorMode)}
+          >
+            彩光
+          </Button>
+          <Button
+            type="button"
+            size="sm"
+            variant={!inColorMode ? "default" : "outline"}
+            disabled={disabled}
+            onClick={() => setCap(lights.mode, whiteMode)}
+          >
+            白光
+          </Button>
+        </div>
+      ) : null}
+
+      {lights.color && (inColorMode || !lights.colorTemp) ? (
+        <div className="flex items-center justify-between gap-3 rounded-md border px-3 py-3">
+          <div>
+            <div className="text-sm font-medium">颜色</div>
+            <div className="text-muted-foreground text-xs">16 百万色</div>
+          </div>
+          <input
+            type="color"
+            value={packedRgbToHex(getState(device, lights.color))}
+            disabled={disabled}
+            onChange={(event) => setCap(lights.color, event.target.value)}
+            aria-label="颜色"
+            className="h-10 w-16 cursor-pointer rounded border bg-transparent p-0.5"
+          />
+        </div>
+      ) : null}
+
+      {colorTempCap && (!inColorMode || !lights.color) ? (
+        <InteractiveSlider
+          label="色温"
+          value={colorTemp}
+          min={colorTempRange.min}
+          max={colorTempRange.max}
+          step={colorTempRange.step || 1}
+          disabled={disabled}
+          display={(next) => `${Math.round(next)} K`}
+          onCommit={(next) => setCap(colorTempCap, next)}
+          aria-label="色温"
+        />
+      ) : null}
+    </section>
+  );
+}
+
 function DeviceControlDialog({
   device,
   open,
@@ -492,10 +775,13 @@ function DeviceControlDialog({
 }) {
   if (!device) return null;
   const Icon = getDeviceIcon(device.category);
+  const lights = lightControlMap(device);
+  const hasLightPanel = Boolean(lights.on || lights.brightness || lights.color || lights.colorTemp);
   const capabilities = device.capabilities.filter(
     (capability) =>
-      (capability.kind === "property" && capability.piid !== undefined) ||
-      (capability.kind === "action" && capability.aiid !== undefined),
+      ((capability.kind === "property" && capability.piid !== undefined) ||
+        (capability.kind === "action" && capability.aiid !== undefined)) &&
+      !(hasLightPanel && isPrimaryLightCapability(capability, lights)),
   );
   const groups = new Map<
     string,
@@ -559,6 +845,13 @@ function DeviceControlDialog({
 
         <ScrollArea className="min-h-0 flex-1">
           <div className="space-y-5 p-5 sm:p-6">
+            {hasLightPanel ? (
+              <LightControlPanel
+                device={device}
+                disabled={Boolean(pendingKey)}
+                onChange={onProperty}
+              />
+            ) : null}
             {[...groups.entries()].map(([serviceName, group]) => (
               <section key={serviceName}>
                 <h3 className="text-muted-foreground mb-2 text-xs font-medium">{group.label}</h3>
@@ -631,7 +924,7 @@ function DeviceControlDialog({
                 </div>
               </section>
             ))}
-            {!groups.size ? (
+            {!groups.size && !hasLightPanel ? (
               <Empty className="min-h-48 border-dashed p-6">
                 <EmptyHeader>
                   <EmptyMedia variant="icon">
@@ -655,6 +948,66 @@ function DeviceControlDialog({
   );
 }
 
+type ListedSmartHomeDevice = XiaomiHomeDevice & { provider: "xiaomi" | "yeelight" };
+
+function packedRgbToHex(value: unknown): string {
+  const packed =
+    typeof value === "number"
+      ? value
+      : typeof value === "string" && /^#?[0-9a-fA-F]{6}$/.test(value)
+        ? Number.parseInt(value.replace("#", ""), 16)
+        : Number(value);
+  if (!Number.isFinite(packed)) return "#ffffff";
+  return `#${Math.max(0, Math.min(0xffffff, packed)).toString(16).padStart(6, "0")}`;
+}
+
+function toListedYeelightDevice(device: YeelightProDevice): ListedSmartHomeDevice {
+  const capabilities: XiaomiHomeCapability[] = device.capabilities.map((capability, index) => ({
+    kind: "property",
+    siid: 1,
+    piid: index + 1,
+    serviceName: "light",
+    serviceDescription: "彩光灯",
+    name: capability.name,
+    description: capability.description,
+    format: capability.format,
+    access: capability.access,
+    unit: capability.unit,
+    valueRange: capability.valueRange,
+    valueList: capability.valueList,
+  }));
+  return {
+    id: device.id,
+    provider: "yeelight",
+    accountId: device.accountId,
+    did: device.did,
+    name: device.name,
+    model: device.model,
+    urn: null,
+    manufacturer: "Yeelight",
+    icon: device.icon,
+    category: device.category,
+    categoryLabel: device.categoryLabel,
+    online: device.online,
+    connectType: null,
+    homeId: device.houseId,
+    homeName: device.houseName,
+    roomId: device.roomId,
+    roomName: device.roomName,
+    capabilities,
+    state: Object.fromEntries(
+      device.capabilities.map((capability, index) => [
+        `1.${index + 1}`,
+        device.state[capability.name],
+      ]),
+    ),
+    metadata: device.metadata,
+    lastStateAt: device.lastStateAt,
+    createdAt: device.createdAt,
+    updatedAt: device.updatedAt,
+  };
+}
+
 export default function SmartHomePage() {
   const settingsDialog = useSettingsDialog();
   const [selectedDeviceId, setSelectedDeviceId] = useState<string>();
@@ -665,14 +1018,40 @@ export default function SmartHomePage() {
   const [pendingKey, setPendingKey] = useState<string | null>(null);
   const deferredKeyword = useDeferredValue(keyword.trim().toLocaleLowerCase());
 
-  const devicesQuery = useAllXiaomiHomeDevicesQuery();
-  const devices = devicesQuery.data || [];
+  const xiaomiQuery = useAllXiaomiHomeDevicesQuery();
+  const yeelightQuery = useYeelightProDevicesQuery();
+  const devicesQuery = {
+    isLoading: xiaomiQuery.isLoading || yeelightQuery.isLoading,
+    isError: xiaomiQuery.isError && yeelightQuery.isError,
+    isFetching: xiaomiQuery.isFetching || yeelightQuery.isFetching,
+    refetch: () => {
+      void xiaomiQuery.refetch();
+      void yeelightQuery.refetch();
+    },
+  };
+  const devices = useMemo<ListedSmartHomeDevice[]>(
+    () => [
+      ...(xiaomiQuery.data || []).map((device) => ({ ...device, provider: "xiaomi" as const })),
+      ...(yeelightQuery.data || []).map(toListedYeelightDevice),
+    ],
+    [xiaomiQuery.data, yeelightQuery.data],
+  );
   const selectedDevice = devices.find((device) => device.id === selectedDeviceId);
+  const isYeelight = selectedDevice?.provider === "yeelight";
   const detailQuery = useXiaomiHomeDeviceQuery(selectedDeviceId, {
-    enabled: Boolean(selectedDeviceId),
+    enabled: Boolean(selectedDeviceId) && !isYeelight,
+  });
+  const yeelightDetailQuery = useYeelightProDeviceQuery(selectedDeviceId, {
+    enabled: Boolean(selectedDeviceId) && isYeelight,
   });
   // The card data is used as an immediate fallback while the detail request refreshes its state.
-  const detailDevice = detailQuery.data || selectedDevice;
+  const detailDevice: ListedSmartHomeDevice | undefined = isYeelight
+    ? yeelightDetailQuery.data
+      ? toListedYeelightDevice(yeelightDetailQuery.data)
+      : selectedDevice
+    : detailQuery.data
+      ? { ...detailQuery.data, provider: "xiaomi" as const }
+      : selectedDevice;
 
   const homes = useMemo(() => {
     const map = new Map<string, { id: string; name: string; count: number }>();
@@ -748,7 +1127,14 @@ export default function SmartHomePage() {
     onSuccess: () => toast.success("设备状态已刷新"),
     onError: (error) => toast.error(error.message || "设备状态刷新失败"),
   });
+  const yeelightRefreshMutation = useRefreshYeelightProDeviceMutation({
+    onSuccess: () => toast.success("设备状态已刷新"),
+    onError: (error) => toast.error(error.message || "设备状态刷新失败"),
+  });
   const propertyMutation = useSetXiaomiHomePropertyMutation({
+    onError: (error) => toast.error(error.message || "设备控制失败"),
+  });
+  const yeelightPropertyMutation = useSetYeelightProPropertyMutation({
     onError: (error) => toast.error(error.message || "设备控制失败"),
   });
   const actionMutation = useExecuteXiaomiHomeActionMutation({
@@ -761,14 +1147,26 @@ export default function SmartHomePage() {
     const key = `${command.siid}.${command.piid}`;
     setPendingKey(key);
     try {
-      await propertyMutation.mutateAsync({ deviceId: detailDevice.id, command });
+      if (detailDevice.provider === "yeelight") {
+        const capability = detailDevice.capabilities.find(
+          (item) => item.siid === command.siid && item.piid === command.piid,
+        );
+        if (!capability) return;
+        await yeelightPropertyMutation.mutateAsync({
+          deviceId: detailDevice.id,
+          command: { name: capability.name, value: command.value },
+        });
+      } else {
+        await propertyMutation.mutateAsync({ deviceId: detailDevice.id, command });
+      }
     } finally {
       setPendingKey(null);
     }
   };
 
   const executeAction = async (capability: XiaomiHomeCapability, values: unknown[]) => {
-    if (!detailDevice || capability.aiid === undefined) return;
+    if (!detailDevice || capability.aiid === undefined || detailDevice.provider === "yeelight")
+      return;
     const key = `${capability.siid}.${capability.aiid}`;
     setPendingKey(key);
     try {
@@ -793,7 +1191,7 @@ export default function SmartHomePage() {
       icon={Home}
       eyebrow="家居设备"
       title="智能家居"
-      description="查看并控制已连接的小米家庭设备"
+      description="查看并控制已连接的小米设备和易来彩光灯"
       className="max-w-7xl"
       actions={
         <Button
@@ -849,7 +1247,7 @@ export default function SmartHomePage() {
             </EmptyMedia>
             <EmptyTitle>暂无智能家居设备</EmptyTitle>
             <EmptyDescription>
-              请先在“我的 → 我的智能家居”中连接小米账号并同步家庭设备。
+              请先在“我的 → 我的智能家居”中连接小米账号或扫码添加易来账号，再同步家庭设备。
             </EmptyDescription>
           </EmptyHeader>
           <EmptyContent>
@@ -941,12 +1339,15 @@ export default function SmartHomePage() {
             <div className="grid gap-3 pb-8 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
               {visibleDevices.map((device) => {
                 const Icon = getDeviceIcon(device.category);
-                const preview = device.capabilities.find(
-                  (capability) =>
-                    capability.kind === "property" &&
-                    capability.access?.includes("read") &&
-                    getState(device, capability) !== undefined,
-                );
+                const lights = lightControlMap(device);
+                const preview =
+                  lights.brightness ||
+                  device.capabilities.find(
+                    (capability) =>
+                      capability.kind === "property" &&
+                      capability.access?.includes("read") &&
+                      getState(device, capability) !== undefined,
+                  );
                 return (
                   <button
                     type="button"
@@ -1018,11 +1419,23 @@ export default function SmartHomePage() {
         onOpenChange={(open) => {
           if (!open) setSelectedDeviceId(undefined);
         }}
-        onRefresh={() => detailDevice && void refreshMutation.mutateAsync(detailDevice.id)}
+        onRefresh={() => {
+          if (!detailDevice) return;
+          if (detailDevice.provider === "yeelight") {
+            void yeelightRefreshMutation.mutateAsync(detailDevice.id);
+            return;
+          }
+          void refreshMutation.mutateAsync(detailDevice.id);
+        }}
         onProperty={(command) => void setProperty(command)}
         onAction={(capability, values) => void executeAction(capability, values)}
         pendingKey={pendingKey}
-        refreshing={refreshMutation.isPending || detailQuery.isFetching}
+        refreshing={
+          refreshMutation.isPending ||
+          yeelightRefreshMutation.isPending ||
+          detailQuery.isFetching ||
+          yeelightDetailQuery.isFetching
+        }
       />
     </PageShell>
   );

@@ -3,11 +3,6 @@
  * SPDX-License-Identifier: MIT
  */
 
-/**
- * Copyright (c) 2025 Bytedance Ltd. and/or its affiliates
- * SPDX-License-Identifier: MIT
- */
-
 import type { FlowNodeRegistry } from "../typings";
 import { BlockEndNodeRegistry } from "./block-end";
 import { BlockStartNodeRegistry } from "./block-start";
@@ -33,6 +28,7 @@ import { WebhookNodeRegistry } from "./webhook";
 import { VisionNodeRegistry } from "./vision";
 import { SpeechNodeRegistry } from "./speech";
 import { DeviceControlNodeRegistry } from "./device-control";
+import { SmartHomeNodeRegistry } from "./smart-home";
 export { WorkflowNodeType } from "./constants";
 
 export const nodeRegistries: FlowNodeRegistry[] = [
@@ -61,4 +57,5 @@ export const nodeRegistries: FlowNodeRegistry[] = [
   VisionNodeRegistry,
   SpeechNodeRegistry,
   DeviceControlNodeRegistry,
+  SmartHomeNodeRegistry,
 ];

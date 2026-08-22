@@ -7,6 +7,7 @@ import {
     McpCommunicationType,
     McpServerType,
     ProgrammingProjectTool,
+    programmingProjectToolKey,
     type ProgrammingProjectPublishedSnapshot,
 } from "@buildingai/db/entities";
 import { Repository } from "@buildingai/db/typeorm";
@@ -132,14 +133,19 @@ export class WorkflowMcpExecutorService {
         const snapshot = input.runtimeContext?.publishedSnapshot;
         if (this.isPublishedSnapshot(snapshot)) {
             const allowed = snapshot.tools.some(
-                (tool) => tool.mcpServerId === mcpServerId && tool.toolName === toolName,
+                (tool) =>
+                    programmingProjectToolKey(tool) ===
+                    programmingProjectToolKey({ kind: "mcp", mcpServerId, toolName }),
             );
             if (!allowed) throw new Error(`MCP tool "${toolName}" is not included in published project`);
             return;
         }
         if (!input.runtimeContext?.projectId) return;
         const enabled = await this.projectToolRepository.findOne({
-            where: { projectId: input.runtimeContext.projectId, mcpServerId, toolName },
+            where: {
+                projectId: input.runtimeContext.projectId,
+                toolKey: programmingProjectToolKey({ kind: "mcp", mcpServerId, toolName }),
+            },
         });
         if (!enabled) throw new Error(`MCP tool "${toolName}" is not enabled for this project`);
     }

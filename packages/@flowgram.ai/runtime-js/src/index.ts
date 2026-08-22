@@ -33,3 +33,8 @@ export type {
     DeviceControlExecutorHandler,
     DeviceControlExecutorInput,
 } from "./nodes/device-control/index.ts";
+export { registerSmartHomeExecutor } from "./nodes/smart-home/index.ts";
+export type {
+    SmartHomeExecutorHandler,
+    SmartHomeExecutorInput,
+} from "./nodes/smart-home/index.ts";

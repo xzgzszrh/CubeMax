@@ -48,18 +48,6 @@ export const XIAOMI_HOME_CATEGORY_LABELS: Record<string, string> = {
     water_heater: "热水器",
 };
 
-export function isLoopbackHttpOrigin(value: string): boolean {
-    try {
-        const url = new URL(value);
-        return (
-            ["http:", "https:"].includes(url.protocol) &&
-            ["localhost", "127.0.0.1", "[::1]"].includes(url.hostname)
-        );
-    } catch {
-        return false;
-    }
-}
-
 const CATEGORY_ALIASES: Record<string, string> = {
     acpartner: "climate",
     aircondition: "climate",

@@ -12,10 +12,20 @@ const PROGRAMMING_PROJECTS_PATH = "/programming-projects";
 export type ProgrammingRuntimeTarget = "local" | "simulator" | "device";
 export type ProgrammingProjectType = "conversation" | "application";
 
+export type ProgrammingProjectToolKind = "mcp" | "xiaomi" | "yeelight";
+
 export type ProgrammingProjectToolRef = {
-    mcpServerId: string;
-    toolName: string;
+    kind?: ProgrammingProjectToolKind;
+    mcpServerId?: string;
+    toolName?: string;
+    deviceId?: string;
 };
+
+export function programmingProjectToolKey(tool: ProgrammingProjectToolRef): string {
+    const kind = tool.kind === "xiaomi" || tool.kind === "yeelight" ? tool.kind : "mcp";
+    if (kind === "mcp") return `mcp\u0000${tool.mcpServerId ?? ""}\u0000${tool.toolName ?? ""}`;
+    return `${kind}\u0000${tool.deviceId ?? ""}`;
+}
 
 export interface ProgrammingProjectItem {
     id: string;

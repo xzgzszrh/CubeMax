@@ -1975,6 +1975,9 @@ importers:
       pg-connection-string:
         specifier: ^2.9.1
         version: 2.11.0
+      qrcode:
+        specifier: ^1.5.4
+        version: 1.5.4
       radash:
         specifier: ^12.1.1
         version: 12.1.1
@@ -2051,6 +2054,9 @@ importers:
       '@types/pg':
         specifier: ^8.15.5
         version: 8.16.0
+      '@types/qrcode':
+        specifier: ^1.5.6
+        version: 1.5.6
       '@types/supertest':
         specifier: ^6.0.2
         version: 6.0.3
@@ -9373,6 +9379,7 @@ packages:
 
   crypto-js@4.2.0:
     resolution: {integrity: sha512-KALDyEYgpY+Rlob/iriUtjV6d5Eq+Y191A5g4UqLAi8CyGP9N1+FdVbkc1SxKc2r4YAYqG8JzO2KGL+AizD70Q==}
+    deprecated: Active development of CryptoJS has been discontinued. This library is no longer maintained.
 
   css-line-break@2.1.0:
     resolution: {integrity: sha512-FHcKFCZcAha3LwfVBhCQbW2nCNbkZXn7KVUJcsT5/P8YmfsVja0FMPJr0B903j/E69HUphKiV9iQArX8SDYA4w==}

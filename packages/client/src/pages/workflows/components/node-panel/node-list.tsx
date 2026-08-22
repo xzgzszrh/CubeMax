@@ -19,18 +19,28 @@ import {
   Search,
   Sparkles,
   Variable,
+  Wrench,
   X,
 } from "lucide-react";
 import type { FC, KeyboardEvent, MouseEvent } from "react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import styled from "styled-components";
 
+import { useProjectTools } from "../../context/ProjectToolsContext";
 import { useUserLuaNodes } from "../../context/UserLuaNodesContext";
 import { nodeRegistries, WorkflowNodeType } from "../../nodes";
 import type { FlowNodeRegistry } from "../../typings";
 import { canContainNode } from "../../utils";
 
-type NodeCategoryId = "frequent" | "ai" | "logic" | "device" | "app" | "integration" | "user-lua";
+type NodeCategoryId =
+  | "frequent"
+  | "tools"
+  | "ai"
+  | "logic"
+  | "device"
+  | "app"
+  | "integration"
+  | "user-lua";
 
 type NodeCategory = {
   id: NodeCategoryId;
@@ -45,6 +55,12 @@ const CATEGORIES: NodeCategory[] = [
     label: "常用",
     description: "最常用的节点",
     icon: Sparkles,
+  },
+  {
+    id: "tools",
+    label: "工具",
+    description: "工程已启用的 MCP 与物联网设备",
+    icon: Wrench,
   },
   {
     id: "ai",
@@ -135,9 +151,11 @@ const CATEGORY_BY_TYPE: Partial<Record<WorkflowNodeType | string, NodeCategoryId
   [WorkflowNodeType.Vision]: "app",
   [WorkflowNodeType.Speech]: "app",
   [WorkflowNodeType.DeviceControl]: "app",
+  [WorkflowNodeType.SmartHome]: "tools",
 };
 
 function getCategoryId(registry: FlowNodeRegistry): NodeCategoryId {
+  if (registry.meta.nodePanelGroup === "tools") return "tools";
   if (registry.meta.nodePanelGroup === "device") return "device";
   if (registry.meta.nodePanelGroup === "app") return "app";
   if (registry.meta.nodePanelGroup === "user-lua") return "user-lua";
@@ -157,8 +175,15 @@ export function getVisibleRegistries(params: {
   fromPort?: WorkflowPortEntity;
   projectType?: "conversation" | "application";
   userLuaRegistries?: FlowNodeRegistry[];
+  projectToolRegistries?: FlowNodeRegistry[];
 }): FlowNodeRegistry[] {
-  const { containerNode, fromPort, projectType = "conversation", userLuaRegistries = [] } = params;
+  const {
+    containerNode,
+    fromPort,
+    projectType = "conversation",
+    userLuaRegistries = [],
+    projectToolRegistries = [],
+  } = params;
 
   return nodeRegistries
     .filter((registry) => registry.meta.nodePanelVisible !== false)
@@ -179,7 +204,8 @@ export function getVisibleRegistries(params: {
       }
       return true;
     })
-    .concat(projectType === "conversation" ? [] : userLuaRegistries);
+    .concat(projectType === "conversation" ? [] : userLuaRegistries)
+    .concat(projectToolRegistries);
 }
 
 interface NodeListProps {
@@ -265,12 +291,14 @@ function groupRegistries(registries: FlowNodeRegistry[]) {
 export const ConversationNodeList: FC<NodeListProps> = ({ onSelect, containerNode, fromPort }) => {
   const context = useClientContext();
   const { registries: userLuaRegistries } = useUserLuaNodes();
+  const { registries: projectToolRegistries } = useProjectTools();
   const groups = groupRegistries(
     getVisibleRegistries({
       containerNode,
       fromPort,
       projectType: "conversation",
       userLuaRegistries,
+      projectToolRegistries,
     }),
   );
 
@@ -383,10 +411,18 @@ export const NodeList: FC<NodeListProps> = ({
   const [activeCategory, setActiveCategory] = useState<NodeCategoryId>("frequent");
   const [keyword, setKeyword] = useState("");
   const { registries: userLuaRegistries, isLoading: isUserLuaLoading } = useUserLuaNodes();
+  const { registries: projectToolRegistries, isLoading: isProjectToolsLoading } = useProjectTools();
 
   const registries = useMemo(
-    () => getVisibleRegistries({ containerNode, fromPort, projectType, userLuaRegistries }),
-    [containerNode, fromPort, projectType, userLuaRegistries],
+    () =>
+      getVisibleRegistries({
+        containerNode,
+        fromPort,
+        projectType,
+        userLuaRegistries,
+        projectToolRegistries,
+      }),
+    [containerNode, fromPort, projectType, projectToolRegistries, userLuaRegistries],
   );
 
   const visibleRegistries = useMemo(() => {
@@ -406,16 +442,27 @@ export const NodeList: FC<NodeListProps> = ({
     });
   }, [activeCategory, keyword, registries]);
 
+  useEffect(() => {
+    if (activeCategory === "tools" || activeCategory === "user-lua") return;
+    const categoryHasNodes = registries.some((registry) =>
+      activeCategory === "frequent"
+        ? FREQUENT_NODE_TYPES.has(registry.type as string)
+        : getCategoryId(registry) === activeCategory,
+    );
+    if (!categoryHasNodes) setActiveCategory("frequent");
+  }, [activeCategory, registries]);
+
   const handleSelect = (event: MouseEvent<HTMLButtonElement>, registry: FlowNodeRegistry) => {
     const json = registry.onAdd?.(context);
     onSelect({
-      nodeType: registry.type as string,
+      nodeType: (json?.type ?? registry.type) as string,
       selectEvent: event,
       nodeJSON: json,
     });
   };
 
   const showUserLuaEmptyMessage = activeCategory === "user-lua" && !keyword.trim();
+  const showToolsEmptyMessage = activeCategory === "tools" && !keyword.trim();
 
   return (
     <div className="workflow-node-library" role="dialog" aria-label="节点库">
@@ -444,7 +491,7 @@ export const NodeList: FC<NodeListProps> = ({
             if (nextKeyword.trim()) setActiveCategory("frequent");
           }}
           onKeyDown={handleSearchKeyDown}
-          placeholder="搜索节点，例如：条件、Lua、MCP"
+          placeholder="搜索节点，例如：灯光、MCP、条件"
           aria-label="搜索节点"
         />
         {keyword && (
@@ -505,7 +552,7 @@ export const NodeList: FC<NodeListProps> = ({
             {visibleRegistries.length > 0 ? (
               visibleRegistries.map((registry) => (
                 <NodeCard
-                  key={registry.type as string}
+                  key={registry.meta.toolKey ?? (registry.type as string)}
                   registry={registry}
                   disabled={!(registry.canAdd?.(context) ?? true)}
                   onClick={(event) => handleSelect(event, registry)}
@@ -515,13 +562,19 @@ export const NodeList: FC<NodeListProps> = ({
               <div
                 className={[
                   "workflow-node-library-empty",
-                  showUserLuaEmptyMessage ? "is-message" : "",
+                  showUserLuaEmptyMessage || showToolsEmptyMessage ? "is-message" : "",
                 ]
                   .filter(Boolean)
                   .join(" ")}
               >
                 {showUserLuaEmptyMessage ? (
                   <span>{isUserLuaLoading ? "正在加载 Lua 模块…" : "当前工程暂无 Lua 模块"}</span>
+                ) : showToolsEmptyMessage ? (
+                  <>
+                    <Variable size={20} aria-hidden="true" />
+                    <strong>{isProjectToolsLoading ? "正在加载工具…" : "还没有可用的工具"}</strong>
+                    <span>先到工程的工具页勾选 MCP 或物联网设备，再回到这里拖进画布。</span>
+                  </>
                 ) : (
                   <>
                     <Variable size={20} aria-hidden="true" />

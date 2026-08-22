@@ -47,7 +47,7 @@ const NAV_ITEMS = [
     icon: MonitorPlay,
     applicationOnly: true,
   },
-  { path: "tools", label: "工具", description: "配置外部服务调用", icon: Wrench },
+  { path: "tools", label: "工具", description: "配置 MCP 与物联网设备", icon: Wrench },
   { path: "settings", label: "设置", description: "目标设备与运行配置", icon: Settings },
   { path: "publish", label: "发布", description: "发布到设备或设置触发器", icon: Rocket },
 ] as const;

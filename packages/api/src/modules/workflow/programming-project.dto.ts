@@ -90,15 +90,24 @@ export class UpdateProgrammingProjectDto {
 }
 
 export class ProgrammingProjectToolDto {
-    @IsString()
-    @IsNotEmpty()
-    @MaxLength(255)
-    mcpServerId: string;
+    @IsOptional()
+    @IsIn(["mcp", "xiaomi", "yeelight"])
+    kind?: "mcp" | "xiaomi" | "yeelight";
 
+    @IsOptional()
     @IsString()
-    @IsNotEmpty()
     @MaxLength(255)
-    toolName: string;
+    mcpServerId?: string;
+
+    @IsOptional()
+    @IsString()
+    @MaxLength(255)
+    toolName?: string;
+
+    @IsOptional()
+    @IsString()
+    @MaxLength(255)
+    deviceId?: string;
 }
 
 export class ReplaceProgrammingProjectToolsDto {

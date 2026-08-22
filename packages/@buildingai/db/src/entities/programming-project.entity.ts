@@ -8,10 +8,51 @@ export type ProgrammingRuntimeTarget = "local" | "simulator" | "device";
 /** The two intentionally different programming experiences. */
 export type ProgrammingProjectType = "conversation" | "application";
 
+export type ProgrammingProjectToolKind = "mcp" | "xiaomi" | "yeelight";
+
 export type ProgrammingProjectToolSnapshot = {
-    mcpServerId: string;
-    toolName: string;
+    kind: ProgrammingProjectToolKind;
+    mcpServerId?: string;
+    toolName?: string;
+    deviceId?: string;
 };
+
+export function programmingProjectToolKind(
+    value: string | null | undefined,
+): ProgrammingProjectToolKind {
+    return value === "xiaomi" || value === "yeelight" ? value : "mcp";
+}
+
+export function programmingProjectToolKey(tool: {
+    kind?: string | null;
+    mcpServerId?: string | null;
+    toolName?: string | null;
+    deviceId?: string | null;
+}): string {
+    const kind = programmingProjectToolKind(tool.kind);
+    if (kind === "mcp") return `mcp:${tool.mcpServerId ?? ""}:${tool.toolName ?? ""}`;
+    return `${kind}:${tool.deviceId ?? ""}`;
+}
+
+export function normalizeProgrammingProjectTool(tool: {
+    kind?: string | null;
+    mcpServerId?: string | null;
+    toolName?: string | null;
+    deviceId?: string | null;
+}): ProgrammingProjectToolSnapshot {
+    const kind = programmingProjectToolKind(tool.kind);
+    if (kind === "mcp") {
+        return {
+            kind,
+            ...(tool.mcpServerId ? { mcpServerId: tool.mcpServerId } : {}),
+            ...(tool.toolName ? { toolName: tool.toolName } : {}),
+        };
+    }
+    return {
+        kind,
+        ...(tool.deviceId ? { deviceId: tool.deviceId } : {}),
+    };
+}
 
 export type ProgrammingProjectLuaSnapshot = {
     id: string;
@@ -93,15 +134,24 @@ export class ProgrammingProject extends BaseEntity {
 }
 
 @AppEntity({ name: "programming_project_tool", comment: "编程工程可调用工具" })
-@Index(["projectId", "mcpServerId", "toolName"], { unique: true })
+@Index(["projectId", "toolKey"], { unique: true })
 @Index(["projectId"])
 export class ProgrammingProjectTool extends BaseEntity {
     @Column({ name: "project_id", type: "uuid" })
     projectId: string;
 
-    @Column({ name: "mcp_server_id", type: "varchar", length: 255 })
-    mcpServerId: string;
+    @Column({ name: "kind", type: "varchar", length: 16, default: "mcp", comment: "工具类型" })
+    kind: ProgrammingProjectToolKind;
 
-    @Column({ name: "tool_name", type: "varchar", length: 255 })
-    toolName: string;
+    @Column({ name: "mcp_server_id", type: "varchar", length: 255, nullable: true })
+    mcpServerId?: string | null;
+
+    @Column({ name: "tool_name", type: "varchar", length: 255, nullable: true })
+    toolName?: string | null;
+
+    @Column({ name: "device_id", type: "varchar", length: 255, nullable: true, comment: "物联网设备ID" })
+    deviceId?: string | null;
+
+    @Column({ name: "tool_key", type: "varchar", length: 512, comment: "去重键" })
+    toolKey: string;
 }

@@ -17,6 +17,7 @@ import { WebhookExecutor } from "./webhook/index.ts";
 import { VisionExecutor } from "./vision/index.ts";
 import { SpeechExecutor } from "./speech/index.ts";
 import { DeviceControlExecutor } from "./device-control/index.ts";
+import { SmartHomeExecutor } from "./smart-home/index.ts";
 
 export const WorkflowRuntimeNodeExecutors: INodeExecutorFactory[] = [
     StartExecutor,
@@ -36,6 +37,7 @@ export const WorkflowRuntimeNodeExecutors: INodeExecutorFactory[] = [
     VisionExecutor,
     SpeechExecutor,
     DeviceControlExecutor,
+    SmartHomeExecutor,
     BreakExecutor,
     ContinueExecutor,
 ];

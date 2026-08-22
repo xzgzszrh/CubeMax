@@ -15,6 +15,7 @@ import { Navigate, Outlet, useLocation, useNavigate, useParams } from "react-rou
 import { ProgrammingProjectContext } from "./context";
 import { ProjectNameDialog } from "./project-name-dialog";
 import { ProgrammingSidebar } from "./workspace-sidebar";
+import { ProjectToolsProvider } from "../workflows/context/ProjectToolsContext";
 import { UserLuaNodesProvider } from "../workflows/context/UserLuaNodesContext";
 
 function WorkspaceTopbar({
@@ -145,11 +146,13 @@ export default function ProgrammingWorkspaceLayout() {
 
   return (
     <ProgrammingProjectContext.Provider value={project}>
-      {project.projectType === "application" ? (
-        <UserLuaNodesProvider projectId={project.id}>{workspace}</UserLuaNodesProvider>
-      ) : (
-        workspace
-      )}
+      <ProjectToolsProvider>
+        {project.projectType === "application" ? (
+          <UserLuaNodesProvider projectId={project.id}>{workspace}</UserLuaNodesProvider>
+        ) : (
+          workspace
+        )}
+      </ProjectToolsProvider>
     </ProgrammingProjectContext.Provider>
   );
 }

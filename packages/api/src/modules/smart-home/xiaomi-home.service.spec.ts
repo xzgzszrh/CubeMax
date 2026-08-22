@@ -38,6 +38,16 @@ jest.mock("@buildingai/errors", () => ({
     },
 }));
 
+jest.mock("./xiaomi-home.constants", () => {
+    const actual = jest.requireActual(
+        "./xiaomi-home.constants",
+    ) as typeof import("./xiaomi-home.constants");
+    return {
+        ...actual,
+        XIAOMI_HOME_LOCAL_OAUTH_ENABLED: true,
+    };
+});
+
 import { XiaomiHomeService } from "./xiaomi-home.service";
 
 function createService() {
@@ -45,7 +55,11 @@ function createService() {
         find: jest.fn().mockResolvedValue([]),
         findOne: jest.fn(),
     } as unknown as Repository<XiaomiHomeAccount>;
-    const oauthSessionRepository = {} as Repository<XiaomiHomeOAuthSession>;
+    const oauthSessionRepository = {
+        create: jest.fn((value) => value),
+        save: jest.fn(async (value) => value),
+        findOne: jest.fn(),
+    } as unknown as Repository<XiaomiHomeOAuthSession>;
     const deviceRepository = {
         find: jest.fn().mockResolvedValue([]),
         findOne: jest.fn(),
@@ -53,6 +67,7 @@ function createService() {
     return {
         service: new XiaomiHomeService(accountRepository, oauthSessionRepository, deviceRepository),
         accountRepository,
+        oauthSessionRepository,
         deviceRepository,
     };
 }
@@ -173,5 +188,55 @@ describe("XiaomiHomeService", () => {
                 }),
             ),
         ).toThrow("本地 Home Assistant 地址");
+    });
+
+    it("allows local script login from a remote frontend origin", async () => {
+        const { service, oauthSessionRepository } = createService();
+        const remoteFrontendOrigin = "http://remote.example:4091";
+
+        const result = await service.startOAuth({
+            userId: "user-a",
+            cloudServer: "cn",
+            mode: "local_token",
+            apiOrigin: "http://remote.example:4090",
+            frontendOrigin: remoteFrontendOrigin,
+        });
+
+        expect(result.mode).toBe("local_token");
+        expect(result.cloudServer).toBe("cn");
+        expect(result.authorizationUrl).toContain("https://account.xiaomi.com/oauth2/authorize");
+        expect(result.redirectUri).toMatch(/^http:\/\/homeassistant\.local:8123\/api\/webhook\//);
+        expect(oauthSessionRepository.create).toHaveBeenCalledWith(
+            expect.objectContaining({
+                ownerUserId: "user-a",
+                cloudServer: "cn",
+                frontendOrigin: remoteFrontendOrigin,
+            }),
+        );
+        expect(oauthSessionRepository.save).toHaveBeenCalled();
+    });
+
+    it("accepts hex colors for MIoT rgb properties", () => {
+        const { service } = createService();
+        const validate = (
+            service as unknown as {
+                validateValue: (
+                    capability: Record<string, unknown>,
+                    value: unknown,
+                ) => unknown;
+            }
+        ).validateValue.bind(service);
+
+        expect(
+            validate(
+                {
+                    name: "color",
+                    format: "uint32",
+                    unit: "rgb",
+                    valueRange: { min: 1, max: 16777215, step: 1 },
+                },
+                "#ff0000",
+            ),
+        ).toBe(0xff0000);
     });
 });
