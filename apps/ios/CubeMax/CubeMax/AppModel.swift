@@ -214,11 +214,7 @@ final class AppModel: ObservableObject {
     }
 
     func executeTrigger(_ trigger: ProgrammingTriggerItem, inputs: [String: JSONValue]) async throws -> String {
-        do {
-            await ensureMobileSocket()
-        } catch {
-            throw APIClientError.server(message: "无法连接实时通道，无法使用摄像头节点", code: nil)
-        }
+        await ensureMobileSocket()
         let response = try await api.executeTrigger(id: trigger.id, inputs: inputs)
         return response.taskID
     }
@@ -280,18 +276,18 @@ final class AppModel: ObservableObject {
 
     func switchCameraFacing() {
         guard let cameraController, allowSwitchFacing, !cameraBusy else { return }
-        do {
-            try cameraController.switchFacing()
-            currentFacing = cameraController.facing == .front ? "front" : "back"
-            Task {
+        Task {
+            do {
+                try await cameraController.switchFacing()
+                currentFacing = cameraController.facing == .front ? "front" : "back"
                 await mobileSocket?.send(.make(type: "camera.session.state", data: [
                     "session_id": .string(currentSession?.sessionId ?? ""),
                     "facing": .string(currentFacing),
                     "preview": .bool(true),
                 ]))
+            } catch {
+                errorMessage = localized(error)
             }
-        } catch {
-            errorMessage = localized(error)
         }
     }
 

@@ -9,11 +9,15 @@
 /* Begin PBXBuildFile section */
 		087FCC5937B6382A66FA9001 /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = EEE443F5470AA918A770370A /* Models.swift */; };
 		0E69CF90B1B31908BCA2ACB4 /* APIClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 34EB5BEF9EC1A2081513DF71 /* APIClient.swift */; };
+		10FB3CAC1A85471957C0EC92 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 03615AF4B90F360322963649 /* Assets.xcassets */; };
 		13EF41B8560669DA71819437 /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FCFB4C79629ACCA6A8093046 /* HomeView.swift */; };
 		1A5FB5BB3D9A2795C1C295A1 /* DeviceControlView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 151B06B7F2BCF4DAB2A44976 /* DeviceControlView.swift */; };
+		20897B7618095C1523C3A9DB /* MobileWebSocketClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = F38C8E6860C65E2941E51554 /* MobileWebSocketClient.swift */; };
 		2CC16170586721EE10E170B7 /* CubeCatDevicesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1CDB4A781577C2EFB6362271 /* CubeCatDevicesView.swift */; };
+		426E5531C3F7021E3F7BEA4D /* CameraPreviewView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 12FFD217AE853E4EB636C6FA /* CameraPreviewView.swift */; };
 		42E62178A78CA90AE0121DC7 /* TriggersView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 721E4130A0A5A10C34AA0126 /* TriggersView.swift */; };
 		454AB8B4F4BF0F7FC7B74845 /* LoginView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E4C33517C4F03D7FCA48C9C /* LoginView.swift */; };
+		4580297DD33EEC71CB4A7CF1 /* MobileProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99F940CE09A76EE69B4A9F42 /* MobileProtocol.swift */; };
 		47F41228FFBCE00C2413664F /* ProfileView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 27F5656ADBFE13F2868A8FAB /* ProfileView.swift */; };
 		4AA7AD290B8E3CAAAE0E71BC /* JSONValue.swift in Sources */ = {isa = PBXBuildFile; fileRef = 26884A3C06900C53D7441198 /* JSONValue.swift */; };
 		56033DFFDC35751C85BD923D /* SmartHomeDevicesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DBF8319924B2B1208236E941 /* SmartHomeDevicesView.swift */; };
@@ -21,14 +25,17 @@
 		745326F3869E51627061538B /* AppModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8F41933BC342DFDB7A28AA2B /* AppModel.swift */; };
 		8FA1C4C00B5BDD737C12EBF4 /* KeychainStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = FB987366036CD49E1D2EAA26 /* KeychainStore.swift */; };
 		B2350D7812E885CE711E3A5A /* ConversationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E0A4B856112BB98C56E843CC /* ConversationView.swift */; };
+		B8276B530384292F482C9E47 /* CameraSessionController.swift in Sources */ = {isa = PBXBuildFile; fileRef = D49B5A145A0831E670530A78 /* CameraSessionController.swift */; };
 		BC1AF0736DDF621EEEEA4212 /* CubeMaxApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 34C5F64822106EC3DD3D1F3E /* CubeMaxApp.swift */; };
-		C6B6E6E4714B4DC49518A101 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = C6B6E6E4714B4DC49518A102 /* Assets.xcassets */; };
 		C703B26C1C8594ABF0FB6BF9 /* CreateTriggerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 31677CD648A22C9A2D0653B2 /* CreateTriggerView.swift */; };
 		DD54CF82384674D636F928B1 /* TriggerFormView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 011C7B600CC8ADDC407BAD46 /* TriggerFormView.swift */; };
+		E53E67CC5B6EABAE06B2ED8A /* CameraCaptureUploader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F5BD204A8820540C7439BA4 /* CameraCaptureUploader.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
 		011C7B600CC8ADDC407BAD46 /* TriggerFormView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TriggerFormView.swift; sourceTree = "<group>"; };
+		03615AF4B90F360322963649 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		12FFD217AE853E4EB636C6FA /* CameraPreviewView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraPreviewView.swift; sourceTree = "<group>"; };
 		151B06B7F2BCF4DAB2A44976 /* DeviceControlView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeviceControlView.swift; sourceTree = "<group>"; };
 		1CDB4A781577C2EFB6362271 /* CubeCatDevicesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CubeCatDevicesView.swift; sourceTree = "<group>"; };
 		26884A3C06900C53D7441198 /* JSONValue.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JSONValue.swift; sourceTree = "<group>"; };
@@ -40,16 +47,27 @@
 		4E4C33517C4F03D7FCA48C9C /* LoginView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginView.swift; sourceTree = "<group>"; };
 		721E4130A0A5A10C34AA0126 /* TriggersView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TriggersView.swift; sourceTree = "<group>"; };
 		8F41933BC342DFDB7A28AA2B /* AppModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppModel.swift; sourceTree = "<group>"; };
-		C6B6E6E4714B4DC49518A102 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		99F940CE09A76EE69B4A9F42 /* MobileProtocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MobileProtocol.swift; sourceTree = "<group>"; };
+		9F5BD204A8820540C7439BA4 /* CameraCaptureUploader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraCaptureUploader.swift; sourceTree = "<group>"; };
+		D49B5A145A0831E670530A78 /* CameraSessionController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraSessionController.swift; sourceTree = "<group>"; };
 		DBF8319924B2B1208236E941 /* SmartHomeDevicesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SmartHomeDevicesView.swift; sourceTree = "<group>"; };
 		E0A4B856112BB98C56E843CC /* ConversationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConversationView.swift; sourceTree = "<group>"; };
 		EEE443F5470AA918A770370A /* Models.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Models.swift; sourceTree = "<group>"; };
 		F00B5997D752D593F706C072 /* CubeMax.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = CubeMax.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		F38C8E6860C65E2941E51554 /* MobileWebSocketClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MobileWebSocketClient.swift; sourceTree = "<group>"; };
 		FB987366036CD49E1D2EAA26 /* KeychainStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeychainStore.swift; sourceTree = "<group>"; };
 		FCFB4C79629ACCA6A8093046 /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXGroup section */
+		050E2190D800044BDFD94244 /* Camera */ = {
+			isa = PBXGroup;
+			children = (
+				12FFD217AE853E4EB636C6FA /* CameraPreviewView.swift */,
+			);
+			path = Camera;
+			sourceTree = "<group>";
+		};
 		11161ACBD5FED15022F07EBD /* Home */ = {
 			isa = PBXGroup;
 			children = (
@@ -72,6 +90,7 @@
 			isa = PBXGroup;
 			children = (
 				26884A3C06900C53D7441198 /* JSONValue.swift */,
+				99F940CE09A76EE69B4A9F42 /* MobileProtocol.swift */,
 				EEE443F5470AA918A770370A /* Models.swift */,
 			);
 			path = Models;
@@ -82,11 +101,12 @@
 			children = (
 				34EB5BEF9EC1A2081513DF71 /* APIClient.swift */,
 				8F41933BC342DFDB7A28AA2B /* AppModel.swift */,
-				C6B6E6E4714B4DC49518A102 /* Assets.xcassets */,
+				03615AF4B90F360322963649 /* Assets.xcassets */,
 				34C5F64822106EC3DD3D1F3E /* CubeMaxApp.swift */,
 				FB987366036CD49E1D2EAA26 /* KeychainStore.swift */,
 				D0660B52B68D19F82ADEB31C /* Features */,
 				468109145791BEFC1A55915B /* Models */,
+				A8720CF2EF1A16F097AA60DD /* Services */,
 			);
 			path = CubeMax;
 			sourceTree = "<group>";
@@ -116,6 +136,16 @@
 			path = Profile;
 			sourceTree = "<group>";
 		};
+		A8720CF2EF1A16F097AA60DD /* Services */ = {
+			isa = PBXGroup;
+			children = (
+				9F5BD204A8820540C7439BA4 /* CameraCaptureUploader.swift */,
+				D49B5A145A0831E670530A78 /* CameraSessionController.swift */,
+				F38C8E6860C65E2941E51554 /* MobileWebSocketClient.swift */,
+			);
+			path = Services;
+			sourceTree = "<group>";
+		};
 		ACAA0FCAF96CEE48E0A29CD0 /* SmartHome */ = {
 			isa = PBXGroup;
 			children = (
@@ -137,6 +167,7 @@
 		D0660B52B68D19F82ADEB31C /* Features */ = {
 			isa = PBXGroup;
 			children = (
+				050E2190D800044BDFD94244 /* Camera */,
 				62F4B765CA2FD514198D7A58 /* Conversation */,
 				11161ACBD5FED15022F07EBD /* Home */,
 				786BCC32072390D8D643962D /* Login */,
@@ -163,7 +194,7 @@
 			buildConfigurationList = D7E9C3DBE0F2C4E69D5086D1 /* Build configuration list for PBXNativeTarget "CubeMax" */;
 			buildPhases = (
 				17D48C964F89B41301E2C433 /* Sources */,
-				C6B6E6E4714B4DC49518A103 /* Resources */,
+				153E4C1C20698C5C3958F990 /* Resources */,
 			);
 			buildRules = (
 			);
@@ -205,11 +236,11 @@
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
-		C6B6E6E4714B4DC49518A103 /* Resources */ = {
+		153E4C1C20698C5C3958F990 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				C6B6E6E4714B4DC49518A101 /* Assets.xcassets in Resources */,
+				10FB3CAC1A85471957C0EC92 /* Assets.xcassets in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -222,6 +253,9 @@
 			files = (
 				0E69CF90B1B31908BCA2ACB4 /* APIClient.swift in Sources */,
 				745326F3869E51627061538B /* AppModel.swift in Sources */,
+				E53E67CC5B6EABAE06B2ED8A /* CameraCaptureUploader.swift in Sources */,
+				426E5531C3F7021E3F7BEA4D /* CameraPreviewView.swift in Sources */,
+				B8276B530384292F482C9E47 /* CameraSessionController.swift in Sources */,
 				B2350D7812E885CE711E3A5A /* ConversationView.swift in Sources */,
 				C703B26C1C8594ABF0FB6BF9 /* CreateTriggerView.swift in Sources */,
 				2CC16170586721EE10E170B7 /* CubeCatDevicesView.swift in Sources */,
@@ -231,6 +265,8 @@
 				4AA7AD290B8E3CAAAE0E71BC /* JSONValue.swift in Sources */,
 				8FA1C4C00B5BDD737C12EBF4 /* KeychainStore.swift in Sources */,
 				454AB8B4F4BF0F7FC7B74845 /* LoginView.swift in Sources */,
+				4580297DD33EEC71CB4A7CF1 /* MobileProtocol.swift in Sources */,
+				20897B7618095C1523C3A9DB /* MobileWebSocketClient.swift in Sources */,
 				087FCC5937B6382A66FA9001 /* Models.swift in Sources */,
 				47F41228FFBCE00C2413664F /* ProfileView.swift in Sources */,
 				715E60EC4075619A0FF4509D /* SmartHomeAccountsView.swift in Sources */,
@@ -252,7 +288,9 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = CubeMax;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
+				INFOPLIST_KEY_NSCameraUsageDescription = "CubeCat 需要使用摄像头，以便工作流拍摄照片并发送到服务器。";
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UIRequiresFullScreen = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -338,7 +376,9 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = CubeMax;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
+				INFOPLIST_KEY_NSCameraUsageDescription = "CubeCat 需要使用摄像头，以便工作流拍摄照片并发送到服务器。";
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UIRequiresFullScreen = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",

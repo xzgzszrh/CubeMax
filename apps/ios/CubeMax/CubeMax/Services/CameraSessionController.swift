@@ -1,17 +1,18 @@
-import AVFoundation
+@preconcurrency import AVFoundation
 import ImageIO
 import UIKit
 
-final class CameraSessionController: NSObject, AVCapturePhotoCaptureDelegate {
+final class CameraSessionController: NSObject, AVCapturePhotoCaptureDelegate, @unchecked Sendable {
     let previewLayer = AVCaptureVideoPreviewLayer()
     private let session = AVCaptureSession()
-    private let queue = DispatchQueue(label: "com.cubemax.camera.session")
+    private let sessionQueue = DispatchQueue(label: "com.cubemax.camera.session")
     private let photoOutput = AVCapturePhotoOutput()
     private var currentInput: AVCaptureDeviceInput?
+    private let continuationLock = NSLock()
     private var captureContinuation: CheckedContinuation<Data, Error>?
     private(set) var facing: AVCaptureDevice.Position = .back
 
-    enum CameraError: LocalizedError {
+    enum CameraError: LocalizedError, Sendable {
         case unavailable
         case captureFailed
         var errorDescription: String? {
@@ -26,23 +27,26 @@ final class CameraSessionController: NSObject, AVCapturePhotoCaptureDelegate {
         let granted = await AVCaptureDevice.requestAccess(for: .video)
         guard granted else { throw CameraError.unavailable }
         self.facing = facing
+        let session = self.session
+        let photoOutput = self.photoOutput
+        let previewLayer = self.previewLayer
         try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
-            queue.async {
+            sessionQueue.async {
                 do {
-                    self.session.beginConfiguration()
-                    self.session.sessionPreset = .photo
+                    session.beginConfiguration()
+                    session.sessionPreset = .photo
                     try self.installInput(position: facing)
-                    if self.session.canAddOutput(self.photoOutput) {
-                        self.session.addOutput(self.photoOutput)
+                    if session.canAddOutput(photoOutput) {
+                        session.addOutput(photoOutput)
                     }
-                    self.photoOutput.isHighResolutionCaptureEnabled = true
-                    self.previewLayer.session = self.session
-                    self.previewLayer.videoGravity = .resizeAspectFill
-                    self.session.commitConfiguration()
-                    self.session.startRunning()
+                    self.configurePhotoDimensions(photoOutput)
+                    previewLayer.session = session
+                    previewLayer.videoGravity = .resizeAspectFill
+                    session.commitConfiguration()
+                    session.startRunning()
                     continuation.resume()
                 } catch {
-                    self.session.commitConfiguration()
+                    session.commitConfiguration()
                     continuation.resume(throwing: error)
                 }
             }
@@ -50,44 +54,73 @@ final class CameraSessionController: NSObject, AVCapturePhotoCaptureDelegate {
     }
 
     func stop() {
-        queue.async {
-            if self.session.isRunning { self.session.stopRunning() }
+        let session = self.session
+        sessionQueue.async {
+            if session.isRunning { session.stopRunning() }
         }
     }
 
-    func switchFacing() throws {
-        facing = facing == .back ? .front : .back
-        try installInput(position: facing)
+    func switchFacing() async throws {
+        let next: AVCaptureDevice.Position = facing == .back ? .front : .back
+        try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
+            sessionQueue.async {
+                do {
+                    try self.installInput(position: next)
+                    self.facing = next
+                    continuation.resume()
+                } catch {
+                    continuation.resume(throwing: error)
+                }
+            }
+        }
     }
 
     func captureJPEG(quality: Double, maxEdge: Int, maxBytes: Int) async throws -> (data: Data, width: Int, height: Int) {
         let settings = AVCapturePhotoSettings(format: [AVVideoCodecKey: AVVideoCodecType.jpeg])
         settings.flashMode = .off
-        if photoOutput.isHighResolutionCaptureEnabled {
-            settings.isHighResolutionPhotoEnabled = true
-        }
+        settings.maxPhotoDimensions = photoOutput.maxPhotoDimensions
+        let photoOutput = self.photoOutput
         let data = try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Data, Error>) in
-            queue.async {
+            sessionQueue.async {
+                self.continuationLock.lock()
                 self.captureContinuation = continuation
-                self.photoOutput.capturePhoto(with: settings, delegate: self)
+                self.continuationLock.unlock()
+                photoOutput.capturePhoto(with: settings, delegate: self)
             }
         }
         return try rewriteJPEG(data, quality: quality, maxEdge: maxEdge, maxBytes: maxBytes)
     }
 
-    func photoOutput(_ output: AVCapturePhotoOutput, didFinishProcessingPhoto photo: AVCapturePhoto, error: Error?) {
+    nonisolated func photoOutput(
+        _ output: AVCapturePhotoOutput,
+        didFinishProcessingPhoto photo: AVCapturePhoto,
+        error: Error?
+    ) {
+        let result: Result<Data, Error>
         if let error {
-            captureContinuation?.resume(throwing: error)
-            captureContinuation = nil
-            return
+            result = .failure(error)
+        } else if let data = photo.fileDataRepresentation() {
+            result = .success(data)
+        } else {
+            result = .failure(CameraError.captureFailed)
         }
-        guard let data = photo.fileDataRepresentation() else {
-            captureContinuation?.resume(throwing: CameraError.captureFailed)
-            captureContinuation = nil
-            return
-        }
-        captureContinuation?.resume(returning: data)
+        continuationLock.lock()
+        let continuation = captureContinuation
         captureContinuation = nil
+        continuationLock.unlock()
+        switch result {
+        case .success(let data):
+            continuation?.resume(returning: data)
+        case .failure(let error):
+            continuation?.resume(throwing: error)
+        }
+    }
+
+    private func configurePhotoDimensions(_ output: AVCapturePhotoOutput) {
+        guard let device = currentInput?.device else { return }
+        if let best = device.activeFormat.supportedMaxPhotoDimensions.last {
+            output.maxPhotoDimensions = best
+        }
     }
 
     private func installInput(position: AVCaptureDevice.Position) throws {
