@@ -158,5 +158,3 @@ GameController = _ts_decorate([
 ], GameController);
 
 exports.GameController = GameController;
-//# sourceMappingURL=game.controller.js.map
-//# sourceMappingURL=game.controller.js.map

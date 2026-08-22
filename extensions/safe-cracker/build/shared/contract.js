@@ -52,5 +52,3 @@ exports.PasswordMode = PasswordMode;
 exports.STUDENT_PLACEHOLDER = STUDENT_PLACEHOLDER;
 exports.SolveVia = SolveVia;
 exports.UNLOCK_TOOL_NAME = UNLOCK_TOOL_NAME;
-//# sourceMappingURL=contract.js.map
-//# sourceMappingURL=contract.js.map

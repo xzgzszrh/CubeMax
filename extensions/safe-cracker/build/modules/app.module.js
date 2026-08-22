@@ -29,5 +29,3 @@ AppModule = _ts_decorate([
 ], AppModule);
 
 exports.AppModule = AppModule;
-//# sourceMappingURL=app.module.js.map
-//# sourceMappingURL=app.module.js.map

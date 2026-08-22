@@ -10,5 +10,3 @@ Object.keys(app_module).forEach(function (k) {
 		get: function () { return app_module[k]; }
 	});
 });
-//# sourceMappingURL=index.js.map
-//# sourceMappingURL=index.js.map
