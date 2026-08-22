@@ -1,4 +1,0 @@
-Noto Sans SC Regular subset is bundled solely for the ESP-Claw web simulator's Chinese text rendering.
-
-Source: ESP-Claw simulator assets, commit 556e432d314c51de5285a4ae895ad3cdda5bade8.
-Retain the upstream font file and its embedded license metadata when updating this runtime asset.

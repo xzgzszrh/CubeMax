@@ -10,7 +10,6 @@
         "build:desktop": "tauri build",
         "lint": "eslint .",
         "lint:fix": "eslint . --fix",
-        "simulator:runtime:update": "node scripts/update-esp-claw-runtime.mjs",
         "preview": "vite preview",
         "tauri": "tauri"
     },
@@ -76,6 +75,7 @@
         "styled-components": "^6.4.3",
         "usehooks-ts": "^3.1.1",
         "uuid": "^13.0.0",
+        "wasmoon": "^1.16.0",
         "zustand": "^5.0.10"
     },
     "devDependencies": {

@@ -81,8 +81,10 @@ export default defineConfig({
       "@douyinfe/semi-ui > Textarea",
       "@douyinfe/semi-ui > Input",
       "@douyinfe/semi-ui > Button",
+      "wasmoon",
     ],
   },
+  assetsInclude: ["**/*.wasm"],
   server: {
     host: host || "0.0.0.0",
     open: true,

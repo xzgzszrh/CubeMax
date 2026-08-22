@@ -42,7 +42,7 @@ import {
   GRAPHICS_DEMO_ID,
   type SimulatorDraft,
 } from "./claw4-compat";
-import { EspClawRuntime } from "./esp-claw-runtime";
+import { CubeCatRuntime } from "./cube-cat-runtime";
 
 const EMPTY_CUBECAT = {
   brightness: 80,
@@ -292,7 +292,7 @@ export default function SimulatorPage({ projectId: projectIdProp }: { projectId?
                 </p>
               </div>
             </div>
-            <EspClawRuntime
+            <CubeCatRuntime
               key={`${selectedId ?? "pending"}-${sourceId}-${runtimeResetVersion}`}
               draft={draft}
               onDeviceOperations={(operations) => {

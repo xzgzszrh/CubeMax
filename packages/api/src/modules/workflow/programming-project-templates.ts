@@ -62,8 +62,29 @@ end
 
 local function present(title, body)
   local screen = ui.screen({ background = 0x101820 })
-  ui.label(screen, { text = tostring(title), color = 0xF5C14A })
-  ui.label(screen, { text = tostring(body), color = 0xFFFFFF })
+  local width = 432
+  if ui.screen_size then
+    local screen_w = ui.screen_size()
+    if type(screen_w) == "number" and screen_w > 48 then
+      width = screen_w - 48
+    end
+  end
+  ui.label({
+    parent = screen,
+    x = 24,
+    y = 32,
+    width = width,
+    text = tostring(title),
+    color = 0xF5C14A,
+  })
+  ui.label({
+    parent = screen,
+    x = 24,
+    y = 96,
+    width = width,
+    text = tostring(body),
+    color = 0xFFFFFF,
+  })
   ui.load(screen)
   device.notify(title)
   speak(title .. "。" .. body)
