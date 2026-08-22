@@ -4,6 +4,7 @@ import type { WebhookExecutorInput, WebhookExecutorResult } from "@flowgram.ai/r
 import { Injectable } from "@nestjs/common";
 
 import { WorkflowWebhookToolRegistry } from "../organization/services/workflow-webhook-tool-registry.service";
+import { XiaozhiMcpService } from "../organization/services/xiaozhi-mcp.service";
 import { WorkflowWaitRegistry } from "./workflow-wait-registry.service";
 
 const TOOL_NAME_PATTERN = /^[a-zA-Z][a-zA-Z0-9_]{0,63}$/;
@@ -42,6 +43,7 @@ export class WorkflowWebhookExecutorService {
     constructor(
         private readonly webhookTools: WorkflowWebhookToolRegistry,
         private readonly waitRegistry: WorkflowWaitRegistry,
+        private readonly mcpService: XiaozhiMcpService,
     ) {}
 
     async execute(input: WebhookExecutorInput): Promise<WebhookExecutorResult> {
@@ -50,11 +52,16 @@ export class WorkflowWebhookExecutorService {
         if (!TOOL_NAME_PATTERN.test(toolName)) {
             throw HttpErrorFactory.badRequest("工具名必须以字母开头，只能包含字母、数字和下划线");
         }
+        if (!input.userId) {
+            throw HttpErrorFactory.unauthorized("回传端点需要登录后执行");
+        }
 
         const agentId = this.resolveAgentId(input);
         if (!agentId) {
             throw HttpErrorFactory.badRequest("请先在工程设置中绑定 CubeCat 智能体");
         }
+
+        await this.mcpService.ensureAgentConnection(input.userId, agentId);
 
         const timeoutMs = asNumber(input.node.data?.timeoutMs) ?? 0;
         const context = asText(input.inputs.context);

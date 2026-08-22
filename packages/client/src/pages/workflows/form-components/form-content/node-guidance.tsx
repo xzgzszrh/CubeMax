@@ -83,7 +83,7 @@ const NODE_GUIDANCE: Partial<Record<string, NodeGuidanceContent>> = {
   [WorkflowNodeType.Webhook]: {
     summary: "向 CubeCat 注册一个回传工具，收到调用后带着数据继续。",
     steps: [
-      "在工程设置里绑定 CubeCat 智能体",
+      "在工程设置里绑定 CubeCat，并确认 MCP 已接入（也可运行时自动接通）",
       "填写工具名，把生成的提示词片段加到「设置智能体」里",
       "从「收到数据」连到下一步；可选地给「错误」接超时处理",
     ],

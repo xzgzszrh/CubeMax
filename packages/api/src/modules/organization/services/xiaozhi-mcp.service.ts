@@ -283,6 +283,35 @@ export class XiaozhiMcpGatewayService implements OnModuleInit, OnModuleDestroy {
         await Promise.all([...this.connectors.keys()].map((id) => this.removeConnection(id)));
     }
 
+    /** True when the outbound MCP WebSocket for this CubeCat is open. */
+    isAgentConnected(agentBindingId: string): boolean {
+        for (const state of this.connectors.values()) {
+            if (
+                state.snapshot?.agentBindingId === agentBindingId &&
+                !state.cancelled &&
+                state.socket?.readyState === WS_OPEN
+            ) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    async waitUntilAgentConnected(agentBindingId: string, timeoutMs = 15_000): Promise<void> {
+        const deadline = Date.now() + timeoutMs;
+        while (Date.now() < deadline) {
+            if (this.isAgentConnected(agentBindingId)) return;
+            await new Promise((resolve) => setTimeout(resolve, 200));
+        }
+        const connection = await this.connectionRepository.findOne({
+            where: { agentBindingId },
+        });
+        const detail = connection?.lastError ? `：${connection.lastError}` : "";
+        throw HttpErrorFactory.badRequest(
+            `CubeCat MCP 尚未连上${detail}。请到讲台「设备管理 → MCP 接入」配置接入点，或确认小智账号可用。`,
+        );
+    }
+
     /** (Re)connect one connection; replaces any live connector for the id. */
     async syncConnection(connectionId: string) {
         await this.removeConnection(connectionId);
@@ -1234,6 +1263,64 @@ export class XiaozhiMcpService {
         // upstream sees the new tool wording immediately.
         await this.gateway.syncWorkspace(organizationId || null, userId);
         return this.toPublicSettings(saved);
+    }
+
+    /**
+     * Make sure this CubeCat has a live outbound MCP socket to
+     * `wss://api.xiaozhi.me/mcp/?token=…`. CubeCat talks to Xiaozhi; Xiaozhi
+     * forwards tools/list and tools/call to us on that socket. Webhook nodes
+     * register tools on that connection.
+     */
+    async ensureAgentConnection(userId: string, agentBindingId: string) {
+        const agent = await this.agentRepository.findOne({ where: { id: agentBindingId } });
+        if (!agent) throw HttpErrorFactory.notFound("CubeCat 不存在");
+        const access = await this.organizationService.requireWorkspace(
+            userId,
+            agent.organizationId,
+        );
+        if (
+            access.type === "organization" &&
+            !access.permissions.includes(OrganizationPermission.ASSET_READ) &&
+            agent.assignedUserId !== userId
+        ) {
+            throw HttpErrorFactory.forbidden("该 CubeCat 没有分发给你");
+        }
+        if (access.type !== "organization" && agent.ownerUserId !== userId) {
+            throw HttpErrorFactory.forbidden("该 CubeCat 不属于当前工作空间");
+        }
+
+        if (this.gateway.isAgentConnected(agent.id)) {
+            const live = await this.connectionRepository.findOne({
+                where: { agentBindingId: agent.id },
+            });
+            return live ? this.toPublicConnection(live) : undefined;
+        }
+
+        let connection = await this.connectionRepository.findOne({
+            where: { agentBindingId: agent.id },
+            withDeleted: true,
+        });
+        if (!connection || connection.deletedAt) {
+            const account = await this.accountRepository.findOne({
+                where: { id: agent.xiaozhiAccountId },
+            });
+            if (!account) throw HttpErrorFactory.notFound("CubeCat 所属的小智账号不存在");
+            const token = await this.generateEndpointToken(account, agent);
+            const endpoint = `${mcpEndpointBase()}?token=${encodeURIComponent(token)}`;
+            connection = await this.upsertConnection(agent, endpoint);
+        } else if (!connection.enabled) {
+            connection.enabled = true;
+            connection.status = XiaozhiMcpConnectionStatus.CONNECTING;
+            connection.lastError = null;
+            connection = await this.connectionRepository.save(connection);
+        }
+
+        if (!this.gateway.isAgentConnected(agent.id)) {
+            await this.gateway.syncConnection(connection.id);
+        }
+        await this.gateway.waitUntilAgentConnected(agent.id);
+        const current = await this.connectionRepository.findOne({ where: { id: connection.id } });
+        return this.toPublicConnection(current || connection);
     }
 
     /**
