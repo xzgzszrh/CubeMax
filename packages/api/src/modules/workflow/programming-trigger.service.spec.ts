@@ -119,6 +119,8 @@ describe("ProgrammingTriggerService", () => {
             "project-a",
             { id: "user-a" },
             inputs,
+            undefined,
+            "打开客厅灯",
         );
     });
 
@@ -139,6 +141,8 @@ describe("ProgrammingTriggerService", () => {
             "project-a",
             { id: "user-a" },
             { count: 2 },
+            undefined,
+            "打开客厅灯",
         );
     });
 });

@@ -22,6 +22,7 @@ targets:
         INFOPLIST_KEY_CFBundleDisplayName: CubeMax
         INFOPLIST_KEY_LSApplicationCategoryType: public.app-category.utilities
         INFOPLIST_KEY_UILaunchScreen_Generation: true
+        INFOPLIST_KEY_NSCameraUsageDescription: "CubeCat 需要使用摄像头，以便工作流拍摄照片并发送到服务器。"
         SUPPORTS_MACCATALYST: false
     scheme:
       gatherCoverageData: false

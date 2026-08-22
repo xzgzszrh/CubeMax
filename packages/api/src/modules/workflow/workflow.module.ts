@@ -17,6 +17,7 @@ import {
 import { AiMcpModule } from "@modules/ai/mcp/ai-mcp.module";
 import { LuaModuleModule } from "@modules/lua/lua.module";
 import { LuaDeviceModule } from "@modules/lua-device/lua-device.module";
+import { MobileModule } from "@modules/mobile/mobile.module";
 import { Module } from "@nestjs/common";
 
 import { SmartHomeModule } from "../smart-home/smart-home.module";
@@ -33,6 +34,7 @@ import { WorkflowLuaExecutorService } from "./workflow-lua-executor.service";
 import { WorkflowMcpExecutorService } from "./workflow-mcp-executor.service";
 import { WorkflowRuntimeController } from "./workflow-runtime.controller";
 import { WorkflowRuntimeExecutionService } from "./workflow-runtime-execution.service";
+import { WorkflowPhoneCameraExecutorService } from "./workflow-phone-camera-executor.service";
 import { WorkflowSmartHomeExecutorService } from "./workflow-smart-home-executor.service";
 
 @Module({
@@ -40,6 +42,7 @@ import { WorkflowSmartHomeExecutorService } from "./workflow-smart-home-executor
         AiMcpModule,
         LuaModuleModule,
         LuaDeviceModule,
+        MobileModule,
         SimulatorModule,
         SmartHomeModule,
         TypeOrmModule.forFeature([
@@ -72,6 +75,7 @@ import { WorkflowSmartHomeExecutorService } from "./workflow-smart-home-executor
         WorkflowLlmExecutorService,
         WorkflowLuaExecutorService,
         WorkflowSmartHomeExecutorService,
+        WorkflowPhoneCameraExecutorService,
         WorkflowRuntimeExecutionService,
         SecretService,
     ],

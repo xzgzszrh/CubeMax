@@ -4,6 +4,18 @@
 
 应用工作流是面向设备编程的图形化编程系统，类似于 Arduino，但使用 AI 进行语音交互和设备控制。系统通过 xiaozhi.me 提供语音服务，工作流通过修改智能体提示词和 MCP 通信来实现与设备的交互。
 
+### 手机摄像头节点（`phone_camera`）
+
+**类型**: `phone_camera`
+
+**功能**: 在已登录的 CubeMax iOS App 上打开摄像头预览，由服务器下发拍照指令后自动截帧，经 `POST /api/mobile/camera/captures` 回传 JPEG。节点输出短时 HMAC 签名 `imageUrl`（不是公开 `/uploads` 路径）。
+
+详见 `docs/design-phone-camera-node.md` 与 `docs/mobile-camera-websocket-protocol.md`。
+
+**开关**: `MOBILE_CAMERA_ENABLED=true`（仅该字面量开启）。编辑器通过 `GET /api/mobile/config` 决定是否展示节点。
+
+---
+
 ## 节点类型
 
 ### 1. Agent 节点（智能体）

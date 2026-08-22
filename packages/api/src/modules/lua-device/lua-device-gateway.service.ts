@@ -9,7 +9,7 @@ import {
 import { In, MoreThan, Repository } from "@buildingai/db/typeorm";
 import { HttpErrorFactory } from "@buildingai/errors";
 import { Injectable, Logger, OnApplicationBootstrap, OnApplicationShutdown } from "@nestjs/common";
-import { HttpAdapterHost } from "@nestjs/core";
+import { HttpUpgradeRouter } from "@common/ws/http-upgrade-router";
 import { createHash, randomUUID } from "crypto";
 import type { IncomingMessage } from "http";
 import type { Duplex } from "stream";
@@ -80,10 +80,9 @@ export class LuaDeviceGatewayService implements OnApplicationBootstrap, OnApplic
     private readonly clients = new Map<string, OnlineClient>();
     private readonly states = new WeakMap<WebSocket, ClientState>();
     private heartbeatTimer?: NodeJS.Timeout;
-    private httpServer?: { on: Function; off: Function };
 
     constructor(
-        private readonly adapterHost: HttpAdapterHost,
+        private readonly upgradeRouter: HttpUpgradeRouter,
         @InjectRepository(LuaPhysicalDevice)
         private readonly deviceRepository: Repository<LuaPhysicalDevice>,
         @InjectRepository(LuaDeviceConnection)
@@ -95,8 +94,7 @@ export class LuaDeviceGatewayService implements OnApplicationBootstrap, OnApplic
     ) {}
 
     onApplicationBootstrap(): void {
-        this.httpServer = this.adapterHost.httpAdapter.getHttpServer();
-        this.httpServer.on("upgrade", this.handleUpgrade);
+        this.upgradeRouter.register(this.websocketPath, this.handleUpgrade);
         this.server.on("connection", this.handleConnection);
         this.heartbeatTimer = setInterval(() => this.heartbeat(), 25_000);
         this.heartbeatTimer.unref();
@@ -105,7 +103,6 @@ export class LuaDeviceGatewayService implements OnApplicationBootstrap, OnApplic
 
     async onApplicationShutdown(): Promise<void> {
         if (this.heartbeatTimer) clearInterval(this.heartbeatTimer);
-        this.httpServer?.off("upgrade", this.handleUpgrade);
         for (const client of this.clients.values()) client.socket.close(1001, "server shutdown");
         this.server.close();
     }
@@ -252,17 +249,6 @@ export class LuaDeviceGatewayService implements OnApplicationBootstrap, OnApplic
         socket: Duplex,
         head: Buffer,
     ): void => {
-        let pathname: string;
-        try {
-            pathname = new URL(request.url || "/", "http://localhost").pathname;
-        } catch {
-            socket.destroy();
-            return;
-        }
-        if (pathname !== this.websocketPath) {
-            socket.destroy();
-            return;
-        }
         this.server.handleUpgrade(request, socket, head, (websocket) => {
             this.server.emit("connection", websocket, request);
         });

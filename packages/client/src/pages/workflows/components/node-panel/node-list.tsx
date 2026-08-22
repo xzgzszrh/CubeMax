@@ -26,6 +26,8 @@ import type { FC, KeyboardEvent, MouseEvent } from "react";
 import { useEffect, useMemo, useState } from "react";
 import styled from "styled-components";
 
+import { useMobileCameraConfigQuery } from "@buildingai/services/web";
+
 import { nodeRegistries, WorkflowNodeType } from "../../nodes";
 import type { FlowNodeRegistry } from "../../typings";
 import { canContainNode } from "../../utils";
@@ -120,6 +122,7 @@ const APP_NODE_TYPES = new Set<string>([
   WorkflowNodeType.Vision,
   WorkflowNodeType.Speech,
   WorkflowNodeType.DeviceControl,
+  WorkflowNodeType.PhoneCamera,
 ]);
 
 const CATEGORY_BY_TYPE: Partial<Record<WorkflowNodeType | string, NodeCategoryId>> = {
@@ -141,6 +144,7 @@ const CATEGORY_BY_TYPE: Partial<Record<WorkflowNodeType | string, NodeCategoryId
   [WorkflowNodeType.Vision]: "app",
   [WorkflowNodeType.Speech]: "app",
   [WorkflowNodeType.DeviceControl]: "app",
+  [WorkflowNodeType.PhoneCamera]: "app",
   [WorkflowNodeType.SmartHome]: "tools",
 };
 
@@ -166,6 +170,7 @@ export function getVisibleRegistries(params: {
   projectType?: "conversation" | "application";
   userLuaRegistries?: FlowNodeRegistry[];
   projectToolRegistries?: FlowNodeRegistry[];
+  cameraEnabled?: boolean;
 }): FlowNodeRegistry[] {
   const {
     containerNode,
@@ -173,6 +178,7 @@ export function getVisibleRegistries(params: {
     projectType = "conversation",
     userLuaRegistries = [],
     projectToolRegistries = [],
+    cameraEnabled = false,
   } = params;
 
   return nodeRegistries
@@ -180,6 +186,9 @@ export function getVisibleRegistries(params: {
     .filter((registry) => {
       // 对话流过滤掉智能交互节点
       if (projectType === "conversation" && APP_NODE_TYPES.has(registry.type as string)) {
+        return false;
+      }
+      if (registry.type === WorkflowNodeType.PhoneCamera && !cameraEnabled) {
         return false;
       }
       // 对话流过滤掉用户 Lua 模块节点
@@ -394,6 +403,7 @@ export const NodeList: FC<NodeListProps> = ({
   const [keyword, setKeyword] = useState("");
   const { registries: userLuaRegistries } = useUserLuaNodes();
   const { registries: projectToolRegistries } = useProjectTools();
+  const { data: cameraConfig } = useMobileCameraConfigQuery();
 
   const registries = useMemo(
     () =>
@@ -403,8 +413,9 @@ export const NodeList: FC<NodeListProps> = ({
         projectType,
         userLuaRegistries,
         projectToolRegistries,
+        cameraEnabled: cameraConfig?.cameraEnabled === true,
       }),
-    [containerNode, fromPort, projectType, projectToolRegistries, userLuaRegistries],
+    [cameraConfig?.cameraEnabled, containerNode, fromPort, projectType, projectToolRegistries, userLuaRegistries],
   );
 
   const categoryCounts = useMemo(() => {

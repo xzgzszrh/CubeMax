@@ -57,6 +57,8 @@ export type WorkflowRuntimeExecutorContext = {
     simulatorSessionId?: string;
     deviceId?: string;
     publishedSnapshot?: unknown;
+    installationId?: string;
+    workflowTaskId?: string;
 };
 
 export type MCPExecutorInput = {
@@ -101,3 +103,18 @@ export type SmartHomeExecutorHandler = (
 ) => Promise<Record<string, unknown>> | Record<string, unknown>;
 
 export declare const registerSmartHomeExecutor: (executor: SmartHomeExecutorHandler) => void;
+
+export type PhoneCameraExecutorInput = {
+    userId?: string;
+    runtimeContext?: WorkflowRuntimeExecutorContext;
+    node: { id: string; type: string; data?: Record<string, unknown> };
+    inputs: Record<string, unknown>;
+};
+
+export type PhoneCameraExecutorHandler = (
+    input: PhoneCameraExecutorInput,
+) => Promise<Record<string, unknown>> | Record<string, unknown>;
+
+export declare const registerPhoneCameraExecutor: (executor: PhoneCameraExecutorHandler) => void;
+
+export declare const onTaskSettled: (taskID: string, cb: () => void) => boolean;

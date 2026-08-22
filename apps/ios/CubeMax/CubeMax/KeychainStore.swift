@@ -7,11 +7,33 @@ final class KeychainStore {
 
     private let service = "com.cubemax.mobile"
     private let account = "access-token"
+    private let installationAccount = "installation-id"
 
     private init() {}
 
     func save(token: String) throws {
-        let data = Data(token.utf8)
+        try save(account: account, value: token)
+    }
+
+    func load() -> String? {
+        load(account: account)
+    }
+
+    func delete() {
+        delete(account: account)
+    }
+
+    func installationId() -> String {
+        if let existing = load(account: installationAccount), !existing.isEmpty {
+            return existing
+        }
+        let created = UUID().uuidString.lowercased()
+        try? save(account: installationAccount, value: created)
+        return load(account: installationAccount) ?? created
+    }
+
+    private func save(account: String, value: String) throws {
+        let data = Data(value.utf8)
         let query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
             kSecAttrService as String: service,
@@ -29,7 +51,7 @@ final class KeychainStore {
         }
     }
 
-    func load() -> String? {
+    private func load(account: String) -> String? {
         let query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
             kSecAttrService as String: service,
@@ -43,7 +65,7 @@ final class KeychainStore {
         return String(data: data, encoding: .utf8)
     }
 
-    func delete() {
+    private func delete(account: String) {
         let query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
             kSecAttrService as String: service,

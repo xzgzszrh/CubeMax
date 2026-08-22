@@ -8,6 +8,7 @@ import { UserToken } from "@buildingai/db/entities";
 import { LessThan, Repository } from "@buildingai/db/typeorm";
 import { DictService } from "@buildingai/dict";
 import { Injectable } from "@nestjs/common";
+import { EventEmitter2 } from "@nestjs/event-emitter";
 import { JwtService } from "@nestjs/jwt";
 
 /**
@@ -65,6 +66,7 @@ export class UserTokenService extends BaseService<UserToken> {
         private readonly dictService: DictService,
         private readonly cacheService: CacheService,
         private readonly redisService: RedisService,
+        private readonly eventEmitter: EventEmitter2,
     ) {
         super(userTokenRepository);
     }
@@ -261,6 +263,10 @@ export class UserTokenService extends BaseService<UserToken> {
             const cacheKey = `${this.TOKEN_CACHE_PREFIX}${token}`;
             await this.cacheService.del(cacheKey);
             await this.redisService.del(cacheKey);
+            this.eventEmitter.emit("auth.token.revoked", {
+                userId: tokenRecord.userId,
+                terminal: tokenRecord.terminal,
+            });
 
             return true;
         } catch (error) {
@@ -295,6 +301,7 @@ export class UserTokenService extends BaseService<UserToken> {
                 await this.redisService.del(cacheKey);
             }
 
+            this.eventEmitter.emit("auth.token.revoked", { userId });
             return result.affected || 0;
         } catch (error) {
             this.logger.error(`撤销用户所有令牌失败: ${error.message}`);
@@ -329,6 +336,7 @@ export class UserTokenService extends BaseService<UserToken> {
                 await this.redisService.del(cacheKey);
             }
 
+            this.eventEmitter.emit("auth.token.revoked", { userId, terminal });
             return result.affected || 0;
         } catch (error) {
             this.logger.error(`撤销用户终端令牌失败: ${error.message}`);

@@ -7,7 +7,7 @@ import type {
     TaskReportOutput,
     TaskResultOutput,
 } from "@flowgram.ai/runtime-interface";
-import { Body, Get, Post, Put, Query } from "@nestjs/common";
+import { Body, Get, Headers, Post, Put, Query } from "@nestjs/common";
 
 import { WorkflowRuntimeExecutionService } from "./workflow-runtime-execution.service";
 import {
@@ -27,16 +27,21 @@ export class WorkflowRuntimeController {
     }
 
     @Post("run")
-    async run(@Body() dto: WorkflowRuntimeTaskDto, @Playground() user: UserPlayground) {
-        return this.runtimeExecutionService.run(dto, user);
+    async run(
+        @Body() dto: WorkflowRuntimeTaskDto,
+        @Playground() user: UserPlayground,
+        @Headers("x-installation-id") installationId?: string,
+    ) {
+        return this.runtimeExecutionService.run(dto, user, installationId);
     }
 
     @Post("run-published")
     async runPublished(
         @Body() dto: PublishedWorkflowRuntimeTaskDto,
         @Playground() user: UserPlayground,
+        @Headers("x-installation-id") installationId?: string,
     ) {
-        return this.runtimeExecutionService.runPublished(dto, user);
+        return this.runtimeExecutionService.runPublished(dto, user, installationId);
     }
 
     @Get("report")

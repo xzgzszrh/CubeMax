@@ -9,8 +9,8 @@ export class WorkflowRuntimeTask implements ITask {
 
     public readonly context: IContext;
 
-    constructor(params: TaskParams) {
-        this.id = uuid();
+    constructor(params: TaskParams & { id?: string }) {
+        this.id = params.id ?? uuid();
         this.context = params.context;
         this.processing = params.processing;
     }
@@ -23,7 +23,11 @@ export class WorkflowRuntimeTask implements ITask {
         });
     }
 
-    public static create(params: TaskParams): WorkflowRuntimeTask {
+    public static create(params: TaskParams & { id?: string }): WorkflowRuntimeTask {
         return new WorkflowRuntimeTask(params);
+    }
+
+    public static createId(): string {
+        return uuid();
     }
 }

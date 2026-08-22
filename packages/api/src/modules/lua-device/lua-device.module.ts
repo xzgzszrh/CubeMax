@@ -5,6 +5,7 @@ import {
     LuaDeviceRunLog,
     LuaPhysicalDevice,
 } from "@buildingai/db/entities/lua-device.entity";
+import { WsUpgradeModule } from "@common/ws/ws-upgrade.module";
 import { Module } from "@nestjs/common";
 
 import { LuaDeviceController } from "./lua-device.controller";
@@ -13,6 +14,7 @@ import { LuaDeviceGatewayService } from "./lua-device-gateway.service";
 
 @Module({
     imports: [
+        WsUpgradeModule,
         TypeOrmModule.forFeature([
             LuaPhysicalDevice,
             LuaDeviceConnection,

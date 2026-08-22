@@ -12,6 +12,7 @@ import { CodeExecutor } from "./code/index.ts";
 import { BreakExecutor } from "./break/index.ts";
 import { LuaExecutor } from "./lua/index.ts";
 import { SmartHomeExecutor } from "./smart-home/index.ts";
+import { PhoneCameraExecutor } from "./phone-camera/index.ts";
 
 export const WorkflowRuntimeNodeExecutors: INodeExecutorFactory[] = [
     StartExecutor,
@@ -26,6 +27,7 @@ export const WorkflowRuntimeNodeExecutors: INodeExecutorFactory[] = [
     CodeExecutor,
     LuaExecutor,
     SmartHomeExecutor,
+    PhoneCameraExecutor,
     BreakExecutor,
     ContinueExecutor,
 ];

@@ -7,12 +7,22 @@ import type {
     TaskValidateOutput,
 } from "@flowgram.ai/runtime-interface";
 import { Injectable } from "@nestjs/common";
+import { randomUUID } from "crypto";
 
+import { CameraSessionService } from "../mobile/camera-session.service";
+import { isMobileCameraEnabled } from "../mobile/is-mobile-camera-enabled";
+import {
+    assertNoPhoneCameraInsideLoop,
+    maxClock,
+    schemaHasOpenCameraOnWorkflowStart,
+    schemaHasPhoneCamera,
+} from "../mobile/phone-camera-schema";
 import { ProgrammingProjectService } from "./programming-project.service";
 import { WorkflowEmbeddedExecutorService } from "./workflow-embedded-executor.service";
 import { WorkflowLlmExecutorService } from "./workflow-llm-executor.service";
 import { WorkflowLuaExecutorService } from "./workflow-lua-executor.service";
 import { WorkflowMcpExecutorService } from "./workflow-mcp-executor.service";
+import { WorkflowPhoneCameraExecutorService } from "./workflow-phone-camera-executor.service";
 import { WorkflowSmartHomeExecutorService } from "./workflow-smart-home-executor.service";
 import { WorkflowService } from "./workflow.service";
 import type {
@@ -41,8 +51,10 @@ export class WorkflowRuntimeExecutionService {
         private readonly workflowLlmExecutorService: WorkflowLlmExecutorService,
         private readonly workflowLuaExecutorService: WorkflowLuaExecutorService,
         private readonly workflowSmartHomeExecutorService: WorkflowSmartHomeExecutorService,
+        private readonly workflowPhoneCameraExecutorService: WorkflowPhoneCameraExecutorService,
         private readonly workflowService: WorkflowService,
         private readonly programmingProjectService: ProgrammingProjectService,
+        private readonly cameraSessionService: CameraSessionService,
     ) {}
 
     private async loadConfiguredRuntime(): Promise<WorkflowRuntimeJsModule> {
@@ -52,6 +64,9 @@ export class WorkflowRuntimeExecutionService {
         runtime.registerLuaExecutor((input) => this.workflowLuaExecutorService.execute(input));
         runtime.registerSmartHomeExecutor((input) =>
             this.workflowSmartHomeExecutorService.execute(input),
+        );
+        runtime.registerPhoneCameraExecutor((input) =>
+            this.workflowPhoneCameraExecutorService.execute(input),
         );
         return runtime;
     }
@@ -71,18 +86,23 @@ export class WorkflowRuntimeExecutionService {
     async run(
         dto: WorkflowRuntimeTaskDto,
         user: Pick<UserPlayground, "id">,
+        installationId?: string,
     ): Promise<TaskRunOutput> {
         const runtime = await this.loadConfiguredRuntime();
         const taskDto = this.workflowEmbeddedExecutorService.prepareTaskDto(dto);
-        return runtime.TaskRunAPI({
-            ...taskDto,
+        const schema = JSON.parse(taskDto.schema) as Record<string, unknown>;
+        return this.startCameraAwareRun(runtime, {
+            schema,
+            inputs: taskDto.inputs,
             context: await this.resolveDraftContext(dto, user.id),
+            installationId,
         });
     }
 
     async runPublished(
         dto: PublishedWorkflowRuntimeTaskDto,
         user: Pick<UserPlayground, "id">,
+        installationId?: string,
     ): Promise<TaskRunOutput> {
         const runtime = await this.loadConfiguredRuntime();
         const workflow = await this.workflowService.findOne(dto.workflowId, user.id);
@@ -111,6 +131,7 @@ export class WorkflowRuntimeExecutionService {
             publishedWorkflow.schema as Record<string, unknown>,
             dto.inputs,
             publishedWorkflow.context,
+            installationId,
         );
     }
 
@@ -119,20 +140,29 @@ export class WorkflowRuntimeExecutionService {
         projectId: string,
         user: Pick<UserPlayground, "id">,
         inputs: Record<string, unknown>,
+        installationId?: string,
+        title?: string,
     ): Promise<TaskRunOutput> {
         const runtime = await this.loadConfiguredRuntime();
         const { project, snapshot } = await this.programmingProjectService.findPublished(
             projectId,
             user.id,
         );
-        return this.runSchema(runtime, snapshot.workflow.schema, inputs, {
-            userId: user.id,
-            projectId: project.id,
-            runtimeTarget: snapshot.runtime.target,
-            simulatorSessionId: snapshot.runtime.simulatorSessionId,
-            deviceId: snapshot.runtime.deviceId,
-            publishedSnapshot: snapshot,
-        });
+        return this.runSchema(
+            runtime,
+            snapshot.workflow.schema,
+            inputs,
+            {
+                userId: user.id,
+                projectId: project.id,
+                runtimeTarget: snapshot.runtime.target,
+                simulatorSessionId: snapshot.runtime.simulatorSessionId,
+                deviceId: snapshot.runtime.deviceId,
+                publishedSnapshot: snapshot,
+            },
+            installationId,
+            title ?? project.name,
+        );
     }
 
     async report(query: WorkflowRuntimeTaskIdDto): Promise<TaskReportOutput> {
@@ -147,6 +177,7 @@ export class WorkflowRuntimeExecutionService {
 
     async cancel(query: WorkflowRuntimeTaskIdDto): Promise<TaskCancelOutput> {
         const runtime = await this.loadConfiguredRuntime();
+        await this.cameraSessionService.closeByTaskId(query.taskID, "workflow_cancelled");
         return runtime.TaskCancelAPI(query);
     }
 
@@ -155,16 +186,76 @@ export class WorkflowRuntimeExecutionService {
         schema: Record<string, unknown>,
         inputs: Record<string, unknown>,
         context: Record<string, unknown>,
+        installationId?: string,
+        title?: string,
     ): Promise<TaskRunOutput> {
-        const taskDto = this.workflowEmbeddedExecutorService.prepareTaskDto({
-            schema: JSON.stringify(schema),
+        return this.startCameraAwareRun(runtime, {
+            schema,
             inputs,
+            context,
+            installationId,
+            title,
+        });
+    }
+
+    private async startCameraAwareRun(
+        runtime: WorkflowRuntimeJsModule,
+        params: {
+            schema: Record<string, unknown>;
+            inputs: Record<string, unknown>;
+            context: Record<string, unknown>;
+            installationId?: string;
+            title?: string;
+        },
+    ): Promise<TaskRunOutput> {
+        const workflowTaskId = randomUUID();
+        const context: Record<string, unknown> = {
+            ...params.context,
+            workflowTaskId,
+            installationId: params.installationId,
+        };
+        const taskDto = this.workflowEmbeddedExecutorService.prepareTaskDto({
+            schema: JSON.stringify(params.schema),
+            inputs: params.inputs,
         });
         const validation = await runtime.TaskValidateAPI({ ...taskDto, context });
         if (!validation.valid) {
             throw new Error(validation.errors?.join("；") || "工作流输入校验失败");
         }
-        return runtime.TaskRunAPI({ ...taskDto, context });
+
+        let warmed = false;
+        if (isMobileCameraEnabled() && schemaHasPhoneCamera(params.schema)) {
+            assertNoPhoneCameraInsideLoop(params.schema);
+            await this.cameraSessionService.warmup({
+                userId: String(context.userId || ""),
+                workflowTaskId,
+                schema: params.schema,
+                installationId: params.installationId,
+                title: params.title,
+                projectId: typeof context.projectId === "string" ? context.projectId : undefined,
+                consentTimeoutMs: maxClock(params.schema, "consentTimeoutMs", 60_000),
+                previewMaxMs: maxClock(params.schema, "previewMaxMs", 600_000),
+                emitSessionStart: schemaHasOpenCameraOnWorkflowStart(params.schema),
+            });
+            warmed = true;
+        }
+
+        let output: TaskRunOutput;
+        try {
+            output = await runtime.TaskRunAPI({ ...taskDto, context });
+        } catch (error) {
+            if (warmed) {
+                await this.cameraSessionService.closeByTaskId(workflowTaskId, "task_run_failed");
+            }
+            throw error;
+        }
+        const hooked = runtime.onTaskSettled(workflowTaskId, () => {
+            void this.cameraSessionService.closeByTaskId(workflowTaskId, "workflow_terminal");
+        });
+        if (!hooked && warmed) {
+            await this.cameraSessionService.closeByTaskId(workflowTaskId, "task_missing");
+        }
+        return output;
     }
 
     private async resolveDraftContext(dto: WorkflowRuntimeTaskDto, userId: string) {

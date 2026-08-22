@@ -6,6 +6,7 @@ CubeMax 使用原生 `URLSession` 调用 BuildingAI Web API。默认地址为生
 ## 请求约定
 
 - 除登录、公开回调外，发送 `Authorization: Bearer <token>`。
+- 所有已登录请求发送 `X-Installation-Id`（Keychain 中的小写 UUID，登出不删除）。
 - 当前组织工作区通过 `x-organization-id` 发送；个人空间不发送该请求头。
 - 服务端通常返回 `{ "code": 0, "message": "ok", "data": ... }`。客户端也接受直接返回的
   `data`，便于兼容旧接口。
@@ -29,11 +30,25 @@ CubeMax 使用原生 `URLSession` 调用 BuildingAI Web API。默认地址为生
 | POST   | `/programming-triggers`                     | 创建表单触发器                         |
 | PATCH  | `/programming-triggers/:id`                 | 修改启用、置顶和名称                   |
 | DELETE | `/programming-triggers/:id`                 | 删除触发器                             |
-| POST   | `/programming-triggers/:id/execute`         | `{ inputs: { ... } }`，返回运行任务 ID |
+| POST   | `/programming-triggers/:id/execute`         | `{ inputs: { ... } }`，返回运行任务 ID。含摄像头节点时需已连接 Mobile WS |
 | GET    | `/programming-projects?page=1&pageSize=100` | 创建触发器时选择已发布工程             |
 
 表单字段直接来自工程主流程 `start` 节点的输入 Schema。客户端支持
 `string`、`integer`、`number`、`boolean`、`object`、`array`、`enum`、默认值和必填校验。
+
+## 手机摄像头
+
+登录成功后客户端连接 `wss://{host}/api/mobile-ws/v1`（由 API base URL 推导：`https` → `wss`，`http` → `ws`）。Upgrade 请求携带 `Authorization` 与 `X-Installation-Id`。hello 的 `capabilities` 固定为 `["camera.photo"]`。
+
+拍照像素**不走 WebSocket**。服务器下发 `camera.capture` 后，App 截取当前预览 JPEG，上传：
+
+`POST /mobile/camera/captures` multipart 字段 `file`，文本字段 `session_id`、`capture_id`、`sha256`、`facing`。
+
+工作流节点拿到的 `imageUrl` 是短时 HMAC 地址：
+
+`GET /mobile/camera/files/:fileId?exp=&sig=`（无需用户 JWT，过期 410）。
+
+完整协议见仓库 `docs/mobile-camera-websocket-protocol.md`。开关 `GET /mobile/config` → `{ cameraEnabled }`。
 
 ## 对话
 

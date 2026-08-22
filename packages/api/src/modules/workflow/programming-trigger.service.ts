@@ -138,7 +138,12 @@ export class ProgrammingTriggerService {
         await this.triggerRepository.remove(trigger);
     }
 
-    async execute(id: string, userId: string, dto: ExecuteProgrammingTriggerDto) {
+    async execute(
+        id: string,
+        userId: string,
+        dto: ExecuteProgrammingTriggerDto,
+        installationId?: string,
+    ) {
         const trigger = await this.findOne(id, userId);
         if (!trigger.isEnabled) throw HttpErrorFactory.badRequest("该触发器已停用");
 
@@ -156,6 +161,8 @@ export class ProgrammingTriggerService {
             project.id,
             { id: userId },
             validation.inputs,
+            installationId,
+            trigger.name,
         );
     }
 

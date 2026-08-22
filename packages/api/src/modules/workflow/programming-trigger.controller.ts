@@ -1,7 +1,7 @@
 import type { UserPlayground } from "@buildingai/db";
 import { Playground } from "@buildingai/decorators/playground.decorator";
 import { WebController } from "@common/decorators/controller.decorator";
-import { Body, Delete, Get, Param, Patch, Post, Query } from "@nestjs/common";
+import { Body, Delete, Get, Headers, Param, Patch, Post, Query } from "@nestjs/common";
 
 import {
     CreateProgrammingTriggerDto,
@@ -49,7 +49,8 @@ export class ProgrammingTriggerController {
         @Playground() user: UserPlayground,
         @Param("id") id: string,
         @Body() dto: ExecuteProgrammingTriggerDto,
+        @Headers("x-installation-id") installationId?: string,
     ) {
-        return this.programmingTriggerService.execute(id, user.id, dto);
+        return this.programmingTriggerService.execute(id, user.id, dto, installationId);
     }
 }
