@@ -15,6 +15,7 @@ struct CubeMaxApp: App {
 
 struct RootView: View {
     @EnvironmentObject private var model: AppModel
+    @Environment(\.scenePhase) private var scenePhase
 
     var body: some View {
         ZStack(alignment: .top) {
@@ -37,6 +38,19 @@ struct RootView: View {
             }
         }
         .animation(.easeInOut(duration: 0.2), value: model.errorMessage)
+        .fullScreenCover(isPresented: $model.cameraPresented) {
+            CameraPreviewView()
+                .environmentObject(model)
+        }
+        .alert(model.consentTitle, isPresented: $model.consentPresented) {
+            Button("拒绝", role: .cancel) { model.denyCameraConsent() }
+            Button("授权") { model.approveCameraConsent() }
+        } message: {
+            Text(model.consentMessage)
+        }
+        .onChange(of: scenePhase) { _, phase in
+            model.handleScenePhase(phase)
+        }
     }
 }
 

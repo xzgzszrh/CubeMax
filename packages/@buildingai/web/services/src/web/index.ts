@@ -33,4 +33,5 @@ export * from "./xiaomi-home";
 export * from "./yeelight-pro";
 export * from "./lua-module";
 export * from "./lua-device";
+export * from "./mobile-camera";
 export * from "./simulator";

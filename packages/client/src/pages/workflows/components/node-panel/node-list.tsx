@@ -120,6 +120,7 @@ const APP_NODE_TYPES = new Set<string>([
   WorkflowNodeType.Vision,
   WorkflowNodeType.Speech,
   WorkflowNodeType.DeviceControl,
+  WorkflowNodeType.PhoneCamera,
 ]);
 
 /**
@@ -151,6 +152,7 @@ const CATEGORY_BY_TYPE: Partial<Record<WorkflowNodeType | string, NodeCategoryId
   [WorkflowNodeType.Vision]: "app",
   [WorkflowNodeType.Speech]: "app",
   [WorkflowNodeType.DeviceControl]: "app",
+  [WorkflowNodeType.PhoneCamera]: "app",
   [WorkflowNodeType.SmartHome]: "tools",
 };
 

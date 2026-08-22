@@ -84,11 +84,13 @@ actor APIClient {
     private(set) var baseURL: URL
     private(set) var token: String?
     private(set) var organizationId: String?
+    private(set) var installationId: String?
 
-    init(baseURLString: String, token: String? = nil) {
+    init(baseURLString: String, token: String? = nil, installationId: String? = nil) {
         self.session = URLSession(configuration: .default)
         self.baseURL = APIEndpoint.normalizedURL(from: baseURLString) ?? APIEndpoint.productionURL
         self.token = token
+        self.installationId = installationId
     }
 
     @discardableResult
@@ -102,6 +104,65 @@ actor APIClient {
 
     func setToken(_ value: String?) { token = value }
     func setOrganizationId(_ value: String?) { organizationId = value }
+    func setInstallationId(_ value: String?) { installationId = value }
+
+    func mobileWebSocketURL() -> URL? {
+        guard var components = URLComponents(url: baseURL, resolvingAgainstBaseURL: false) else { return nil }
+        let scheme = (components.scheme ?? "https").lowercased()
+        components.scheme = scheme == "https" ? "wss" : "ws"
+        let path = components.path.hasSuffix("/") ? String(components.path.dropLast()) : components.path
+        components.path = "\(path)/mobile-ws/v1"
+        components.query = nil
+        return components.url
+    }
+
+    func uploadCameraCapture(
+        jpeg: Data,
+        sessionId: String,
+        captureId: String,
+        sha256: String,
+        facing: String,
+        width: Int,
+        height: Int
+    ) async throws -> CameraCaptureUploadResponse {
+        let path = "/mobile/camera/captures"
+        guard let url = URL(string: path, relativeTo: baseURL)?.absoluteURL else { throw APIClientError.invalidBaseURL }
+        let boundary = "Boundary-\(UUID().uuidString)"
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
+        request.setValue("application/json", forHTTPHeaderField: "Accept")
+        applyAuthHeaders(&request)
+        var body = Data()
+        func appendField(_ name: String, _ value: String) {
+            body.append("--\(boundary)\r\n".data(using: .utf8)!)
+            body.append("Content-Disposition: form-data; name=\"\(name)\"\r\n\r\n".data(using: .utf8)!)
+            body.append("\(value)\r\n".data(using: .utf8)!)
+        }
+        appendField("session_id", sessionId)
+        appendField("capture_id", captureId)
+        appendField("sha256", sha256)
+        appendField("facing", facing)
+        appendField("width", String(width))
+        appendField("height", String(height))
+        body.append("--\(boundary)\r\n".data(using: .utf8)!)
+        body.append("Content-Disposition: form-data; name=\"file\"; filename=\"camera-capture-\(captureId).jpg\"\r\n".data(using: .utf8)!)
+        body.append("Content-Type: image/jpeg\r\n\r\n".data(using: .utf8)!)
+        body.append(jpeg)
+        body.append("\r\n--\(boundary)--\r\n".data(using: .utf8)!)
+        request.httpBody = body
+        let (data, response): (Data, URLResponse)
+        do {
+            (data, response) = try await session.data(for: request)
+        } catch {
+            throw transportError(error)
+        }
+        try validate(response, data: data)
+        if let envelope = try? JSONDecoder().decode(APIEnvelope<CameraCaptureUploadResponse>.self, from: data) {
+            return envelope.data
+        }
+        return try JSONDecoder().decode(CameraCaptureUploadResponse.self, from: data)
+    }
 
     func login(username: String, password: String) async throws -> LoginResponse {
         try await request("/auth/login", method: "POST", body: LoginRequest(username: username, password: password, terminal: 4))
@@ -262,8 +323,7 @@ actor APIClient {
         request.httpMethod = method
         request.setValue("application/json", forHTTPHeaderField: "Accept")
         if body != nil { request.setValue("application/json", forHTTPHeaderField: "Content-Type") }
-        if let token { request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization") }
-        if let organizationId { request.setValue(organizationId, forHTTPHeaderField: "x-organization-id") }
+        applyAuthHeaders(&request)
         if let body { request.httpBody = try JSONEncoder().encode(body) }
         return request
     }
@@ -309,6 +369,12 @@ actor APIClient {
             throw transportError(error)
         }
         try validate(response, data: data)
+    }
+
+    private func applyAuthHeaders(_ request: inout URLRequest) {
+        if let token { request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization") }
+        if let organizationId { request.setValue(organizationId, forHTTPHeaderField: "x-organization-id") }
+        if let installationId { request.setValue(installationId, forHTTPHeaderField: "X-Installation-Id") }
     }
 
     private func transportError(_ error: Error) -> APIClientError {

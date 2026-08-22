@@ -38,3 +38,10 @@ export type {
     SmartHomeExecutorHandler,
     SmartHomeExecutorInput,
 } from "./nodes/smart-home/index.ts";
+export { registerPhoneCameraExecutor } from "./nodes/phone-camera/index.ts";
+export type {
+    PhoneCameraExecutorHandler,
+    PhoneCameraExecutorInput,
+} from "./nodes/phone-camera/index.ts";
+export { onTaskSettled } from "./api/on-task-settled.ts";
+export type { WorkflowRuntimeExecutorContext } from "./nodes/runtime-metadata.ts";

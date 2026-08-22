@@ -2,33 +2,7 @@ import { HttpErrorFactory } from "@buildingai/errors";
 import type { VisionExecutorInput } from "@flowgram.ai/runtime-js";
 import { Injectable } from "@nestjs/common";
 
-import { LuaDeviceGatewayService } from "../lua-device/lua-device-gateway.service";
-import { WorkflowRuntimeDeviceService } from "./workflow-runtime-device.service";
-
-const VISION_SCRIPT = `function main(args)
-  local camera = require("camera")
-  local question = args.question or args.analysisPrompt or "描述这张图片"
-  local res, err = camera.explain(question)
-  if not res then
-    return {
-      success = false,
-      analysisResult = tostring(err or "camera.explain failed"),
-      imageUrl = "",
-      detectedObjects = {},
-    }
-  end
-  local text = res
-  if type(res) == "table" then
-    text = res.result or res.analysis or res.explanation or res.message or ""
-  end
-  return {
-    success = true,
-    analysisResult = tostring(text),
-    imageUrl = "",
-    detectedObjects = {},
-  }
-end
-`;
+import { WorkflowPhoneCameraExecutorService } from "./workflow-phone-camera-executor.service";
 
 function asText(value: unknown): string {
     if (typeof value === "string") return value;
@@ -38,56 +12,36 @@ function asText(value: unknown): string {
 
 @Injectable()
 export class WorkflowVisionExecutorService {
-    constructor(
-        private readonly luaDeviceGatewayService: LuaDeviceGatewayService,
-        private readonly runtimeDeviceService: WorkflowRuntimeDeviceService,
-    ) {}
+    constructor(private readonly phoneCameraExecutorService: WorkflowPhoneCameraExecutorService) {}
 
     async execute(input: VisionExecutorInput): Promise<Record<string, unknown>> {
         if (!input.userId) throw HttpErrorFactory.unauthorized("视觉节点需要登录后执行");
-        if (
-            input.runtimeContext?.runtimeTarget &&
-            input.runtimeContext.runtimeTarget !== "device"
-        ) {
-            throw HttpErrorFactory.badRequest("视觉节点需要在工程设置中把运行目标设为 CubeCat 设备");
-        }
-        const deviceId = await this.runtimeDeviceService.resolveLuaDeviceId(
-            input.userId,
-            input.runtimeContext,
-        );
-
-        const question =
-            asText(input.inputs.context).trim() ||
-            asText(input.inputs.analysisPrompt).trim() ||
-            asText(input.node.data?.analysisPrompt).trim() ||
-            "描述这张图片";
-
-        const run = await this.luaDeviceGatewayService.createRun(input.userId, deviceId, {
-            name: "vision",
-            projectId: input.runtimeContext?.projectId,
-            source: VISION_SCRIPT,
-            params: { question, analysisPrompt: question },
-            requiredCapabilities: ["lua", "camera"],
-            timeoutMs: 60_000,
+        const captured = await this.phoneCameraExecutorService.execute({
+            userId: input.userId,
+            runtimeContext: input.runtimeContext,
+            node: {
+                id: input.node.id,
+                type: input.node.type,
+                data: {
+                    ...input.node.data,
+                    deviceBinding: input.node.data?.deviceBinding || "triggering_device",
+                    installationId: input.node.data?.installationId || "",
+                    facingDefault: input.node.data?.facingDefault || "back",
+                    allowSwitchFacing: input.node.data?.allowSwitchFacing !== false,
+                    resolution: input.node.data?.resolution || "1080p",
+                    timeoutMs: input.node.data?.timeoutMs || 30_000,
+                    openCameraOn: input.node.data?.openCameraOn || "workflow_start",
+                },
+            },
+            inputs: input.inputs,
         });
-        const completed = await this.luaDeviceGatewayService.waitForRun(
-            input.userId,
-            deviceId,
-            run.id,
-            65_000,
-        );
-        if (completed.status !== "succeeded") {
-            throw HttpErrorFactory.badRequest(completed.error?.message ?? "设备拍照分析失败");
-        }
-        const result = completed.result;
-        if (result && typeof result === "object" && !Array.isArray(result)) {
-            return result as Record<string, unknown>;
-        }
         return {
-            success: true,
-            analysisResult: result == null ? "" : String(result),
-            imageUrl: "",
+            success: captured.success !== false,
+            imageUrl: asText(captured.imageUrl),
+            analysisResult: "",
             detectedObjects: [],
+            fileId: captured.fileId,
+            captureId: captured.captureId,
         };
     }
 }

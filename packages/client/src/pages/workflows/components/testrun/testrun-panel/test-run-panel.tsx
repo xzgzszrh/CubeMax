@@ -78,6 +78,9 @@ export const TestRunSidePanel: FC<TestRunSidePanelProps> = () => {
     <div className={styles["testrun-panel-form"]}>
       <div className={styles["testrun-panel-input"]}>
         <div className={styles.title}>输入表单</div>
+        <div className={styles.hint} style={{ fontSize: 12, color: "var(--semi-color-text-2)", marginBottom: 8 }}>
+          用 CubeMax 连接：目标手机须已登录且 App 保持前台。含「手机摄像头」或「视觉识别」节点时请在节点中指定拍摄设备，或从手机运行。
+        </div>
         <div>JSON 模式</div>
         <Switch
           checked={inputJSONMode}

@@ -50,4 +50,5 @@ export enum WorkflowNodeType {
   Speech = "speech",
   DeviceControl = "device_control",
   SmartHome = "smart_home",
+  PhoneCamera = "phone_camera",
 }

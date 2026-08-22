@@ -1,5 +1,5 @@
 /**
- * 视觉节点 - CubeCat 拍照并用 camera.explain 分析
+ * 视觉节点 - 由 iPhone 拍照（ESP32 无摄像头时的回传路径），图片供后续节点使用
  */
 
 import { nanoid } from "nanoid";
@@ -15,7 +15,7 @@ export const VisionNodeRegistry: FlowNodeRegistry = {
   type: WorkflowNodeType.Vision,
   info: {
     icon: iconVision,
-    description: "让 CubeCat 拍照并用 camera.explain 分析画面。",
+    description: "调用 CubeMax iPhone 摄像头拍一张照片，把图片传回工作流。",
   },
   meta: {
     nodePanelLabel: "视觉识别",
@@ -30,13 +30,13 @@ export const VisionNodeRegistry: FlowNodeRegistry = {
       type: WorkflowNodeType.Vision,
       data: {
         title: `视觉识别_${++index}`,
-        // 拍摄模式: photo = 单张拍照, continuous = 连续拍摄, stream = 视频流
         captureMode: "photo",
-        // 分析提示词
+        deviceBinding: "triggering_device",
+        installationId: "",
+        facingDefault: "back",
+        openCameraOn: "workflow_start",
         analysisPrompt: "",
-        // AI 模型选择
         modelId: "",
-        // 是否保存图片
         saveImage: false,
         // 输入定义（可接收前置节点变量）
         inputs: {

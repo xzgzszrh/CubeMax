@@ -60,6 +60,14 @@ export {
     type LuaDeviceRuntime,
     LuaPhysicalDevice,
 } from "./lua-device.entity";
+export {
+    CameraCapture,
+    type CameraCaptureStatus,
+    CameraSession,
+    type CameraSessionStatus,
+    MobileConnection,
+    MobileInstallation,
+} from "./mobile-camera.entity";
 export { type LuaAssistantMessage, LuaModule, type LuaModuleSchema } from "./lua-module.entity";
 export { MembershipLevels } from "./membership-levels.entity";
 export { MembershipOrder } from "./membership-order.entity";

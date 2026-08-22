@@ -31,6 +31,7 @@ import { ExtensionCoreModule } from "@modules/extension/extension.module";
 import { HealthModule } from "@modules/health/health.module";
 import { LuaModuleModule } from "@modules/lua/lua.module";
 import { LuaDeviceModule } from "@modules/lua-device/lua-device.module";
+import { MobileModule } from "@modules/mobile/mobile.module";
 import { MembershipModule } from "@modules/membership/membership.module";
 import { NotificationModule } from "@modules/notification/notification.module";
 import { SimulatorModule } from "@modules/simulator/simulator.module";
@@ -142,6 +143,7 @@ export class AppModule {
                 MembershipModule,
                 LuaModuleModule,
                 LuaDeviceModule,
+                MobileModule,
                 Pm2Module,
                 RechargeModule,
                 RoleModule,

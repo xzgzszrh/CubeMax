@@ -4,6 +4,16 @@
 
 应用工作流是面向设备编程的图形化编程系统，类似于 Arduino，但使用 AI 进行语音交互和设备控制。系统通过 xiaozhi.me 提供语音服务，工作流通过修改智能体提示词和 MCP 通信来实现与设备的交互。
 
+### 手机摄像头节点（`phone_camera`）
+
+**类型**: `phone_camera`
+
+**功能**: 在已登录的 CubeMax iOS App 上打开摄像头预览，由服务器下发拍照指令后自动截帧，经 `POST /api/mobile/camera/captures` 回传 JPEG。节点输出短时 HMAC 签名 `imageUrl`（不是公开 `/uploads` 路径）。
+
+详见 `docs/design-phone-camera-node.md` 与 `docs/mobile-camera-websocket-protocol.md`。手机摄像头默认启用，应用工程节点库会展示该节点。
+
+---
+
 ## 节点类型
 
 ### 1. Agent 节点（智能体）
@@ -129,15 +139,16 @@ Body: { action: string, data: object }
 
 **类型**: `vision`
 
-**功能**: 拍摄照片并交给 AI 分析
+**功能**: 由 CubeMax iPhone 拍摄一张照片并回传（ESP32 无摄像头时的路径）。
 
 **数据字段**:
 
 | 字段 | 类型 | 必填 | 说明 |
 |------|------|------|------|
-| deviceId | string | 是 | CubeCat 设备 ID |
-| captureMode | string | 否 | 拍摄模式: `photo`(单张), `continuous`(连续), `stream`(视频流) |
-| analysisPrompt | string | 否 | AI 分析提示词 |
+| deviceBinding | string | 否 | `triggering_device`（从 CubeMax 启动用本机）或 `specific` |
+| installationId | string | 条件 | `deviceBinding=specific` 时必填 |
+| captureMode | string | 否 | 拍摄模式: `photo`(单张) |
+| analysisPrompt | string | 否 | 预留给下游分析；iPhone 路径只回传图片 |
 | modelId | string | 否 | 视觉模型 ID |
 | saveImage | boolean | 否 | 是否保存图片 |
 

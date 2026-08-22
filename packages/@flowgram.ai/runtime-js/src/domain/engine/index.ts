@@ -26,11 +26,16 @@ export class WorkflowRuntimeEngine implements IEngine {
     }
 
     public invoke(params: InvokeParams): ITask {
-        const context = WorkflowRuntimeContext.create();
+        const context = WorkflowRuntimeContext.create() as WorkflowRuntimeContext;
         context.init(params);
+        const existing = context.metadata.workflowTaskId;
+        const taskId =
+            typeof existing === "string" && existing ? existing : WorkflowRuntimeTask.createId();
+        context.metadata.workflowTaskId = taskId;
         const valid = this.validate(params, context);
         if (!valid) {
             return WorkflowRuntimeTask.create({
+                id: taskId,
                 processing: Promise.resolve({}),
                 context,
             });
@@ -40,6 +45,7 @@ export class WorkflowRuntimeEngine implements IEngine {
             context.dispose();
         });
         return WorkflowRuntimeTask.create({
+            id: taskId,
             processing,
             context,
         });

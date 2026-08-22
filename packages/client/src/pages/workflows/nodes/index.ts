@@ -29,6 +29,7 @@ import { VisionNodeRegistry } from "./vision";
 import { SpeechNodeRegistry } from "./speech";
 import { DeviceControlNodeRegistry } from "./device-control";
 import { SmartHomeNodeRegistry } from "./smart-home";
+import { PhoneCameraNodeRegistry } from "./phone-camera";
 export { WorkflowNodeType } from "./constants";
 
 export const nodeRegistries: FlowNodeRegistry[] = [
@@ -58,4 +59,5 @@ export const nodeRegistries: FlowNodeRegistry[] = [
   SpeechNodeRegistry,
   DeviceControlNodeRegistry,
   SmartHomeNodeRegistry,
+  PhoneCameraNodeRegistry,
 ];

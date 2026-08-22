@@ -8,6 +8,25 @@ struct APIEnvelope<Value: Decodable & Sendable>: Decodable, Sendable {
 
 struct EmptyResponse: Decodable, Sendable {}
 
+struct CameraCaptureUploadResponse: Decodable, Sendable {
+    let captureId: String
+    let sessionId: String
+    let fileId: String?
+    let url: String?
+    let sha256: String?
+    let size: Int?
+    let width: Int?
+    let height: Int?
+    let facing: String?
+
+    enum CodingKeys: String, CodingKey {
+        case captureId = "capture_id"
+        case sessionId = "session_id"
+        case fileId = "file_id"
+        case url, sha256, size, width, height, facing
+    }
+}
+
 struct LoginResponse: Decodable, Sendable {
     let token: String
     let expiresAt: String?

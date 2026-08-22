@@ -18,6 +18,7 @@ import { VisionExecutor } from "./vision/index.ts";
 import { SpeechExecutor } from "./speech/index.ts";
 import { DeviceControlExecutor } from "./device-control/index.ts";
 import { SmartHomeExecutor } from "./smart-home/index.ts";
+import { PhoneCameraExecutor } from "./phone-camera/index.ts";
 
 export const WorkflowRuntimeNodeExecutors: INodeExecutorFactory[] = [
     StartExecutor,
@@ -38,6 +39,7 @@ export const WorkflowRuntimeNodeExecutors: INodeExecutorFactory[] = [
     SpeechExecutor,
     DeviceControlExecutor,
     SmartHomeExecutor,
+    PhoneCameraExecutor,
     BreakExecutor,
     ContinueExecutor,
 ];

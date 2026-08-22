@@ -50,5 +50,12 @@ export function canContainNode(
   if (childNodeType === WorkflowNodeType.Loop && parentNodeType === WorkflowNodeType.Loop) {
     return false;
   }
+  if (
+    (childNodeType === WorkflowNodeType.PhoneCamera ||
+      childNodeType === WorkflowNodeType.Vision) &&
+    parentNodeType === WorkflowNodeType.Loop
+  ) {
+    return false;
+  }
   return true;
 }
